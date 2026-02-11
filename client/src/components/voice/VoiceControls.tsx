@@ -75,13 +75,12 @@ export function VoiceControls({
         >
           {isMuted ? (
             <svg className="h-5 w-5" viewBox="0 0 24 24" fill="currentColor">
-              <path d="M12 3a1 1 0 0 0-1 1v8a3 3 0 0 0 3 3c.23 0 .46-.03.68-.08L12 12.24V4a1 1 0 0 0-1-1zM6.29 5.71a1 1 0 0 0-1.41 0L3.29 7.29a1 1 0 0 0 1.41 1.41L6.29 7.12a1 1 0 0 0 0-1.41z" />
+              <path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3zm7 9a1 1 0 1 0-2 0 5 5 0 0 1-10 0 1 1 0 1 0-2 0 7 7 0 0 0 6 6.93V21a1 1 0 1 0 2 0v-2.07A7 7 0 0 0 19 11z" />
               <line x1="3" y1="3" x2="21" y2="21" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-              <path d="M12 3a1 1 0 0 0-1 1v8a3 3 0 0 0 6 0V4a1 1 0 1 0-2 0v8a1 1 0 1 1-2 0V4a1 1 0 0 0-1-1z" />
             </svg>
           ) : (
             <svg className="h-5 w-5" viewBox="0 0 24 24" fill="currentColor">
-              <path d="M12 3a1 1 0 0 0-1 1v8a3 3 0 0 0 6 0V4a1 1 0 1 0-2 0v8a1 1 0 1 1-2 0V4a1 1 0 0 0-1-1zM7 12a5 5 0 0 0 10 0 1 1 0 1 1 2 0 7 7 0 0 1-6 6.93V21a1 1 0 1 1-2 0v-2.07A7 7 0 0 1 5 12a1 1 0 1 1 2 0z" />
+              <path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3zm7 9a1 1 0 1 0-2 0 5 5 0 0 1-10 0 1 1 0 1 0-2 0 7 7 0 0 0 6 6.93V21a1 1 0 1 0 2 0v-2.07A7 7 0 0 0 19 11z" />
             </svg>
           )}
         </button>

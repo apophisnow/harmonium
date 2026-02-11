@@ -47,7 +47,7 @@ export function VoiceParticipant({ participant }: VoiceParticipantProps) {
             viewBox="0 0 24 24"
             fill="currentColor"
           >
-            <path d="M12 3a1 1 0 0 0-1 1v8a3 3 0 0 0 4.18 2.76l-8.9-8.9A1 1 0 0 0 6 6v6a6 6 0 0 0 8.44 5.48l-2.16-2.16A3 3 0 0 1 9 12v-1.17L3.71 5.54a1 1 0 0 1 1.41-1.41l15.3 15.3a1 1 0 0 1-1.41 1.41L15 16.83V12a3 3 0 0 0-3-3z" />
+            <path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3zm7 9a1 1 0 1 0-2 0 5 5 0 0 1-10 0 1 1 0 1 0-2 0 7 7 0 0 0 6 6.93V21a1 1 0 1 0 2 0v-2.07A7 7 0 0 0 19 11z" />
             <line x1="3" y1="3" x2="21" y2="21" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
           </svg>
         )}
