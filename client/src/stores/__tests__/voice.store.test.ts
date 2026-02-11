@@ -10,6 +10,7 @@ const makeParticipant = (userId: string, username: string): VoiceParticipant => 
   isDeafened: false,
   isSpeaking: false,
   isScreenSharing: false,
+  hasWebcam: false,
 });
 
 describe('useVoiceStore', () => {

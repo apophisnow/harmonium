@@ -1,4 +1,4 @@
-import type { VoiceState } from '@harmonium/shared';
+import type { VoiceState, ProducerType } from '@harmonium/shared';
 import { apiClient } from './client.js';
 
 export interface JoinVoiceResponse {
@@ -26,6 +26,7 @@ export interface ConsumeResponse {
   producerId: string;
   kind: 'audio' | 'video';
   rtpParameters: unknown;
+  producerType: ProducerType;
 }
 
 export async function joinVoice(channelId: string): Promise<JoinVoiceResponse> {
@@ -48,6 +49,7 @@ export async function produce(data: {
   transportId: string;
   kind: string;
   rtpParameters: unknown;
+  producerType: ProducerType;
 }): Promise<{ producerId: string }> {
   const response = await apiClient.post<{ producerId: string }>(
     '/voice/produce',

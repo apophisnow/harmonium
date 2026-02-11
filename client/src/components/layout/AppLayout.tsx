@@ -21,6 +21,7 @@ import { InviteModal } from '../server/InviteModal.js';
 import { ServerSettings } from '../server/ServerSettings.js';
 import { EditProfileModal } from '../user/EditProfileModal.js';
 import { ScreenShareViewer } from '../voice/ScreenShareViewer.js';
+import { WebcamGallery } from '../voice/WebcamGallery.js';
 
 const EMPTY_CHANNELS: Channel[] = [];
 
@@ -67,6 +68,9 @@ export function AppLayout({ sendEvent, isConnected }: AppLayoutProps) {
     toggleDeafen,
     startScreenShare,
     stopScreenShare,
+    startWebcam,
+    stopWebcam,
+    isWebcamOn,
   } = useVoice();
 
   // Find the current channel object
@@ -153,6 +157,9 @@ export function AppLayout({ sendEvent, isConnected }: AppLayoutProps) {
               onToggleDeafen={toggleDeafen}
               onStartScreenShare={startScreenShare}
               onStopScreenShare={stopScreenShare}
+              onStartWebcam={startWebcam}
+              onStopWebcam={stopWebcam}
+              isWebcamOn={isWebcamOn}
             />
           </div>
         </>
@@ -172,6 +179,9 @@ export function AppLayout({ sendEvent, isConnected }: AppLayoutProps) {
             onToggleDeafen={toggleDeafen}
             onStartScreenShare={startScreenShare}
             onStopScreenShare={stopScreenShare}
+            onStartWebcam={startWebcam}
+            onStopWebcam={stopWebcam}
+            isWebcamOn={isWebcamOn}
           />
         </>
       )}
@@ -183,6 +193,7 @@ export function AppLayout({ sendEvent, isConnected }: AppLayoutProps) {
         {currentChannel ? (
           <>
             <ScreenShareViewer />
+            <WebcamGallery />
             {/* Chat area with typing indicator overlay */}
             <div className="relative flex min-h-0 flex-1 flex-col">
               <MessageList

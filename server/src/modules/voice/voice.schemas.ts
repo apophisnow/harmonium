@@ -29,6 +29,7 @@ export const produceSchema = z.object({
     encodings: z.array(z.any()).optional(),
     rtcp: z.any().optional(),
   }),
+  producerType: z.enum(['audio', 'screenShare', 'webcam']).optional(),
 });
 
 export const consumeSchema = z.object({

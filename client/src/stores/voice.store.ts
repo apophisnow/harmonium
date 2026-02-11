@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import type { ProducerType } from '@harmonium/shared';
 
 export interface VoiceParticipant {
   userId: string;
@@ -8,6 +9,7 @@ export interface VoiceParticipant {
   isDeafened: boolean;
   isSpeaking: boolean;
   isScreenSharing: boolean;
+  hasWebcam: boolean;
 }
 
 interface VoiceState {
@@ -20,6 +22,8 @@ interface VoiceState {
   isScreenSharing: boolean;
   screenShareUserId: string | null;
   participants: Map<string, VoiceParticipant>;
+  webcamStreams: Map<string, MediaStream>;
+  isWebcamOn: boolean;
 
   joinChannel: (channelId: string, serverId: string) => void;
   leaveChannel: () => void;
@@ -36,6 +40,9 @@ interface VoiceState {
     updates: Partial<VoiceParticipant>,
   ) => void;
   setParticipants: (participants: VoiceParticipant[]) => void;
+  setWebcamStream: (userId: string, stream: MediaStream) => void;
+  removeWebcamStream: (userId: string) => void;
+  setWebcamOn: (on: boolean) => void;
 }
 
 export const useVoiceStore = create<VoiceState>((set, get) => ({
@@ -48,6 +55,8 @@ export const useVoiceStore = create<VoiceState>((set, get) => ({
   isScreenSharing: false,
   screenShareUserId: null,
   participants: new Map(),
+  webcamStreams: new Map(),
+  isWebcamOn: false,
 
   joinChannel: (channelId, serverId) => {
     set({
@@ -55,6 +64,8 @@ export const useVoiceStore = create<VoiceState>((set, get) => ({
       currentServerId: serverId,
       isConnecting: true,
       participants: new Map(),
+      webcamStreams: new Map(),
+      isWebcamOn: false,
     });
   },
 
@@ -69,6 +80,8 @@ export const useVoiceStore = create<VoiceState>((set, get) => ({
       isScreenSharing: false,
       screenShareUserId: null,
       participants: new Map(),
+      webcamStreams: new Map(),
+      isWebcamOn: false,
     });
   },
 
@@ -106,6 +119,7 @@ export const useVoiceStore = create<VoiceState>((set, get) => ({
     participants.set(participant.userId, {
       ...participant,
       isScreenSharing: participant.isScreenSharing ?? false,
+      hasWebcam: participant.hasWebcam ?? false,
     });
     set({ participants });
   },
@@ -131,5 +145,26 @@ export const useVoiceStore = create<VoiceState>((set, get) => ({
       participants.set(p.userId, p);
     }
     set({ participants });
+  },
+
+  setWebcamStream: (userId, stream) => {
+    const webcamStreams = new Map(get().webcamStreams);
+    webcamStreams.set(userId, stream);
+    set({ webcamStreams });
+  },
+
+  removeWebcamStream: (userId) => {
+    const webcamStreams = new Map(get().webcamStreams);
+    webcamStreams.delete(userId);
+    const participants = new Map(get().participants);
+    const existing = participants.get(userId);
+    if (existing) {
+      participants.set(userId, { ...existing, hasWebcam: false });
+    }
+    set({ webcamStreams, participants });
+  },
+
+  setWebcamOn: (on) => {
+    set({ isWebcamOn: on });
   },
 }));

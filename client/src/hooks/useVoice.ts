@@ -5,7 +5,7 @@ import { useVoiceStore } from '../stores/voice.store.js';
 import { useToastStore } from '../stores/toast.store.js';
 import { useAuthStore } from '../stores/auth.store.js';
 import * as voiceApi from '../api/voice.js';
-import type { VoiceState } from '@harmonium/shared';
+import type { VoiceState, ProducerType } from '@harmonium/shared';
 
 const SPEAKING_THRESHOLD = -50; // dB
 const SPEAKING_CHECK_INTERVAL = 100; // ms
@@ -24,11 +24,14 @@ export function useVoice() {
   const channelIdRef = useRef<string | null>(null);
   const screenProducerRef = useRef<mediasoupTypes.Producer | null>(null);
   const screenStreamRef = useRef<MediaStream | null>(null);
+  const webcamProducerRef = useRef<mediasoupTypes.Producer | null>(null);
+  const webcamStreamRef = useRef<MediaStream | null>(null);
   const videoElementsRef = useRef<Map<string, HTMLVideoElement>>(new Map());
 
   const currentChannelId = useVoiceStore((s) => s.currentChannelId);
   const isMuted = useVoiceStore((s) => s.isMuted);
   const isDeafened = useVoiceStore((s) => s.isDeafened);
+  const isWebcamOn = useVoiceStore((s) => s.isWebcamOn);
 
   const addToast = useToastStore((s) => s.addToast);
   const currentUser = useAuthStore((s) => s.user);
@@ -46,6 +49,9 @@ export function useVoice() {
     toggleDeafen: useVoiceStore.getState().toggleDeafen,
     setScreenSharing: useVoiceStore.getState().setScreenSharing,
     setScreenShareUser: useVoiceStore.getState().setScreenShareUser,
+    setWebcamStream: useVoiceStore.getState().setWebcamStream,
+    removeWebcamStream: useVoiceStore.getState().removeWebcamStream,
+    setWebcamOn: useVoiceStore.getState().setWebcamOn,
   });
 
   // Keep refs in sync
@@ -63,6 +69,9 @@ export function useVoice() {
       toggleDeafen: useVoiceStore.getState().toggleDeafen,
       setScreenSharing: useVoiceStore.getState().setScreenSharing,
       setScreenShareUser: useVoiceStore.getState().setScreenShareUser,
+      setWebcamStream: useVoiceStore.getState().setWebcamStream,
+      removeWebcamStream: useVoiceStore.getState().removeWebcamStream,
+      setWebcamOn: useVoiceStore.getState().setWebcamOn,
     };
   });
 
@@ -133,6 +142,17 @@ export function useVoice() {
       screenStreamRef.current.getTracks().forEach((track) => track.stop());
       screenStreamRef.current = null;
     }
+
+    // Close webcam producer and stream
+    if (webcamProducerRef.current) {
+      webcamProducerRef.current.close();
+      webcamProducerRef.current = null;
+    }
+    if (webcamStreamRef.current) {
+      webcamStreamRef.current.getTracks().forEach((track) => track.stop());
+      webcamStreamRef.current = null;
+    }
+
     for (const video of videoElementsRef.current.values()) {
       video.pause();
       video.srcObject = null;
@@ -185,6 +205,8 @@ export function useVoice() {
 
         consumersRef.current.set(consumer.id, consumer);
 
+        const producerType: ProducerType = consumerInfo.producerType ?? 'audio';
+
         if (consumer.kind === 'audio') {
           // Play audio through HTMLAudioElement
           const stream = new MediaStream([consumer.track]);
@@ -201,13 +223,25 @@ export function useVoice() {
           });
         } else if (consumer.kind === 'video') {
           const stream = new MediaStream([consumer.track]);
-          storeActions.current.setScreenShareUser(userId);
-          storeActions.current.updateParticipant(userId, { isScreenSharing: true });
-          window.dispatchEvent(
-            new CustomEvent('voice:screen_share_stream', {
-              detail: { userId, stream },
-            }),
-          );
+
+          if (producerType === 'webcam') {
+            storeActions.current.updateParticipant(userId, { hasWebcam: true });
+            storeActions.current.setWebcamStream(userId, stream);
+            window.dispatchEvent(
+              new CustomEvent('voice:webcam_stream', {
+                detail: { userId, stream },
+              }),
+            );
+          } else {
+            // screenShare or fallback
+            storeActions.current.setScreenShareUser(userId);
+            storeActions.current.updateParticipant(userId, { isScreenSharing: true });
+            window.dispatchEvent(
+              new CustomEvent('voice:screen_share_stream', {
+                detail: { userId, stream },
+              }),
+            );
+          }
         }
       } catch (error) {
         console.error(`Failed to consume producer ${producerId}:`, error);
@@ -258,13 +292,17 @@ export function useVoice() {
           }
         });
 
-        sendTransport.on('produce', async ({ kind, rtpParameters }, callback, errback) => {
+        sendTransport.on('produce', async ({ kind, rtpParameters, appData }, callback, errback) => {
           try {
+            const producerType: ProducerType =
+              (appData?.producerType as ProducerType) ??
+              (kind === 'video' ? 'screenShare' : 'audio');
             const { producerId } = await voiceApi.produce({
               channelId,
               transportId: sendTransport.id,
               kind,
               rtpParameters,
+              producerType,
             });
             callback({ id: producerId });
           } catch (e) {
@@ -321,6 +359,7 @@ export function useVoice() {
             opusStereo: true,
             opusDtx: true,
           },
+          appData: { producerType: 'audio' as ProducerType },
         });
         producerRef.current = producer;
 
@@ -337,6 +376,7 @@ export function useVoice() {
             isDeafened: false,
             isSpeaking: false,
             isScreenSharing: false,
+            hasWebcam: false,
           });
         }
 
@@ -353,6 +393,7 @@ export function useVoice() {
                 isDeafened: state.selfDeaf,
                 isSpeaking: false,
                 isScreenSharing: false,
+                hasWebcam: false,
               });
             }
           }
@@ -361,12 +402,9 @@ export function useVoice() {
         }
 
         // 11. Consume existing producers
+        // consumeProducer handles producerType-based routing (screenShare vs webcam)
         for (const existing of joinResult.existingProducers) {
           await consumeProducer(existing.producerId, existing.userId);
-          if (existing.kind === 'video') {
-            storeActions.current.setScreenShareUser(existing.userId);
-            storeActions.current.updateParticipant(existing.userId, { isScreenSharing: true });
-          }
         }
 
         // 12. Start speaking detection
@@ -459,6 +497,63 @@ export function useVoice() {
     }
   }, [currentUser]);
 
+  const stopWebcam = useCallback(async () => {
+    if (webcamProducerRef.current) {
+      webcamProducerRef.current.close();
+      webcamProducerRef.current = null;
+    }
+    if (webcamStreamRef.current) {
+      webcamStreamRef.current.getTracks().forEach((t) => t.stop());
+      webcamStreamRef.current = null;
+    }
+
+    storeActions.current.setWebcamOn(false);
+    if (currentUser) {
+      storeActions.current.updateParticipant(currentUser.id, { hasWebcam: false });
+    }
+  }, [currentUser]);
+
+  const startWebcam = useCallback(async () => {
+    if (!channelIdRef.current || !sendTransportRef.current || !deviceRef.current) return;
+    if (webcamProducerRef.current) return; // Already on
+    if (useVoiceStore.getState().isWebcamOn) return;
+
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: {
+          width: 1280,
+          height: 720,
+          facingMode: 'user',
+        },
+        audio: false,
+      });
+
+      webcamStreamRef.current = stream;
+      const videoTrack = stream.getVideoTracks()[0];
+
+      videoTrack.onended = () => {
+        stopWebcam();
+      };
+
+      const producer = await sendTransportRef.current.produce({
+        track: videoTrack,
+        appData: { producerType: 'webcam' as ProducerType },
+      });
+
+      webcamProducerRef.current = producer;
+      storeActions.current.setWebcamOn(true);
+      if (currentUser) {
+        storeActions.current.updateParticipant(currentUser.id, { hasWebcam: true });
+      }
+    } catch (error) {
+      if (webcamStreamRef.current) {
+        webcamStreamRef.current.getTracks().forEach((t) => t.stop());
+        webcamStreamRef.current = null;
+      }
+      console.error('Failed to start webcam:', error);
+    }
+  }, [currentUser, stopWebcam]);
+
   const startScreenShare = useCallback(async () => {
     if (!channelIdRef.current || !sendTransportRef.current || !deviceRef.current) return;
     if (screenProducerRef.current) return; // Already sharing
@@ -478,6 +573,7 @@ export function useVoice() {
 
       const producer = await sendTransportRef.current.produce({
         track: videoTrack,
+        appData: { producerType: 'screenShare' as ProducerType },
       });
 
       screenProducerRef.current = producer;
@@ -537,6 +633,7 @@ export function useVoice() {
             isDeafened: detail.selfDeaf,
             isSpeaking: false,
             isScreenSharing: false,
+            hasWebcam: false,
           });
         }
       }
@@ -555,6 +652,7 @@ export function useVoice() {
         producerId: string;
         userId: string;
         kind: 'audio' | 'video';
+        producerType: ProducerType;
         channelId: string;
       };
 
@@ -571,12 +669,19 @@ export function useVoice() {
         producerId: string;
         userId: string;
         kind: 'audio' | 'video';
+        producerType: ProducerType;
         channelId: string;
       };
 
       if (detail.userId === currentUser?.id) return;
 
-      if (detail.kind === 'video') {
+      if (detail.producerType === 'webcam') {
+        storeActions.current.updateParticipant(detail.userId, { hasWebcam: false });
+        storeActions.current.removeWebcamStream(detail.userId);
+        window.dispatchEvent(
+          new CustomEvent('voice:webcam_stream_ended', { detail: { userId: detail.userId } }),
+        );
+      } else if (detail.producerType === 'screenShare') {
         storeActions.current.setScreenShareUser(null);
         storeActions.current.updateParticipant(detail.userId, { isScreenSharing: false });
         window.dispatchEvent(
@@ -619,5 +724,5 @@ export function useVoice() {
     };
   }, [cleanupMedia]);
 
-  return { join, leave, toggleMute, toggleDeafen, startScreenShare, stopScreenShare };
+  return { join, leave, toggleMute, toggleDeafen, startScreenShare, stopScreenShare, startWebcam, stopWebcam, isWebcamOn };
 }

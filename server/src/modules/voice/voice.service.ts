@@ -3,7 +3,7 @@ import type { DtlsParameters, MediaKind, RtpParameters, RtpCapabilities } from '
 import { getDb, schema } from '../../db/index.js';
 import { NotFoundError, ForbiddenError, ValidationError } from '../../utils/errors.js';
 import { computeChannelPermissions } from '../../utils/permissions.js';
-import { Permission, hasPermission } from '@harmonium/shared';
+import { Permission, hasPermission, type ProducerType } from '@harmonium/shared';
 import { getPubSubManager } from '../../ws/pubsub.js';
 import { getVoiceServer } from '../../voice/voice-server.js';
 
@@ -166,8 +166,20 @@ export async function produce(
   transportId: string,
   kind: MediaKind,
   rtpParameters: RtpParameters,
+  producerType?: ProducerType,
 ) {
   const db = getDb();
+
+  // Determine the producer type: default to 'audio' for audio kind, require it for video
+  let resolvedProducerType: ProducerType;
+  if (kind === 'audio') {
+    resolvedProducerType = 'audio';
+  } else {
+    if (!producerType || producerType === 'audio') {
+      throw new ValidationError('producerType must be "screenShare" or "webcam" for video producers');
+    }
+    resolvedProducerType = producerType;
+  }
 
   // Check SPEAK permission
   const channel = await getChannelWithValidation(channelId);
@@ -196,21 +208,21 @@ export async function produce(
     throw new ForbiddenError('You are not in this voice channel');
   }
 
-  // For video (screen share), check if someone else is already sharing
-  if (kind === 'video') {
+  // For screen share, check if someone else is already sharing
+  if (resolvedProducerType === 'screenShare') {
     const currentSharer = room.getScreenSharerUserId();
     if (currentSharer && currentSharer !== userId) {
       throw new ForbiddenError('Someone else is already sharing their screen');
     }
   }
 
-  const producerId = await room.produce(userId, transportId, kind, rtpParameters);
+  const producerId = await room.produce(userId, transportId, kind, rtpParameters, resolvedProducerType);
 
   // Notify other peers about the new producer via WebSocket
   const pubsub = getPubSubManager();
   await pubsub.publishToServer(serverId, {
     op: 'NEW_PRODUCER' as const,
-    d: { producerId, userId, kind, channelId, serverId },
+    d: { producerId, userId, kind, channelId, serverId, producerType: resolvedProducerType },
   }, userId);
 
   return { producerId };
@@ -245,7 +257,9 @@ export async function consume(
 
   const consumerInfo = await room.consume(userId, producerId, rtpCapabilities);
 
-  return consumerInfo;
+  const consumerProducerType = room.producerMetadata.get(producerId) ?? 'audio';
+
+  return { ...consumerInfo, producerType: consumerProducerType };
 }
 
 export async function leaveVoice(userId: string) {
@@ -271,9 +285,10 @@ export async function leaveVoice(userId: string) {
       const pubsub = getPubSubManager();
       for (const { producerId, kind } of producers) {
         if (kind === 'video') {
+          const producerType = room.producerMetadata.get(producerId) ?? 'screenShare';
           await pubsub.publishToServer(serverId, {
             op: 'PRODUCER_CLOSED' as const,
-            d: { producerId, userId, kind: 'video', channelId, serverId },
+            d: { producerId, userId, kind: 'video', channelId, serverId, producerType },
           });
         }
       }
@@ -335,10 +350,11 @@ export async function stopScreenShare(userId: string) {
   const pubsub = getPubSubManager();
   for (const { producerId, kind } of producers) {
     if (kind === 'video') {
+      const producerType = room.producerMetadata.get(producerId) ?? 'screenShare';
       await room.closeProducer(userId, producerId);
       await pubsub.publishToServer(serverId, {
         op: 'PRODUCER_CLOSED' as const,
-        d: { producerId, userId, kind: 'video', channelId, serverId },
+        d: { producerId, userId, kind: 'video', channelId, serverId, producerType },
       });
     }
   }

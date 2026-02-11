@@ -3,7 +3,7 @@ import type { PublicUser, UserStatus } from './types/user.js';
 import type { Channel } from './types/channel.js';
 import type { Server, ServerMember } from './types/server.js';
 import type { Role } from './types/role.js';
-import type { VoiceState } from './types/voice.js';
+import type { VoiceState, ProducerType } from './types/voice.js';
 
 // ===== Client-to-Server Events =====
 
@@ -143,6 +143,7 @@ export interface NewProducerServerEvent {
     producerId: string;
     userId: string;
     kind: 'audio' | 'video';
+    producerType: ProducerType;
     channelId: string;
     serverId: string;
   };
@@ -154,6 +155,7 @@ export interface ProducerClosedServerEvent {
     producerId: string;
     userId: string;
     kind: 'audio' | 'video';
+    producerType: ProducerType;
     channelId: string;
     serverId: string;
   };

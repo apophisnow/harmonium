@@ -8,6 +8,7 @@ import type {
   DtlsParameters,
   MediaKind,
 } from 'mediasoup/types';
+import type { ProducerType } from '@harmonium/shared';
 import { getTransportOptions } from './mediasoup-config.js';
 
 export interface VoicePeer {
@@ -37,6 +38,7 @@ export interface TransportConnectInfo {
 export class VoiceRoom {
   private readonly router: Router;
   private readonly peers = new Map<string, VoicePeer>();
+  readonly producerMetadata = new Map<string, ProducerType>();
 
   constructor(router: Router) {
     this.router = router;
@@ -122,6 +124,7 @@ export class VoiceRoom {
     transportId: string,
     kind: MediaKind,
     rtpParameters: RtpParameters,
+    producerType: ProducerType,
   ): Promise<string> {
     const peer = this.peers.get(userId);
     if (!peer) {
@@ -136,10 +139,12 @@ export class VoiceRoom {
     const producer = await transport.produce({ kind, rtpParameters });
 
     peer.producers.set(producer.id, producer);
+    this.producerMetadata.set(producer.id, producerType);
 
     // Clean up on producer close
     producer.on('transportclose', () => {
       peer.producers.delete(producer.id);
+      this.producerMetadata.delete(producer.id);
     });
 
     return producer.id;
@@ -203,9 +208,10 @@ export class VoiceRoom {
     }
     peer.consumers.clear();
 
-    // Close all producers
-    for (const producer of peer.producers.values()) {
+    // Close all producers and clean up metadata
+    for (const [producerId, producer] of peer.producers) {
       producer.close();
+      this.producerMetadata.delete(producerId);
     }
     peer.producers.clear();
 
@@ -220,13 +226,14 @@ export class VoiceRoom {
     this.peers.delete(userId);
   }
 
-  getOtherProducerIds(excludeUserId: string): Array<{ producerId: string; userId: string; kind: MediaKind }> {
-    const result: Array<{ producerId: string; userId: string; kind: MediaKind }> = [];
+  getOtherProducerIds(excludeUserId: string): Array<{ producerId: string; userId: string; kind: MediaKind; producerType: ProducerType }> {
+    const result: Array<{ producerId: string; userId: string; kind: MediaKind; producerType: ProducerType }> = [];
 
     for (const [userId, peer] of this.peers) {
       if (userId === excludeUserId) continue;
       for (const [producerId, producer] of peer.producers) {
-        result.push({ producerId, userId, kind: producer.kind });
+        const producerType = this.producerMetadata.get(producerId) ?? 'audio';
+        result.push({ producerId, userId, kind: producer.kind, producerType });
       }
     }
 
@@ -250,16 +257,30 @@ export class VoiceRoom {
     const kind = producer.kind;
     producer.close();
     peer.producers.delete(producerId);
+    this.producerMetadata.delete(producerId);
     return kind;
   }
 
   getScreenSharerUserId(): string | null {
     for (const [userId, peer] of this.peers) {
-      for (const producer of peer.producers.values()) {
-        if (producer.kind === 'video') return userId;
+      for (const [producerId] of peer.producers) {
+        if (this.producerMetadata.get(producerId) === 'screenShare') return userId;
       }
     }
     return null;
+  }
+
+  getWebcamUserIds(): string[] {
+    const userIds: string[] = [];
+    for (const [userId, peer] of this.peers) {
+      for (const [producerId] of peer.producers) {
+        if (this.producerMetadata.get(producerId) === 'webcam') {
+          userIds.push(userId);
+          break;
+        }
+      }
+    }
+    return userIds;
   }
 
   close(): void {
@@ -268,8 +289,9 @@ export class VoiceRoom {
       for (const consumer of peer.consumers.values()) {
         consumer.close();
       }
-      for (const producer of peer.producers.values()) {
+      for (const [producerId, producer] of peer.producers) {
         producer.close();
+        this.producerMetadata.delete(producerId);
       }
       if (peer.sendTransport) peer.sendTransport.close();
       if (peer.recvTransport) peer.recvTransport.close();

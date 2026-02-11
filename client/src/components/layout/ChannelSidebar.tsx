@@ -15,6 +15,9 @@ interface ChannelSidebarProps {
   onToggleDeafen?: () => void;
   onStartScreenShare?: () => void;
   onStopScreenShare?: () => void;
+  onStartWebcam?: () => void;
+  onStopWebcam?: () => void;
+  isWebcamOn?: boolean;
 }
 
 export function ChannelSidebar({
@@ -24,6 +27,9 @@ export function ChannelSidebar({
   onToggleDeafen,
   onStartScreenShare,
   onStopScreenShare,
+  onStartWebcam,
+  onStopWebcam,
+  isWebcamOn,
 }: ChannelSidebarProps = {}) {
   const currentServerId = useServerStore((s) => s.currentServerId);
   const server = useServerStore((s) =>
@@ -106,11 +112,14 @@ export function ChannelSidebar({
       </div>
 
       {/* Voice controls (shown when in a voice channel) */}
-      {voiceChannelId && onLeaveVoice && onToggleMute && onToggleDeafen && onStartScreenShare && onStopScreenShare && (
+      {voiceChannelId && onLeaveVoice && onToggleMute && onToggleDeafen && onStartScreenShare && onStopScreenShare && onStartWebcam && onStopWebcam && isWebcamOn !== undefined && (
         <VoiceControls
           onLeave={onLeaveVoice}
           onToggleMute={onToggleMute}
           onToggleDeafen={onToggleDeafen}
+          onStartWebcam={onStartWebcam}
+          onStopWebcam={onStopWebcam}
+          isWebcamOn={isWebcamOn}
           onStartScreenShare={onStartScreenShare}
           onStopScreenShare={onStopScreenShare}
         />

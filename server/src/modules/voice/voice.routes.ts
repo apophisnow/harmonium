@@ -59,6 +59,7 @@ export async function voiceRoutes(app: FastifyInstance) {
       bodyParsed.data.transportId,
       bodyParsed.data.kind,
       bodyParsed.data.rtpParameters as Parameters<typeof voiceService.produce>[4],
+      bodyParsed.data.producerType,
     );
 
     return reply.send(result);

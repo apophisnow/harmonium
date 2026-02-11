@@ -8,6 +8,9 @@ interface VoiceControlsProps {
   onLeave: () => void;
   onToggleMute: () => void;
   onToggleDeafen: () => void;
+  onStartWebcam: () => void;
+  onStopWebcam: () => void;
+  isWebcamOn: boolean;
   onStartScreenShare: () => void;
   onStopScreenShare: () => void;
 }
@@ -16,6 +19,9 @@ export function VoiceControls({
   onLeave,
   onToggleMute,
   onToggleDeafen,
+  onStartWebcam,
+  onStopWebcam,
+  isWebcamOn,
   onStartScreenShare,
   onStopScreenShare,
 }: VoiceControlsProps) {
@@ -106,6 +112,24 @@ export function VoiceControls({
               <path d="M20 12v-2a8 8 0 0 0-16 0v2a2 2 0 0 0-2 2v2a2 2 0 0 0 2 2h2v-6a6 6 0 0 1 12 0v6h2a2 2 0 0 0 2-2v-2a2 2 0 0 0-2-2zM8 20v-4H6v4a2 2 0 0 0 2 2h2v-2H8zM16 20h-2v2h2a2 2 0 0 0 2-2v-4h-2v4z" />
             </svg>
           )}
+        </button>
+
+        {/* Webcam button */}
+        <button
+          onClick={isWebcamOn ? onStopWebcam : onStartWebcam}
+          disabled={!isConnected}
+          className={`flex-1 flex items-center justify-center rounded p-1.5 transition-colors ${
+            isWebcamOn
+              ? 'bg-[#3ba55c]/20 text-[#3ba55c] hover:bg-[#3ba55c]/30'
+              : !isConnected
+                ? 'text-[#4f5660] cursor-not-allowed'
+                : 'text-[#b9bbbe] hover:bg-[#36393f] hover:text-[#dcddde]'
+          }`}
+          title={isWebcamOn ? 'Turn Off Camera' : 'Turn On Camera'}
+        >
+          <svg className="h-5 w-5" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M17 10.5V7a1 1 0 0 0-1-1H4a1 1 0 0 0-1 1v10a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-3.5l4 4v-11l-4 4z" />
+          </svg>
         </button>
 
         {/* Screen Share button */}

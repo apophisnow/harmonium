@@ -1,3 +1,5 @@
+export type ProducerType = 'audio' | 'screenShare' | 'webcam';
+
 export interface VoiceState {
   userId: string;
   channelId: string;

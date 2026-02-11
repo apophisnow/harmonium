@@ -5,7 +5,7 @@ interface VoiceParticipantProps {
 }
 
 export function VoiceParticipant({ participant }: VoiceParticipantProps) {
-  const { username, avatarUrl, isMuted, isDeafened, isSpeaking, isScreenSharing } = participant;
+  const { username, avatarUrl, isMuted, isDeafened, isSpeaking, isScreenSharing, hasWebcam } = participant;
 
   return (
     <div className="flex items-center gap-1.5 rounded px-1 py-0.5 ml-6">
@@ -67,6 +67,15 @@ export function VoiceParticipant({ participant }: VoiceParticipantProps) {
             fill="currentColor"
           >
             <path d="M2 4v13h6v3h8v-3h6V4H2zm18 11H4V6h16v9z" />
+          </svg>
+        )}
+        {hasWebcam && (
+          <svg
+            className="h-3.5 w-3.5 text-[#3ba55c]"
+            viewBox="0 0 24 24"
+            fill="currentColor"
+          >
+            <path d="M17 10.5V7a1 1 0 0 0-1-1H4a1 1 0 0 0-1 1v10a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-3.5l4 4v-11l-4 4z" />
           </svg>
         )}
       </div>
