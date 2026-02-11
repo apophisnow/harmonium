@@ -21,7 +21,7 @@ import { InviteModal } from '../server/InviteModal.js';
 import { ServerSettings } from '../server/ServerSettings.js';
 import { EditProfileModal } from '../user/EditProfileModal.js';
 import { ScreenShareViewer } from '../voice/ScreenShareViewer.js';
-import { WebcamGallery } from '../voice/WebcamGallery.js';
+import { VoiceGrid } from '../voice/VoiceGrid.js';
 
 const EMPTY_CHANNELS: Channel[] = [];
 
@@ -193,7 +193,7 @@ export function AppLayout({ sendEvent, isConnected }: AppLayoutProps) {
         {currentChannel ? (
           <>
             <ScreenShareViewer />
-            <WebcamGallery />
+            <VoiceGrid />
             {/* Chat area with typing indicator overlay */}
             <div className="relative flex min-h-0 flex-1 flex-col">
               <MessageList

@@ -169,14 +169,15 @@ export class VoiceRoom {
       throw new Error('Receive transport not found');
     }
 
-    if (!this.router.canConsume({ producerId, rtpCapabilities })) {
+    const canConsume = this.router.canConsume({ producerId, rtpCapabilities });
+    if (!canConsume) {
       throw new Error('Cannot consume this producer');
     }
 
     const consumer = await peer.recvTransport.consume({
       producerId,
       rtpCapabilities,
-      paused: false,
+      paused: true, // Start paused — client calls resumeConsumer after setup
     });
 
     peer.consumers.set(consumer.id, consumer);
@@ -196,6 +197,20 @@ export class VoiceRoom {
       kind: consumer.kind,
       rtpParameters: consumer.rtpParameters,
     };
+  }
+
+  async resumeConsumer(userId: string, consumerId: string): Promise<void> {
+    const peer = this.peers.get(userId);
+    if (!peer) {
+      throw new Error('Peer not found in room');
+    }
+
+    const consumer = peer.consumers.get(consumerId);
+    if (!consumer) {
+      throw new Error('Consumer not found');
+    }
+
+    await consumer.resume();
   }
 
   async removePeer(userId: string): Promise<void> {

@@ -47,11 +47,13 @@ services:
       PORT: 3001
       CLIENT_URL: http://localhost
       MEDIASOUP_ANNOUNCED_IP: ${MEDIASOUP_ANNOUNCED_IP:-127.0.0.1}
+      MEDIASOUP_PREFER_TCP: "true"
       UPLOAD_DIR: /app/uploads
       MAX_UPLOAD_SIZE: 10485760
     ports:
       - "3001:3001"
       - "40000-40100:40000-40100/udp"
+      - "40000-40100:40000-40100/tcp"
     volumes:
       - uploads_data:/app/uploads
     healthcheck:

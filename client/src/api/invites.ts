@@ -33,3 +33,7 @@ export async function getServerInvites(serverId: string): Promise<Invite[]> {
   );
   return response.data;
 }
+
+export async function deleteInvite(code: string): Promise<void> {
+  await apiClient.delete(`/invites/${code}`);
+}

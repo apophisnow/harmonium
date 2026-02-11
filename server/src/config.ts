@@ -8,6 +8,7 @@ const envSchema = z.object({
   PORT: z.coerce.number().default(3001),
   CLIENT_URL: z.string().url().default('http://localhost:5173'),
   MEDIASOUP_ANNOUNCED_IP: z.string().default('127.0.0.1'),
+  MEDIASOUP_PREFER_TCP: z.coerce.boolean().default(false),
   UPLOAD_DIR: z.string().default('./uploads'),
   MAX_UPLOAD_SIZE: z.coerce.number().default(10_485_760), // 10MB
 });

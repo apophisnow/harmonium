@@ -52,5 +52,6 @@ WORKDIR /app/server
 
 EXPOSE 3001
 EXPOSE 40000-40100/udp
+EXPOSE 40000-40100/tcp
 
 CMD ["node", "dist/index.js"]

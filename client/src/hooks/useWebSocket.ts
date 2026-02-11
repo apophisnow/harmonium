@@ -75,13 +75,19 @@ export function useWebSocket() {
         case 'HEARTBEAT_ACK':
           // Connection still alive
           break;
-        case 'READY':
+        case 'READY': {
           if (reconnectAttemptRef.current > 0) {
             useToastStore.getState().addToast('success', 'Reconnected to server');
+          }
+          // Set own presence to online
+          const currentUserId = useAuthStore.getState().user?.id;
+          if (currentUserId) {
+            setPresence(currentUserId, 'online');
           }
           setIsConnected(true);
           reconnectAttemptRef.current = 0;
           break;
+        }
         case 'MESSAGE_CREATE':
           addMessage(data.d.message);
           break;

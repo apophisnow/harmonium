@@ -5,6 +5,7 @@ import {
   connectTransportSchema,
   produceSchema,
   consumeSchema,
+  resumeConsumerSchema,
   leaveSchema,
   serverParamsSchema,
 } from './voice.schemas.js';
@@ -80,6 +81,22 @@ export async function voiceRoutes(app: FastifyInstance) {
     );
 
     return reply.send(result);
+  });
+
+  // POST /api/voice/resume-consumer - Resume a paused consumer (client signals ready)
+  app.post('/api/voice/resume-consumer', async (request, reply) => {
+    const bodyParsed = resumeConsumerSchema.safeParse(request.body);
+    if (!bodyParsed.success) {
+      throw new ValidationError(bodyParsed.error.errors[0].message);
+    }
+
+    await voiceService.resumeConsumer(
+      request.user.userId,
+      bodyParsed.data.channelId,
+      bodyParsed.data.consumerId,
+    );
+
+    return reply.send({ ok: true });
   });
 
   // POST /api/voice/leave - Leave a voice channel

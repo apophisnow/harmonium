@@ -136,16 +136,8 @@ export async function connectTransport(
   transportId: string,
   dtlsParameters: DtlsParameters,
 ) {
-  const db = getDb();
-
-  // Verify CONNECT permission at the DB level
-  const channel = await getChannelWithValidation(channelId);
-  const serverId = channel.serverId.toString();
-  const permissions = await computeChannelPermissions(db, serverId, channelId, userId);
-  if (!hasPermission(permissions, Permission.CONNECT)) {
-    throw new ForbiddenError('You do not have permission to connect to this voice channel');
-  }
-
+  // CONNECT permission was already verified during joinVoice.
+  // Only verify the user is still a peer in the room.
   const voiceServer = getVoiceServer();
   const room = voiceServer.getRoom(channelId);
 
@@ -234,16 +226,8 @@ export async function consume(
   producerId: string,
   rtpCapabilities: RtpCapabilities,
 ) {
-  const db = getDb();
-
-  // Verify CONNECT permission at the DB level
-  const channel = await getChannelWithValidation(channelId);
-  const serverId = channel.serverId.toString();
-  const permissions = await computeChannelPermissions(db, serverId, channelId, userId);
-  if (!hasPermission(permissions, Permission.CONNECT)) {
-    throw new ForbiddenError('You do not have permission to connect to this voice channel');
-  }
-
+  // CONNECT permission was already verified during joinVoice.
+  // Only verify the user is still a peer in the room.
   const voiceServer = getVoiceServer();
   const room = voiceServer.getRoom(channelId);
 
@@ -260,6 +244,25 @@ export async function consume(
   const consumerProducerType = room.producerMetadata.get(producerId) ?? 'audio';
 
   return { ...consumerInfo, producerType: consumerProducerType };
+}
+
+export async function resumeConsumer(
+  userId: string,
+  channelId: string,
+  consumerId: string,
+) {
+  const voiceServer = getVoiceServer();
+  const room = voiceServer.getRoom(channelId);
+
+  if (!room) {
+    throw new NotFoundError('Voice room not found');
+  }
+
+  if (!room.hasPeer(userId)) {
+    throw new ForbiddenError('You are not in this voice channel');
+  }
+
+  await room.resumeConsumer(userId, consumerId);
 }
 
 export async function leaveVoice(userId: string) {

@@ -3,6 +3,7 @@ import { useServerStore } from '../../stores/server.store.js';
 import { useChannelStore } from '../../stores/channel.store.js';
 import { useUIStore } from '../../stores/ui.store.js';
 import { useAuthStore } from '../../stores/auth.store.js';
+import { usePresenceStore } from '../../stores/presence.store.js';
 import { useVoiceStore } from '../../stores/voice.store.js';
 import { ChannelList } from '../channel/ChannelList.js';
 import { VoiceControls } from '../voice/VoiceControls.js';
@@ -39,6 +40,7 @@ export function ChannelSidebar({
   const openModal = useUIStore((s) => s.openModal);
   const user = useAuthStore((s) => s.user);
   const logout = useAuthStore((s) => s.logout);
+  const ownPresence = usePresenceStore((s) => user ? s.presences.get(user.id) : undefined);
   const voiceChannelId = useVoiceStore((s) => s.currentChannelId);
 
   useEffect(() => {
@@ -85,8 +87,26 @@ export function ChannelSidebar({
         {currentServerId ? (
           <>
             <ChannelList serverId={currentServerId} onJoinVoice={onJoinVoice} />
-            {/* Add channel button */}
-            <div className="px-2 py-2">
+            {/* Sidebar actions */}
+            <div className="px-2 py-2 space-y-0.5">
+              <button
+                onClick={() => openModal('invite')}
+                className="flex w-full items-center gap-1 rounded px-2 py-1 text-xs text-[#96989d] hover:text-[#dcddde] transition-colors"
+              >
+                <svg
+                  className="h-4 w-4"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                >
+                  <path d="M16 21v-2a4 4 0 00-4-4H5a4 4 0 00-4-4v2" />
+                  <circle cx="8.5" cy="7" r="4" />
+                  <line x1="20" y1="8" x2="20" y2="14" />
+                  <line x1="23" y1="11" x2="17" y2="11" />
+                </svg>
+                Invite People
+              </button>
               <button
                 onClick={() => openModal('createChannel')}
                 className="flex w-full items-center gap-1 rounded px-2 py-1 text-xs text-[#96989d] hover:text-[#dcddde] transition-colors"
@@ -130,7 +150,7 @@ export function ChannelSidebar({
         <UserAvatar
           username={user?.username ?? ''}
           avatarUrl={user?.avatarUrl}
-          status={user?.status ?? 'online'}
+          status={ownPresence ?? 'online'}
           size={32}
         />
         <div className="min-w-0 flex-1">

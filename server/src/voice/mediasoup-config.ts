@@ -35,7 +35,8 @@ export function getTransportOptions(): WebRtcTransportOptions {
     ],
     enableUdp: true,
     enableTcp: true,
-    preferUdp: true,
+    preferUdp: !config.MEDIASOUP_PREFER_TCP,
+    preferTcp: config.MEDIASOUP_PREFER_TCP,
   };
 }
 

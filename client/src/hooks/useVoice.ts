@@ -243,6 +243,14 @@ export function useVoice() {
             );
           }
         }
+
+        // Tell the server the client is ready — this resumes the server-side
+        // consumer which triggers a keyframe request from the producer,
+        // ensuring the video decoder can start immediately.
+        await voiceApi.resumeConsumer({
+          channelId,
+          consumerId: consumer.id,
+        });
       } catch (error) {
         console.error(`Failed to consume producer ${producerId}:`, error);
       }
@@ -510,6 +518,12 @@ export function useVoice() {
     storeActions.current.setWebcamOn(false);
     if (currentUser) {
       storeActions.current.updateParticipant(currentUser.id, { hasWebcam: false });
+      storeActions.current.removeWebcamStream(currentUser.id);
+      window.dispatchEvent(
+        new CustomEvent('voice:webcam_stream_ended', {
+          detail: { userId: currentUser.id },
+        }),
+      );
     }
   }, [currentUser]);
 
@@ -544,6 +558,12 @@ export function useVoice() {
       storeActions.current.setWebcamOn(true);
       if (currentUser) {
         storeActions.current.updateParticipant(currentUser.id, { hasWebcam: true });
+        storeActions.current.setWebcamStream(currentUser.id, stream);
+        window.dispatchEvent(
+          new CustomEvent('voice:webcam_stream', {
+            detail: { userId: currentUser.id, stream },
+          }),
+        );
       }
     } catch (error) {
       if (webcamStreamRef.current) {

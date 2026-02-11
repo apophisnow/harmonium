@@ -18,7 +18,7 @@ export interface JoinVoiceResponse {
     codecs?: unknown[];
     headerExtensions?: unknown[];
   };
-  existingProducers: Array<{ producerId: string; userId: string; kind: 'audio' | 'video' }>;
+  existingProducers: Array<{ producerId: string; userId: string; kind: 'audio' | 'video'; producerType: ProducerType }>;
 }
 
 export interface ConsumeResponse {
@@ -68,6 +68,13 @@ export async function consume(data: {
     data,
   );
   return response.data;
+}
+
+export async function resumeConsumer(data: {
+  channelId: string;
+  consumerId: string;
+}): Promise<void> {
+  await apiClient.post('/voice/resume-consumer', data);
 }
 
 export async function leaveVoice(channelId: string): Promise<void> {

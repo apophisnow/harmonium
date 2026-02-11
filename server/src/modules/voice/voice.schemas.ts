@@ -41,6 +41,11 @@ export const consumeSchema = z.object({
   }),
 });
 
+export const resumeConsumerSchema = z.object({
+  channelId: z.string().min(1, 'channelId is required'),
+  consumerId: z.string().min(1, 'consumerId is required'),
+});
+
 export const leaveSchema = z.object({
   channelId: z.string().min(1, 'channelId is required'),
 });

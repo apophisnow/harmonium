@@ -1,11 +1,12 @@
 import { useState, useEffect, useCallback } from 'react';
-import type { Role } from '@harmonium/shared';
+import type { Role, Invite } from '@harmonium/shared';
 import { Modal } from '../shared/Modal.js';
 import { useServerStore } from '../../stores/server.store.js';
 import { useUIStore } from '../../stores/ui.store.js';
 import { useAuthStore } from '../../stores/auth.store.js';
 import { deleteServer, updateServer } from '../../api/servers.js';
 import { getRoles, createRole, deleteRole, reorderRoles, updateRole } from '../../api/roles.js';
+import { createInvite, getServerInvites, deleteInvite } from '../../api/invites.js';
 import {
   Permission,
   hasPermission as checkPermission,
@@ -86,6 +87,14 @@ export function ServerSettings() {
   const isOpen = activeModal === 'serverSettings';
   const isOwner = server && user && server.ownerId === user.id;
 
+  // Invite management state
+  const [invites, setInvites] = useState<Invite[]>([]);
+  const [isLoadingInvites, setIsLoadingInvites] = useState(false);
+  const [isCreatingInvite, setIsCreatingInvite] = useState(false);
+  const [inviteError, setInviteError] = useState('');
+  const [copiedCode, setCopiedCode] = useState<string | null>(null);
+  const [deletingInviteCode, setDeletingInviteCode] = useState<string | null>(null);
+
   // Role editing state
   const [editingRoleId, setEditingRoleId] = useState<string | null>(null);
   const [editRoleName, setEditRoleName] = useState('');
@@ -95,6 +104,23 @@ export function ServerSettings() {
 
   const { hasPermission } = usePermissions(currentServerId, roles);
   const canManageRoles = isOwner || hasPermission(Permission.MANAGE_ROLES);
+  const canManageServer = isOwner || hasPermission(Permission.MANAGE_SERVER);
+  const canCreateInvite = isOwner || hasPermission(Permission.CREATE_INVITE);
+
+  // Fetch invites when modal opens
+  const fetchInvites = useCallback(async () => {
+    if (!currentServerId || !canManageServer) return;
+    setIsLoadingInvites(true);
+    setInviteError('');
+    try {
+      const fetched = await getServerInvites(currentServerId);
+      setInvites(fetched);
+    } catch {
+      // May not have permission, that's ok
+    } finally {
+      setIsLoadingInvites(false);
+    }
+  }, [currentServerId, canManageServer]);
 
   // Fetch roles when modal opens
   const fetchRoles = useCallback(async () => {
@@ -114,8 +140,9 @@ export function ServerSettings() {
   useEffect(() => {
     if (isOpen && currentServerId) {
       fetchRoles();
+      fetchInvites();
     }
-  }, [isOpen, currentServerId, fetchRoles]);
+  }, [isOpen, currentServerId, fetchRoles, fetchInvites]);
 
   useEffect(() => {
     const handleRoleUpdate = (event: Event) => {
@@ -137,6 +164,9 @@ export function ServerSettings() {
     setNewRoleName('');
     setRoleError('');
     setEditingRoleId(null);
+    setInvites([]);
+    setInviteError('');
+    setCopiedCode(null);
     closeModal();
   };
 
@@ -281,6 +311,41 @@ export function ServerSettings() {
     }
   };
 
+  const handleCreateInvite = async () => {
+    if (!currentServerId) return;
+    setIsCreatingInvite(true);
+    setInviteError('');
+    try {
+      const invite = await createInvite(currentServerId, '');
+      setInvites((prev) => [invite, ...prev]);
+      handleCopyInvite(invite.code);
+    } catch {
+      setInviteError('Failed to create invite.');
+    } finally {
+      setIsCreatingInvite(false);
+    }
+  };
+
+  const handleDeleteInvite = async (code: string) => {
+    setDeletingInviteCode(code);
+    setInviteError('');
+    try {
+      await deleteInvite(code);
+      setInvites((prev) => prev.filter((i) => i.code !== code));
+    } catch {
+      setInviteError('Failed to delete invite.');
+    } finally {
+      setDeletingInviteCode(null);
+    }
+  };
+
+  const handleCopyInvite = (code: string) => {
+    const url = `${window.location.origin}/invite/${code}`;
+    navigator.clipboard.writeText(url).catch(() => {});
+    setCopiedCode(code);
+    setTimeout(() => setCopiedCode(null), 2000);
+  };
+
   // Initialize edit name when modal opens with a server
   const displayName = hasEditedName ? editName : (server?.name ?? '');
 
@@ -334,6 +399,98 @@ export function ServerSettings() {
               Server ID
             </label>
             <p className="text-sm text-[#96989d]">{server.id}</p>
+          </div>
+
+          {/* Invites Section */}
+          <div className="border-t border-[#42444a] pt-4">
+            <label className="mb-2 block text-xs font-bold uppercase text-[#96989d]">
+              Invites
+            </label>
+
+            {canCreateInvite && (
+              <button
+                onClick={handleCreateInvite}
+                disabled={isCreatingInvite}
+                className="mb-3 flex w-full items-center justify-center gap-2 rounded bg-[#5865f2] px-3 py-2 text-sm font-medium text-white transition-colors hover:bg-[#4752c4] disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {isCreatingInvite ? <LoadingSpinner size={14} /> : (
+                  <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71" />
+                    <path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71" />
+                  </svg>
+                )}
+                Generate Invite Link
+              </button>
+            )}
+
+            {isLoadingInvites ? (
+              <div className="flex justify-center py-2">
+                <LoadingSpinner size={20} className="text-[#96989d]" />
+              </div>
+            ) : invites.length > 0 ? (
+              <div className="space-y-1.5">
+                {invites.map((invite) => {
+                  const isExpired = invite.expiresAt && new Date(invite.expiresAt) < new Date();
+                  const isMaxed = invite.maxUses !== null && invite.useCount >= invite.maxUses;
+
+                  return (
+                    <div
+                      key={invite.code}
+                      className={`flex items-center gap-2 rounded bg-[#202225] px-3 py-2 ${isExpired || isMaxed ? 'opacity-50' : ''}`}
+                    >
+                      <div className="min-w-0 flex-1">
+                        <p className="truncate text-sm font-mono text-[#dcddde]">
+                          {window.location.origin}/invite/{invite.code}
+                        </p>
+                        <p className="text-xs text-[#72767d]">
+                          {invite.useCount} use{invite.useCount !== 1 ? 's' : ''}
+                          {invite.maxUses !== null && ` / ${invite.maxUses} max`}
+                          {isExpired && ' \u00b7 Expired'}
+                        </p>
+                      </div>
+                      <button
+                        onClick={() => handleCopyInvite(invite.code)}
+                        className="rounded p-1.5 text-[#96989d] transition-colors hover:text-[#dcddde]"
+                        title="Copy invite link"
+                      >
+                        {copiedCode === invite.code ? (
+                          <svg className="h-4 w-4 text-[#3ba55c]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                            <path d="M20 6L9 17l-5-5" />
+                          </svg>
+                        ) : (
+                          <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                            <rect x="9" y="9" width="13" height="13" rx="2" />
+                            <path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1" />
+                          </svg>
+                        )}
+                      </button>
+                      {canManageServer && (
+                        <button
+                          onClick={() => handleDeleteInvite(invite.code)}
+                          disabled={deletingInviteCode === invite.code}
+                          className="rounded p-1.5 text-[#96989d] transition-colors hover:text-[#ed4245] disabled:opacity-50 disabled:cursor-not-allowed"
+                          title="Delete invite"
+                        >
+                          {deletingInviteCode === invite.code ? (
+                            <LoadingSpinner size={14} />
+                          ) : (
+                            <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                              <path d="M3 6h18M8 6V4a2 2 0 012-2h4a2 2 0 012 2v2m3 0v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6h14" />
+                            </svg>
+                          )}
+                        </button>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            ) : (
+              <p className="py-1 text-center text-sm text-[#72767d]">No active invites.</p>
+            )}
+
+            {inviteError && (
+              <p className="mt-2 text-sm text-[#ed4245]">{inviteError}</p>
+            )}
           </div>
 
           {/* Roles Section */}
