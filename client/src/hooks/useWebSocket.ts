@@ -1,0 +1,238 @@
+import { useEffect, useRef, useCallback, useState } from 'react';
+import type { ClientEvent, ServerEvent } from '@harmonium/shared';
+import { useAuthStore } from '../stores/auth.store.js';
+import { useToastStore } from '../stores/toast.store.js';
+import { useMessageStore } from '../stores/message.store.js';
+import { usePresenceStore } from '../stores/presence.store.js';
+import { useMemberStore } from '../stores/member.store.js';
+import { useChannelStore } from '../stores/channel.store.js';
+import { useServerStore } from '../stores/server.store.js';
+
+const WS_URL = import.meta.env.VITE_WS_URL ?? 'ws://localhost:3001/ws/gateway';
+
+const MAX_RECONNECT_DELAY = 30_000;
+const BASE_RECONNECT_DELAY = 1_000;
+const MAX_RECONNECT_ATTEMPTS = 20;
+
+export function useWebSocket() {
+  const wsRef = useRef<WebSocket | null>(null);
+  const heartbeatRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const reconnectTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const reconnectAttemptRef = useRef(0);
+  const seqRef = useRef(0);
+  const [isConnected, setIsConnected] = useState(false);
+
+  const token = useAuthStore((s) => s.accessToken);
+
+  const addMessage = useMessageStore((s) => s.addMessage);
+  const updateMessage = useMessageStore((s) => s.updateMessage);
+  const deleteMessage = useMessageStore((s) => s.deleteMessage);
+
+  const setPresence = usePresenceStore((s) => s.setPresence);
+
+  const addMember = useMemberStore((s) => s.addMember);
+  const removeMember = useMemberStore((s) => s.removeMember);
+  const updateMemberUser = useMemberStore((s) => s.updateMemberUser);
+  const updateMemberRoles = useMemberStore((s) => s.updateMemberRoles);
+
+  const addChannel = useChannelStore((s) => s.addChannel);
+  const updateChannel = useChannelStore((s) => s.updateChannel);
+  const removeChannel = useChannelStore((s) => s.removeChannel);
+
+  const removeServer = useServerStore((s) => s.removeServer);
+  const updateServer = useServerStore((s) => s.updateServer);
+
+  const clearHeartbeat = useCallback(() => {
+    if (heartbeatRef.current) {
+      clearInterval(heartbeatRef.current);
+      heartbeatRef.current = null;
+    }
+  }, []);
+
+  const sendEvent = useCallback((event: ClientEvent) => {
+    if (wsRef.current?.readyState === WebSocket.OPEN) {
+      wsRef.current.send(JSON.stringify(event));
+    }
+  }, []);
+
+  const handleMessage = useCallback(
+    (data: ServerEvent) => {
+      switch (data.op) {
+        case 'HELLO': {
+          // Send IDENTIFY
+          if (token) {
+            sendEvent({ op: 'IDENTIFY', d: { token } });
+          }
+          // Start heartbeat
+          clearHeartbeat();
+          const interval = data.d.heartbeatInterval;
+          heartbeatRef.current = setInterval(() => {
+            seqRef.current += 1;
+            sendEvent({ op: 'HEARTBEAT', d: { seq: seqRef.current } });
+          }, interval);
+          break;
+        }
+        case 'HEARTBEAT_ACK':
+          // Connection still alive
+          break;
+        case 'READY':
+          if (reconnectAttemptRef.current > 0) {
+            useToastStore.getState().addToast('success', 'Reconnected to server');
+          }
+          setIsConnected(true);
+          reconnectAttemptRef.current = 0;
+          break;
+        case 'MESSAGE_CREATE':
+          addMessage(data.d.message);
+          break;
+        case 'MESSAGE_UPDATE':
+          updateMessage(data.d.message);
+          break;
+        case 'MESSAGE_DELETE':
+          deleteMessage(data.d.channelId, data.d.id);
+          break;
+        case 'PRESENCE_UPDATE':
+          setPresence(data.d.userId, data.d.status);
+          break;
+        case 'USER_UPDATE':
+          updateMemberUser(data.d.user);
+          break;
+        case 'MEMBER_JOIN':
+          addMember(data.d.serverId, data.d.member);
+          break;
+        case 'MEMBER_LEAVE':
+          removeMember(data.d.serverId, data.d.userId);
+          break;
+        case 'MEMBER_UPDATE':
+          updateMemberRoles(data.d.serverId, data.d.userId, data.d.roles);
+          break;
+        case 'ROLE_UPDATE':
+          window.dispatchEvent(
+            new CustomEvent('ws:role_update', { detail: data.d }),
+          );
+          break;
+        case 'CHANNEL_CREATE':
+          addChannel(data.d.channel);
+          break;
+        case 'CHANNEL_UPDATE':
+          updateChannel(data.d.channel);
+          break;
+        case 'CHANNEL_DELETE':
+          removeChannel(data.d.channelId, data.d.serverId);
+          break;
+        case 'SERVER_UPDATE':
+          updateServer(data.d.server);
+          break;
+        case 'SERVER_DELETE':
+          removeServer(data.d.serverId);
+          break;
+        case 'TYPING_START':
+          // Handled by useTypingIndicator via a custom event
+          window.dispatchEvent(
+            new CustomEvent('ws:typing_start', { detail: data.d }),
+          );
+          break;
+        case 'VOICE_STATE_UPDATE':
+          // Dispatch for voice handling
+          window.dispatchEvent(
+            new CustomEvent('ws:voice_state_update', { detail: data.d }),
+          );
+          break;
+        case 'NEW_PRODUCER':
+          window.dispatchEvent(
+            new CustomEvent('ws:new_producer', { detail: data.d }),
+          );
+          break;
+        case 'PRODUCER_CLOSED':
+          window.dispatchEvent(
+            new CustomEvent('ws:producer_closed', { detail: data.d }),
+          );
+          break;
+        case 'ERROR':
+          console.error('[WS] Server error:', data.d.message);
+          break;
+      }
+    },
+    [
+      token,
+      sendEvent,
+      clearHeartbeat,
+      addMessage,
+      updateMessage,
+      deleteMessage,
+      setPresence,
+      addMember,
+      removeMember,
+      updateMemberUser,
+      updateMemberRoles,
+      addChannel,
+      updateChannel,
+      removeChannel,
+      removeServer,
+      updateServer,
+    ],
+  );
+
+  const connect = useCallback(() => {
+    if (!token) return;
+    if (wsRef.current?.readyState === WebSocket.OPEN) return;
+
+    const ws = new WebSocket(WS_URL);
+    wsRef.current = ws;
+
+    ws.onopen = () => {
+      // Wait for HELLO from server
+    };
+
+    ws.onmessage = (event) => {
+      try {
+        const data = JSON.parse(event.data as string) as ServerEvent;
+        handleMessage(data);
+      } catch {
+        console.error('[WS] Failed to parse message');
+      }
+    };
+
+    ws.onclose = () => {
+      setIsConnected(false);
+      clearHeartbeat();
+
+      if (reconnectAttemptRef.current === 0) {
+        useToastStore.getState().addToast('info', 'Disconnected from server. Reconnecting...');
+      }
+
+      if (reconnectAttemptRef.current >= MAX_RECONNECT_ATTEMPTS) {
+        useToastStore.getState().addToast('error', 'Connection lost. Please refresh the page.');
+        return;
+      }
+
+      // Reconnect with exponential backoff
+      const delay = Math.min(
+        BASE_RECONNECT_DELAY * 2 ** reconnectAttemptRef.current,
+        MAX_RECONNECT_DELAY,
+      );
+      reconnectAttemptRef.current += 1;
+      reconnectTimeoutRef.current = setTimeout(connect, delay);
+    };
+
+    ws.onerror = () => {
+      ws.close();
+    };
+  }, [token, handleMessage, clearHeartbeat]);
+
+  useEffect(() => {
+    connect();
+    return () => {
+      clearHeartbeat();
+      if (reconnectTimeoutRef.current) {
+        clearTimeout(reconnectTimeoutRef.current);
+      }
+      if (wsRef.current) {
+        wsRef.current.onclose = null; // prevent reconnect on intentional close
+        wsRef.current.close();
+      }
+    };
+  }, [connect, clearHeartbeat]);
+
+  return { isConnected, sendEvent };
+}
