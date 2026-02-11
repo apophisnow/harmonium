@@ -69,6 +69,7 @@ export interface ReadyEvent {
     user: PublicUser;
     servers: Array<{ id: string; name: string; iconUrl: string | null }>;
     sessionId: string;
+    presences: Array<{ userId: string; status: UserStatus }>;
   };
 }
 

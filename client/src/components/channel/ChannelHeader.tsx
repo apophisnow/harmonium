@@ -1,5 +1,6 @@
 import type { Channel } from '@harmonium/shared';
 import { useUIStore } from '../../stores/ui.store.js';
+import { useVoiceStore } from '../../stores/voice.store.js';
 import { useIsMobile } from '../../hooks/useMediaQuery.js';
 
 interface ChannelHeaderProps {
@@ -10,6 +11,7 @@ export function ChannelHeader({ channel }: ChannelHeaderProps) {
   const toggleMemberSidebar = useUIStore((s) => s.toggleMemberSidebar);
   const toggleMobileSidebar = useUIStore((s) => s.toggleMobileSidebar);
   const showMemberSidebar = useUIStore((s) => s.showMemberSidebar);
+  const voiceParticipantCount = useVoiceStore((s) => s.participants.size);
   const isMobile = useIsMobile();
 
   if (!channel) {
@@ -61,6 +63,11 @@ export function ChannelHeader({ channel }: ChannelHeaderProps) {
           </svg>
         )}
         <h2 className="font-semibold text-white">{channel.name}</h2>
+        {channel.type === 'voice' && voiceParticipantCount > 0 && (
+          <span className="text-xs text-[#96989d]">
+            {voiceParticipantCount} participant{voiceParticipantCount !== 1 ? 's' : ''}
+          </span>
+        )}
       </div>
 
       {/* Topic divider */}

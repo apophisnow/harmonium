@@ -4,6 +4,7 @@ import type { Channel, ClientEvent } from '@harmonium/shared';
 import { useServerStore } from '../../stores/server.store.js';
 import { useChannelStore } from '../../stores/channel.store.js';
 import { useUIStore } from '../../stores/ui.store.js';
+import { useVoiceStore } from '../../stores/voice.store.js';
 import { useInfiniteMessages } from '../../hooks/useInfiniteMessages.js';
 import { useTypingIndicator } from '../../hooks/useTypingIndicator.js';
 import { useVoice } from '../../hooks/useVoice.js';
@@ -22,6 +23,7 @@ import { ServerSettings } from '../server/ServerSettings.js';
 import { EditProfileModal } from '../user/EditProfileModal.js';
 import { ScreenShareViewer } from '../voice/ScreenShareViewer.js';
 import { VoiceGrid } from '../voice/VoiceGrid.js';
+import { VoicePiP } from '../voice/VoicePiP.js';
 
 const EMPTY_CHANNELS: Channel[] = [];
 
@@ -52,12 +54,33 @@ export function AppLayout({ sendEvent, isConnected }: AppLayoutProps) {
   const closeMobileSidebar = useUIStore((s) => s.closeMobileSidebar);
   const openModal = useUIStore((s) => s.openModal);
 
+  const voiceChannelId = useVoiceStore((s) => s.currentChannelId);
+  const voiceIsConnected = useVoiceStore((s) => s.isConnected);
+  const voiceIsConnecting = useVoiceStore((s) => s.isConnecting);
+
   const isMobile = useIsMobile();
 
+  // Find the current channel object
+  const currentChannel = useMemo(
+    () => channels.find((c) => c.id === currentChannelId) ?? null,
+    [channels, currentChannelId],
+  );
+
+  // Determine view mode from existing state
+  const isViewingVoiceChannel =
+    currentChannel?.type === 'voice' &&
+    currentChannel.id === voiceChannelId &&
+    (voiceIsConnected || voiceIsConnecting);
+
+  const showVoicePiP = voiceIsConnected && !isViewingVoiceChannel;
+
+  // Only fetch messages/typing for text channels
+  const textChannelId = currentChannel?.type !== 'voice' ? currentChannelId : null;
+
   const { messages, isLoading, hasMore, loadMore } =
-    useInfiniteMessages(currentChannelId);
+    useInfiniteMessages(textChannelId);
   const { typingUsers, sendTyping } = useTypingIndicator(
-    currentChannelId,
+    textChannelId,
     sendEvent,
   );
 
@@ -72,12 +95,6 @@ export function AppLayout({ sendEvent, isConnected }: AppLayoutProps) {
     stopWebcam,
     isWebcamOn,
   } = useVoice();
-
-  // Find the current channel object
-  const currentChannel = useMemo(
-    () => channels.find((c) => c.id === currentChannelId) ?? null,
-    [channels, currentChannelId],
-  );
 
   // Fetch servers on mount
   useEffect(() => {
@@ -108,6 +125,17 @@ export function AppLayout({ sendEvent, isConnected }: AppLayoutProps) {
       }
     }
   }, [channelId, currentServerId, channels, setCurrentChannel, navigate]);
+
+  // When disconnected from voice while viewing a voice channel, redirect to a text channel
+  useEffect(() => {
+    if (currentChannel?.type === 'voice' && !voiceIsConnected && !voiceIsConnecting) {
+      const firstText = channels.find((c) => c.type === 'text');
+      if (firstText) {
+        setCurrentChannel(firstText.id);
+        navigate(`/channels/${currentServerId}/${firstText.id}`, { replace: true });
+      }
+    }
+  }, [currentChannel, voiceIsConnected, voiceIsConnecting, channels, currentServerId, setCurrentChannel, navigate]);
 
   // Subscribe to server events via WebSocket
   useEffect(() => {
@@ -186,15 +214,19 @@ export function AppLayout({ sendEvent, isConnected }: AppLayoutProps) {
         </>
       )}
 
-      {/* Main chat area - flexible */}
+      {/* Main content area */}
       <div className="flex min-w-0 flex-1 flex-col bg-[#36393f]">
         <ChannelHeader channel={currentChannel} />
 
-        {currentChannel ? (
+        {isViewingVoiceChannel ? (
+          // Voice channel full view
           <>
             <ScreenShareViewer />
-            <VoiceGrid />
-            {/* Chat area with typing indicator overlay */}
+            <VoiceGrid expanded />
+          </>
+        ) : currentChannel ? (
+          // Text channel view (with PiP overlay if in voice)
+          <>
             <div className="relative flex min-h-0 flex-1 flex-col">
               <MessageList
                 messages={messages}
@@ -203,6 +235,7 @@ export function AppLayout({ sendEvent, isConnected }: AppLayoutProps) {
                 loadMore={loadMore}
               />
               <TypingIndicator typingUsers={typingUsers} />
+              {showVoicePiP && <VoicePiP />}
             </div>
 
             <MessageInput

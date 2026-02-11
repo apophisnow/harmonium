@@ -6,6 +6,7 @@ import type {
   HeartbeatAckEvent,
   ReadyEvent,
   ErrorEvent,
+  UserStatus,
 } from '@harmonium/shared';
 import { connectionManager } from './index.js';
 import type { ConnectionMeta } from './index.js';
@@ -16,7 +17,7 @@ import { handleVoiceStateUpdate } from './handlers/voice-signal.handler.js';
 import { leaveVoice } from '../modules/voice/voice.service.js';
 import { isValidSnowflake } from '../utils/validation.js';
 import { getDb, schema } from '../db/index.js';
-import { eq } from 'drizzle-orm';
+import { eq, inArray } from 'drizzle-orm';
 
 const HEARTBEAT_INTERVAL = 30_000; // 30 seconds
 const HEARTBEAT_CHECK_INTERVAL = 45_000; // 45 seconds
@@ -256,6 +257,30 @@ export async function registerGateway(app: FastifyInstance): Promise<void> {
       // Subscribe to user-specific channel
       await pubsub.subscribeToUser(userId);
 
+      // Gather online presences for all co-members across the user's servers
+      let presences: Array<{ userId: string; status: UserStatus }> = [];
+      if (serverIds.length > 0) {
+        const coMembers = await db
+          .selectDistinct({ userId: schema.serverMembers.userId })
+          .from(schema.serverMembers)
+          .where(inArray(schema.serverMembers.serverId, serverIds));
+
+        const coMemberIds = coMembers
+          .map((m) => m.userId.toString())
+          .filter((id) => id !== userId);
+
+        if (coMemberIds.length > 0) {
+          const redisKeys = coMemberIds.map((id) => `presence:${id}`);
+          const statuses = await app.redis.mget(...redisKeys);
+          for (let i = 0; i < coMemberIds.length; i++) {
+            const status = statuses[i] as UserStatus | null;
+            if (status && status !== 'offline') {
+              presences.push({ userId: coMemberIds[i], status });
+            }
+          }
+        }
+      }
+
       // Send READY event
       const readyEvent: ReadyEvent = {
         op: 'READY',
@@ -273,6 +298,7 @@ export async function registerGateway(app: FastifyInstance): Promise<void> {
           },
           servers: serverList,
           sessionId: sessId,
+          presences,
         },
       };
 

@@ -1,7 +1,12 @@
 import { useEffect, useRef, useCallback } from 'react';
 import { useVoiceStore } from '../../stores/voice.store.js';
 
-export function VoiceGrid() {
+interface VoiceGridProps {
+  compact?: boolean;
+  expanded?: boolean;
+}
+
+export function VoiceGrid({ compact = false, expanded = false }: VoiceGridProps) {
   const isConnected = useVoiceStore((s) => s.isConnected);
   const participants = useVoiceStore((s) => s.participants);
   const webcamStreams = useVoiceStore((s) => s.webcamStreams);
@@ -94,17 +99,36 @@ export function VoiceGrid() {
   const participantList = Array.from(participants.values());
   if (participantList.length === 0) return null;
 
-  const gridCols =
-    participantList.length === 1
+  // In compact mode, limit to 4 visible tiles
+  const displayList = compact ? participantList.slice(0, 4) : participantList;
+  const overflow = compact ? Math.max(0, participantList.length - 4) : 0;
+
+  const gridCols = compact
+    ? 'grid-cols-2'
+    : displayList.length <= 2
       ? 'grid-cols-1'
-      : participantList.length <= 4
+      : displayList.length <= 4
         ? 'grid-cols-2'
         : 'grid-cols-3';
 
+  // Size classes for avatar and tile
+  const avatarSize = compact ? 'h-8 w-8' : expanded ? 'h-20 w-20' : 'h-16 w-16';
+  const avatarText = compact ? 'text-sm' : expanded ? 'text-3xl' : 'text-2xl';
+
+  const containerClass = expanded
+    ? 'flex flex-1 flex-col items-center justify-center bg-[#2f3136] p-4'
+    : compact
+      ? 'flex flex-col'
+      : 'flex flex-col border-b border-[#202225]';
+
+  const gridClass = expanded
+    ? `grid ${gridCols} gap-3 w-full max-w-4xl`
+    : `grid ${gridCols} gap-1.5 bg-[#2f3136] p-1.5`;
+
   return (
-    <div className="flex flex-col border-b border-[#202225]">
-      <div className={`grid ${gridCols} gap-1.5 bg-[#2f3136] p-1.5`}>
-        {participantList.map((participant) => {
+    <div className={containerClass}>
+      <div className={gridClass}>
+        {displayList.map((participant) => {
           const hasStream = webcamStreams.has(participant.userId);
 
           return (
@@ -130,10 +154,10 @@ export function VoiceGrid() {
                     <img
                       src={participant.avatarUrl}
                       alt={participant.username}
-                      className="h-16 w-16 rounded-full object-cover"
+                      className={`${avatarSize} rounded-full object-cover`}
                     />
                   ) : (
-                    <div className="flex h-16 w-16 items-center justify-center rounded-full bg-[#5865f2] text-2xl font-semibold text-white">
+                    <div className={`flex ${avatarSize} items-center justify-center rounded-full bg-[#5865f2] ${avatarText} font-semibold text-white`}>
                       {participant.username.charAt(0).toUpperCase()}
                     </div>
                   )}
@@ -143,13 +167,13 @@ export function VoiceGrid() {
               {/* Username overlay */}
               <div className="absolute bottom-0 left-0 right-0 bg-black/60 px-2 py-0.5">
                 <div className="flex items-center gap-1">
-                  <span className="truncate text-xs font-medium text-white">
+                  <span className={`truncate font-medium text-white ${compact ? 'text-[10px]' : 'text-xs'}`}>
                     {participant.username}
                   </span>
                   <div className="ml-auto flex items-center gap-0.5">
                     {participant.isMuted && (
                       <svg
-                        className="h-3 w-3 text-[#ed4245]"
+                        className={`${compact ? 'h-2.5 w-2.5' : 'h-3 w-3'} text-[#ed4245]`}
                         viewBox="0 0 24 24"
                         fill="currentColor"
                       >
@@ -157,7 +181,7 @@ export function VoiceGrid() {
                         <line x1="3" y1="3" x2="21" y2="21" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
                       </svg>
                     )}
-                    {participant.isDeafened && (
+                    {!compact && participant.isDeafened && (
                       <svg
                         className="h-3 w-3 text-[#ed4245]"
                         viewBox="0 0 24 24"
@@ -166,7 +190,7 @@ export function VoiceGrid() {
                         <path d="M3.27 2L2 3.27l3.18 3.18A7.93 7.93 0 0 0 4 10v2a2 2 0 0 0 2 2h2v4a2 2 0 0 0 2 2h2a2 2 0 0 0 2-2v-1.18l4.73 4.73L20 20.73 3.27 2zM20 10v2h-2v-2a6 6 0 0 0-8.44-5.48l1.73 1.73A4 4 0 0 1 16 10v2h-2v-2a2 2 0 0 0-2-2c-.18 0-.35.03-.52.07l-1.73-1.73A4 4 0 0 1 12 6a4 4 0 0 1 4 4v2h4z" />
                       </svg>
                     )}
-                    {participant.isScreenSharing && (
+                    {!compact && participant.isScreenSharing && (
                       <svg
                         className="h-3 w-3 text-[#3ba55c]"
                         viewBox="0 0 24 24"
@@ -182,6 +206,11 @@ export function VoiceGrid() {
           );
         })}
       </div>
+      {overflow > 0 && (
+        <p className="py-1 text-center text-[10px] text-[#96989d]">
+          +{overflow} more
+        </p>
+      )}
     </div>
   );
 }

@@ -1,5 +1,8 @@
+import { useNavigate } from 'react-router-dom';
 import type { Channel } from '@harmonium/shared';
 import { useVoiceStore } from '../../stores/voice.store.js';
+import { useChannelStore } from '../../stores/channel.store.js';
+import { useUIStore } from '../../stores/ui.store.js';
 import { VoiceParticipant } from './VoiceParticipant.js';
 
 interface VoiceChannelProps {
@@ -9,9 +12,12 @@ interface VoiceChannelProps {
 }
 
 export function VoiceChannel({ channel, serverId, onJoin }: VoiceChannelProps) {
+  const navigate = useNavigate();
   const currentChannelId = useVoiceStore((s) => s.currentChannelId);
   const participants = useVoiceStore((s) => s.participants);
   const isConnecting = useVoiceStore((s) => s.isConnecting);
+  const setCurrentChannel = useChannelStore((s) => s.setCurrentChannel);
+  const closeMobileSidebar = useUIStore((s) => s.closeMobileSidebar);
 
   const isActive = channel.id === currentChannelId;
 
@@ -21,9 +27,14 @@ export function VoiceChannel({ channel, serverId, onJoin }: VoiceChannelProps) {
     : [];
 
   const handleClick = () => {
+    // If not connected to this channel, join it
     if (!isActive && !isConnecting) {
       onJoin(channel.id, serverId);
     }
+    // Always navigate to show voice full view
+    setCurrentChannel(channel.id);
+    navigate(`/channels/${serverId}/${channel.id}`);
+    closeMobileSidebar();
   };
 
   return (

@@ -1,7 +1,11 @@
 import { useEffect, useRef, useState } from 'react';
 import { useVoiceStore } from '../../stores/voice.store.js';
 
-export function ScreenShareViewer() {
+interface ScreenShareViewerProps {
+  compact?: boolean;
+}
+
+export function ScreenShareViewer({ compact = false }: ScreenShareViewerProps) {
   const screenShareUserId = useVoiceStore((s) => s.screenShareUserId);
   const isLocalSharing = useVoiceStore((s) => s.isScreenSharing);
   const participants = useVoiceStore((s) => s.participants);
@@ -32,31 +36,40 @@ export function ScreenShareViewer() {
   }, []);
 
   useEffect(() => {
-    if (videoRef.current && stream) {
-      videoRef.current.srcObject = stream;
-      videoRef.current.play().catch(() => {});
+    if (videoRef.current) {
+      if (stream) {
+        videoRef.current.srcObject = stream;
+        videoRef.current.play().catch(() => {});
+      } else {
+        videoRef.current.srcObject = null;
+      }
     }
   }, [stream]);
 
   // Don't show if nobody is sharing, or if the local user is the one sharing
   if (!screenShareUserId || !sharer || isLocalSharing) return null;
 
+  const maxHeight = compact ? '120px' : '50vh';
+
   return (
     <div className="flex flex-col border-b border-[#202225]">
-      <div className="flex items-center gap-2 bg-[#2f3136] px-3 py-1.5">
-        <svg className="h-4 w-4 text-[#3ba55c]" viewBox="0 0 24 24" fill="currentColor">
-          <path d="M2 4v13h6v3h8v-3h6V4H2zm18 11H4V6h16v9z" />
-        </svg>
-        <span className="text-sm font-medium text-white">
-          {sharer.username} is sharing their screen
-        </span>
-      </div>
-      <div className="flex items-center justify-center bg-black" style={{ maxHeight: '50vh' }}>
+      {!compact && (
+        <div className="flex items-center gap-2 bg-[#2f3136] px-3 py-1.5">
+          <svg className="h-4 w-4 text-[#3ba55c]" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M2 4v13h6v3h8v-3h6V4H2zm18 11H4V6h16v9z" />
+          </svg>
+          <span className="text-sm font-medium text-white">
+            {sharer.username} is sharing their screen
+          </span>
+        </div>
+      )}
+      <div className="flex items-center justify-center bg-black" style={{ maxHeight }}>
         <video
           ref={videoRef}
           autoPlay
           playsInline
-          className="max-h-[50vh] w-full object-contain"
+          className={`w-full object-contain`}
+          style={{ maxHeight }}
         />
       </div>
     </div>

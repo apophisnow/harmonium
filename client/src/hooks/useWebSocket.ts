@@ -29,6 +29,7 @@ export function useWebSocket() {
   const deleteMessage = useMessageStore((s) => s.deleteMessage);
 
   const setPresence = usePresenceStore((s) => s.setPresence);
+  const bulkSetPresence = usePresenceStore((s) => s.bulkSetPresence);
 
   const addMember = useMemberStore((s) => s.addMember);
   const removeMember = useMemberStore((s) => s.removeMember);
@@ -79,10 +80,14 @@ export function useWebSocket() {
           if (reconnectAttemptRef.current > 0) {
             useToastStore.getState().addToast('success', 'Reconnected to server');
           }
-          // Set own presence to online
+          // Set own presence + all online co-members from the server
           const currentUserId = useAuthStore.getState().user?.id;
+          const entries = data.d.presences ?? [];
           if (currentUserId) {
-            setPresence(currentUserId, 'online');
+            entries.push({ userId: currentUserId, status: 'online' });
+          }
+          if (entries.length > 0) {
+            bulkSetPresence(entries);
           }
           setIsConnected(true);
           reconnectAttemptRef.current = 0;
@@ -167,6 +172,7 @@ export function useWebSocket() {
       updateMessage,
       deleteMessage,
       setPresence,
+      bulkSetPresence,
       addMember,
       removeMember,
       updateMemberUser,

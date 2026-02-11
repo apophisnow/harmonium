@@ -207,6 +207,36 @@ export function useVoice() {
 
         const producerType: ProducerType = consumerInfo.producerType ?? 'audio';
 
+        // When the remote producer closes (or the transport closes), clean up
+        // the associated stream so VoiceGrid switches back to the avatar tile.
+        const cleanupOnClose = () => {
+          consumersRef.current.delete(consumer.id);
+          if (consumer.kind === 'video') {
+            if (producerType === 'webcam') {
+              storeActions.current.updateParticipant(userId, { hasWebcam: false });
+              storeActions.current.removeWebcamStream(userId);
+              window.dispatchEvent(
+                new CustomEvent('voice:webcam_stream_ended', { detail: { userId } }),
+              );
+            } else {
+              storeActions.current.setScreenShareUser(null);
+              storeActions.current.updateParticipant(userId, { isScreenSharing: false });
+              window.dispatchEvent(
+                new CustomEvent('voice:screen_share_ended', { detail: { userId } }),
+              );
+            }
+          } else {
+            const audio = audioElementsRef.current.get(userId);
+            if (audio) {
+              audio.pause();
+              audio.srcObject = null;
+              audioElementsRef.current.delete(userId);
+            }
+          }
+        };
+        consumer.on('transportclose', cleanupOnClose);
+        consumer.on('trackended', cleanupOnClose);
+
         if (consumer.kind === 'audio') {
           // Play audio through HTMLAudioElement
           const stream = new MediaStream([consumer.track]);
