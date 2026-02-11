@@ -11,7 +11,7 @@ COPY package.json package-lock.json* ./
 COPY packages/shared/package.json ./packages/shared/
 COPY server/package.json ./server/
 
-# Install all dependencies
+# Install all dependencies (single compilation of native modules)
 RUN npm install
 
 # Copy source
@@ -22,19 +22,28 @@ COPY server/ ./server/
 RUN npm run build --workspace=packages/shared
 RUN npm run build --workspace=server
 
+# Prune dev dependencies in-place (reuses already-compiled native modules)
+RUN npm prune --omit=dev
+
 # Production stage
 FROM node:22-alpine
 
-RUN apk add --no-cache python3 py3-pip py3-setuptools make g++ linux-headers
+# mediasoup needs native libs at runtime
+RUN apk add --no-cache python3 make g++ linux-headers
 
 WORKDIR /app
 
-COPY package.json package-lock.json* ./
+# Copy pruned node_modules from builder (no recompilation)
+COPY --from=builder /app/node_modules ./node_modules
+COPY --from=builder /app/packages/shared/node_modules ./packages/shared/node_modules
+COPY --from=builder /app/server/node_modules ./server/node_modules
+
+# Copy package files (needed for workspace resolution)
+COPY package.json ./
 COPY packages/shared/package.json ./packages/shared/
 COPY server/package.json ./server/
 
-RUN npm install --omit=dev
-
+# Copy compiled output
 COPY --from=builder /app/packages/shared/dist ./packages/shared/dist
 COPY --from=builder /app/server/dist ./server/dist
 COPY --from=builder /app/server/src/db/migrations ./server/dist/db/migrations
