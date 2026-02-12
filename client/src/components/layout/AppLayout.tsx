@@ -187,7 +187,7 @@ export function AppLayout({ sendEvent, isConnected }: AppLayoutProps) {
   return (
     <div className="flex h-screen w-screen flex-col overflow-hidden">
       {!isConnected && (
-        <div className="flex items-center justify-center bg-th-yellow px-4 py-1 text-sm font-medium text-white">
+        <div className="flex items-center justify-center bg-th-yellow px-4 py-1 text-sm font-medium text-black">
           Connecting to server...
         </div>
       )}

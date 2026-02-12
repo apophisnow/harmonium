@@ -125,16 +125,16 @@ export function VoicePiP() {
     navigate(`/channels/${voiceServerId}/${voiceChannelId}`);
   };
 
-  // When position is set, use fixed positioning; otherwise use absolute default
+  // When dragged, use explicit coordinates; otherwise default to bottom-right via CSS
   const positionStyle: React.CSSProperties = position
-    ? { position: 'fixed', left: position.x, top: position.y, bottom: 'auto', right: 'auto' }
+    ? { left: position.x, top: position.y, bottom: 'auto', right: 'auto' }
     : {};
 
   if (isMinimized) {
     return (
       <div
         ref={containerRef}
-        className="absolute bottom-20 right-4 z-30 flex items-center gap-2 rounded-lg border border-th-border bg-th-bg-secondary px-3 py-2 shadow-lg"
+        className="fixed bottom-20 right-4 z-30 flex items-center gap-2 rounded-lg border border-th-border bg-th-bg-secondary px-3 py-2 shadow-lg"
         style={positionStyle}
       >
         <div
@@ -170,7 +170,7 @@ export function VoicePiP() {
   return (
     <div
       ref={containerRef}
-      className="absolute bottom-20 right-4 z-30 w-80 overflow-hidden rounded-lg border border-th-border bg-th-bg-secondary shadow-lg"
+      className="fixed bottom-20 right-4 z-30 w-80 overflow-hidden rounded-lg border border-th-border bg-th-bg-secondary shadow-lg"
       style={positionStyle}
     >
       {/* PiP header — drag handle */}
