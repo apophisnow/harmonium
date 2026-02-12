@@ -62,9 +62,9 @@ export function RegisterForm() {
   };
 
   return (
-    <div className="w-full max-w-md rounded-lg bg-[#36393f] p-8 shadow-lg">
+    <div className="w-full max-w-md rounded-lg bg-th-bg-primary p-8 shadow-lg">
       <div className="mb-6 text-center">
-        <h1 className="text-2xl font-bold text-[#dcddde]">Create an account</h1>
+        <h1 className="text-2xl font-bold text-th-text-primary">Create an account</h1>
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-4">
@@ -77,7 +77,7 @@ export function RegisterForm() {
         <div>
           <label
             htmlFor="username"
-            className="mb-2 block text-xs font-bold uppercase text-[#96989d]"
+            className="mb-2 block text-xs font-bold uppercase text-th-text-secondary"
           >
             Username <span className="text-red-400">*</span>
           </label>
@@ -86,7 +86,7 @@ export function RegisterForm() {
             type="text"
             value={username}
             onChange={(e) => setUsername(e.target.value)}
-            className="w-full rounded border border-[#040405] bg-[#202225] px-3 py-2 text-[#dcddde] outline-none focus:border-[#5865f2] transition-colors"
+            className="w-full rounded border border-th-border-strong bg-th-bg-tertiary px-3 py-2 text-th-text-primary outline-none focus:border-th-brand transition-colors"
             autoComplete="username"
             disabled={isSubmitting}
           />
@@ -98,7 +98,7 @@ export function RegisterForm() {
         <div>
           <label
             htmlFor="email"
-            className="mb-2 block text-xs font-bold uppercase text-[#96989d]"
+            className="mb-2 block text-xs font-bold uppercase text-th-text-secondary"
           >
             Email <span className="text-red-400">*</span>
           </label>
@@ -107,7 +107,7 @@ export function RegisterForm() {
             type="email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            className="w-full rounded border border-[#040405] bg-[#202225] px-3 py-2 text-[#dcddde] outline-none focus:border-[#5865f2] transition-colors"
+            className="w-full rounded border border-th-border-strong bg-th-bg-tertiary px-3 py-2 text-th-text-primary outline-none focus:border-th-brand transition-colors"
             autoComplete="email"
             disabled={isSubmitting}
           />
@@ -119,7 +119,7 @@ export function RegisterForm() {
         <div>
           <label
             htmlFor="password"
-            className="mb-2 block text-xs font-bold uppercase text-[#96989d]"
+            className="mb-2 block text-xs font-bold uppercase text-th-text-secondary"
           >
             Password <span className="text-red-400">*</span>
           </label>
@@ -128,7 +128,7 @@ export function RegisterForm() {
             type="password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            className="w-full rounded border border-[#040405] bg-[#202225] px-3 py-2 text-[#dcddde] outline-none focus:border-[#5865f2] transition-colors"
+            className="w-full rounded border border-th-border-strong bg-th-bg-tertiary px-3 py-2 text-th-text-primary outline-none focus:border-th-brand transition-colors"
             autoComplete="new-password"
             disabled={isSubmitting}
           />
@@ -140,14 +140,14 @@ export function RegisterForm() {
         <button
           type="submit"
           disabled={isSubmitting}
-          className="flex w-full items-center justify-center rounded py-2.5 font-medium text-white bg-[#5865f2] hover:bg-[#4752c4] disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+          className="flex w-full items-center justify-center rounded py-2.5 font-medium text-white bg-th-brand hover:bg-th-brand-hover disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
         >
           {isSubmitting ? <LoadingSpinner size={20} /> : 'Continue'}
         </button>
 
-        <p className="mt-2 text-sm text-[#96989d]">
+        <p className="mt-2 text-sm text-th-text-secondary">
           Already have an account?{' '}
-          <Link to="/login" className="text-[#5865f2] hover:underline">
+          <Link to="/login" className="text-th-brand hover:underline">
             Login
           </Link>
         </p>

@@ -13,7 +13,7 @@ export function VoiceParticipant({ participant }: VoiceParticipantProps) {
       <div
         className={`relative flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full transition-all ${
           isSpeaking
-            ? 'ring-2 ring-[#3ba55c]'
+            ? 'ring-2 ring-th-green'
             : ''
         }`}
       >
@@ -24,7 +24,7 @@ export function VoiceParticipant({ participant }: VoiceParticipantProps) {
             className="h-full w-full rounded-full object-cover"
           />
         ) : (
-          <div className="flex h-full w-full items-center justify-center rounded-full bg-[#5865f2] text-[10px] font-medium text-white">
+          <div className="flex h-full w-full items-center justify-center rounded-full bg-th-brand text-[10px] font-medium text-white">
             {username.charAt(0).toUpperCase()}
           </div>
         )}
@@ -33,7 +33,7 @@ export function VoiceParticipant({ participant }: VoiceParticipantProps) {
       {/* Username */}
       <span
         className={`truncate text-sm ${
-          isSpeaking ? 'text-[#3ba55c]' : 'text-[#96989d]'
+          isSpeaking ? 'text-th-green' : 'text-th-text-secondary'
         }`}
       >
         {username}
@@ -43,7 +43,7 @@ export function VoiceParticipant({ participant }: VoiceParticipantProps) {
       <div className="ml-auto flex items-center gap-0.5">
         {isMuted && (
           <svg
-            className="h-3.5 w-3.5 text-[#ed4245]"
+            className="h-3.5 w-3.5 text-th-red"
             viewBox="0 0 24 24"
             fill="currentColor"
           >
@@ -53,7 +53,7 @@ export function VoiceParticipant({ participant }: VoiceParticipantProps) {
         )}
         {isDeafened && (
           <svg
-            className="h-3.5 w-3.5 text-[#ed4245]"
+            className="h-3.5 w-3.5 text-th-red"
             viewBox="0 0 24 24"
             fill="currentColor"
           >
@@ -62,7 +62,7 @@ export function VoiceParticipant({ participant }: VoiceParticipantProps) {
         )}
         {isScreenSharing && (
           <svg
-            className="h-3.5 w-3.5 text-[#3ba55c]"
+            className="h-3.5 w-3.5 text-th-green"
             viewBox="0 0 24 24"
             fill="currentColor"
           >
@@ -71,7 +71,7 @@ export function VoiceParticipant({ participant }: VoiceParticipantProps) {
         )}
         {hasWebcam && (
           <svg
-            className="h-3.5 w-3.5 text-[#3ba55c]"
+            className="h-3.5 w-3.5 text-th-green"
             viewBox="0 0 24 24"
             fill="currentColor"
           >

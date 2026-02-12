@@ -21,7 +21,7 @@ export function ServerSidebar() {
   };
 
   return (
-    <div className="flex h-full w-[72px] flex-col items-center bg-[#202225] py-3 overflow-y-auto scrollbar-none">
+    <div className="flex h-full w-[72px] flex-col items-center bg-th-bg-tertiary py-3 overflow-y-auto scrollbar-none">
       {/* Home button */}
       <div className="mb-2">
         <Tooltip content="Direct Messages" position="right">
@@ -32,8 +32,8 @@ export function ServerSidebar() {
             }}
             className={`flex h-12 w-12 items-center justify-center transition-all duration-200 ${
               currentServerId === null
-                ? 'rounded-2xl bg-[#5865f2]'
-                : 'rounded-3xl bg-[#36393f] hover:rounded-2xl hover:bg-[#5865f2]'
+                ? 'rounded-2xl bg-th-brand'
+                : 'rounded-3xl bg-th-bg-primary hover:rounded-2xl hover:bg-th-brand'
             }`}
           >
             <svg
@@ -48,7 +48,7 @@ export function ServerSidebar() {
       </div>
 
       {/* Separator */}
-      <div className="mx-auto mb-2 h-0.5 w-8 rounded-full bg-[#36393f]" />
+      <div className="mx-auto mb-2 h-0.5 w-8 rounded-full bg-th-bg-primary" />
 
       {/* Server list */}
       {serverList.map((server) => (
@@ -62,13 +62,13 @@ export function ServerSidebar() {
       ))}
 
       {/* Separator */}
-      <div className="mx-auto my-1 h-0.5 w-8 rounded-full bg-[#36393f]" />
+      <div className="mx-auto my-1 h-0.5 w-8 rounded-full bg-th-bg-primary" />
 
       {/* Add server button */}
       <Tooltip content="Add a Server" position="right">
         <button
           onClick={() => openModal('createServer')}
-          className="flex h-12 w-12 items-center justify-center rounded-3xl bg-[#36393f] text-[#3ba55c] transition-all duration-200 hover:rounded-2xl hover:bg-[#3ba55c] hover:text-white"
+          className="flex h-12 w-12 items-center justify-center rounded-3xl bg-th-bg-primary text-th-green transition-all duration-200 hover:rounded-2xl hover:bg-th-green hover:text-white"
         >
           <svg
             className="h-6 w-6"

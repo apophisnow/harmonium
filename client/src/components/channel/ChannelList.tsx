@@ -69,7 +69,7 @@ export function ChannelList({ serverId, onJoinVoice }: ChannelListProps) {
       {textChannels.length > 0 && (
         <div className="mb-1">
           <h3
-            className="flex items-center px-1 py-1.5 text-xs font-semibold uppercase text-[#96989d] hover:text-[#dcddde] cursor-pointer select-none"
+            className="flex items-center px-1 py-1.5 text-xs font-semibold uppercase text-th-text-secondary hover:text-th-text-primary cursor-pointer select-none"
             onClick={() => toggleCategory('text')}
           >
             <svg
@@ -100,7 +100,7 @@ export function ChannelList({ serverId, onJoinVoice }: ChannelListProps) {
       {voiceChannels.length > 0 && (
         <div className="mb-1">
           <h3
-            className="flex items-center px-1 py-1.5 text-xs font-semibold uppercase text-[#96989d] hover:text-[#dcddde] cursor-pointer select-none"
+            className="flex items-center px-1 py-1.5 text-xs font-semibold uppercase text-th-text-secondary hover:text-th-text-primary cursor-pointer select-none"
             onClick={() => toggleCategory('voice')}
           >
             <svg
@@ -144,15 +144,15 @@ function ChannelItem({
       onClick={onClick}
       className={`group flex w-full items-center gap-1.5 rounded px-2 py-2 md:py-1.5 text-sm transition-colors ${
         isActive
-          ? 'bg-[#40444b] text-white'
-          : 'text-[#96989d] hover:bg-[#36393f] hover:text-[#dcddde]'
+          ? 'bg-th-bg-accent text-white'
+          : 'text-th-text-secondary hover:bg-th-bg-primary hover:text-th-text-primary'
       }`}
     >
       {channel.type === 'text' ? (
-        <span className="text-lg leading-none font-light text-[#96989d]">#</span>
+        <span className="text-lg leading-none font-light text-th-text-secondary">#</span>
       ) : (
         <svg
-          className="h-5 w-5 flex-shrink-0 text-[#96989d]"
+          className="h-5 w-5 flex-shrink-0 text-th-text-secondary"
           viewBox="0 0 24 24"
           fill="currentColor"
         >

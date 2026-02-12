@@ -216,53 +216,53 @@ export function EditProfileModal() {
               onChange={handleAvatarChange}
               className="hidden"
             />
-            <p className="mt-2 text-xs text-[#96989d]">
+            <p className="mt-2 text-xs text-th-text-secondary">
               Click to change avatar
             </p>
           </div>
 
           {/* Username */}
           <div>
-            <label className="mb-2 block text-xs font-bold uppercase text-[#96989d]">
+            <label className="mb-2 block text-xs font-bold uppercase text-th-text-secondary">
               Username
             </label>
             <input
               type="text"
               value={username}
               onChange={(e) => setUsername(e.target.value)}
-              className="w-full rounded bg-[#202225] px-3 py-2 text-[#dcddde] placeholder-[#72767d] outline-none focus:ring-2 focus:ring-[#5865f2]"
+              className="w-full rounded bg-th-bg-tertiary px-3 py-2 text-th-text-primary placeholder-th-text-muted outline-none focus:ring-2 focus:ring-th-brand"
               maxLength={32}
             />
           </div>
 
           {/* About Me */}
           <div>
-            <label className="mb-2 block text-xs font-bold uppercase text-[#96989d]">
+            <label className="mb-2 block text-xs font-bold uppercase text-th-text-secondary">
               About Me
             </label>
             <textarea
               value={aboutMe}
               onChange={(e) => setAboutMe(e.target.value)}
-              className="w-full resize-none rounded bg-[#202225] px-3 py-2 text-[#dcddde] placeholder-[#72767d] outline-none focus:ring-2 focus:ring-[#5865f2]"
+              className="w-full resize-none rounded bg-th-bg-tertiary px-3 py-2 text-th-text-primary placeholder-th-text-muted outline-none focus:ring-2 focus:ring-th-brand"
               placeholder="Tell us about yourself"
               maxLength={2000}
               rows={3}
             />
-            <p className="mt-1 text-right text-xs text-[#96989d]">
+            <p className="mt-1 text-right text-xs text-th-text-secondary">
               {aboutMe.length}/2000
             </p>
           </div>
 
           {/* Custom Status */}
           <div>
-            <label className="mb-2 block text-xs font-bold uppercase text-[#96989d]">
+            <label className="mb-2 block text-xs font-bold uppercase text-th-text-secondary">
               Custom Status
             </label>
             <input
               type="text"
               value={customStatus}
               onChange={(e) => setCustomStatus(e.target.value)}
-              className="w-full rounded bg-[#202225] px-3 py-2 text-[#dcddde] placeholder-[#72767d] outline-none focus:ring-2 focus:ring-[#5865f2]"
+              className="w-full rounded bg-th-bg-tertiary px-3 py-2 text-th-text-primary placeholder-th-text-muted outline-none focus:ring-2 focus:ring-th-brand"
               placeholder="What are you up to?"
               maxLength={128}
             />
@@ -270,60 +270,60 @@ export function EditProfileModal() {
 
           {/* Profile Error */}
           {profileError && (
-            <p className="text-sm text-[#ed4245]">{profileError}</p>
+            <p className="text-sm text-th-red">{profileError}</p>
           )}
 
           {/* Save Changes Button */}
           <button
             onClick={handleSaveProfile}
             disabled={isSavingProfile || !username.trim()}
-            className="flex w-full items-center justify-center gap-2 rounded bg-[#5865f2] px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-[#4752c4] disabled:cursor-not-allowed disabled:opacity-50"
+            className="flex w-full items-center justify-center gap-2 rounded bg-th-brand px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-th-brand-hover disabled:cursor-not-allowed disabled:opacity-50"
           >
             {isSavingProfile && <LoadingSpinner size={14} />}
             Save Changes
           </button>
 
           {/* Password Change Section */}
-          <div className="border-t border-[#42444a] pt-5">
-            <h3 className="mb-4 text-sm font-bold uppercase text-[#96989d]">
+          <div className="border-t border-th-border pt-5">
+            <h3 className="mb-4 text-sm font-bold uppercase text-th-text-secondary">
               Change Password
             </h3>
 
             <div className="space-y-3">
               <div>
-                <label className="mb-2 block text-xs font-bold uppercase text-[#96989d]">
+                <label className="mb-2 block text-xs font-bold uppercase text-th-text-secondary">
                   Current Password
                 </label>
                 <input
                   type="password"
                   value={currentPassword}
                   onChange={(e) => setCurrentPassword(e.target.value)}
-                  className="w-full rounded bg-[#202225] px-3 py-2 text-[#dcddde] placeholder-[#72767d] outline-none focus:ring-2 focus:ring-[#5865f2]"
+                  className="w-full rounded bg-th-bg-tertiary px-3 py-2 text-th-text-primary placeholder-th-text-muted outline-none focus:ring-2 focus:ring-th-brand"
                 />
               </div>
 
               <div>
-                <label className="mb-2 block text-xs font-bold uppercase text-[#96989d]">
+                <label className="mb-2 block text-xs font-bold uppercase text-th-text-secondary">
                   New Password
                 </label>
                 <input
                   type="password"
                   value={newPassword}
                   onChange={(e) => setNewPassword(e.target.value)}
-                  className="w-full rounded bg-[#202225] px-3 py-2 text-[#dcddde] placeholder-[#72767d] outline-none focus:ring-2 focus:ring-[#5865f2]"
+                  className="w-full rounded bg-th-bg-tertiary px-3 py-2 text-th-text-primary placeholder-th-text-muted outline-none focus:ring-2 focus:ring-th-brand"
                   placeholder="Min. 8 characters"
                 />
               </div>
 
               {/* Password Error */}
               {passwordError && (
-                <p className="text-sm text-[#ed4245]">{passwordError}</p>
+                <p className="text-sm text-th-red">{passwordError}</p>
               )}
 
               <button
                 onClick={handleChangePassword}
                 disabled={isChangingPassword || !currentPassword || !newPassword}
-                className="flex w-full items-center justify-center gap-2 rounded bg-[#4f545c] px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-[#5d6269] disabled:cursor-not-allowed disabled:opacity-50"
+                className="flex w-full items-center justify-center gap-2 rounded bg-th-bg-accent px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-th-bg-accent disabled:cursor-not-allowed disabled:opacity-50"
               >
                 {isChangingPassword && <LoadingSpinner size={14} />}
                 Change Password
@@ -332,7 +332,7 @@ export function EditProfileModal() {
           </div>
         </div>
       ) : (
-        <p className="text-[#96989d]">Not logged in.</p>
+        <p className="text-th-text-secondary">Not logged in.</p>
       )}
     </Modal>
   );

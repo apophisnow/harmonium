@@ -48,7 +48,7 @@ export function ContextMenu({ x, y, items, onClose }: ContextMenuProps) {
   return (
     <div
       ref={menuRef}
-      className="fixed z-50 min-w-[180px] rounded-md bg-[#18191c] p-1.5 shadow-xl"
+      className="fixed z-50 min-w-[180px] rounded-md bg-th-bg-floating p-1.5 shadow-xl"
       style={{ left: x, top: y }}
     >
       {items.map((item, i) => {
@@ -56,7 +56,7 @@ export function ContextMenu({ x, y, items, onClose }: ContextMenuProps) {
           return (
             <div
               key={`sep-${i}`}
-              className="my-1 h-px bg-[#36393f]"
+              className="my-1 h-px bg-th-bg-primary"
             />
           );
         }
@@ -65,8 +65,8 @@ export function ContextMenu({ x, y, items, onClose }: ContextMenuProps) {
             key={item.label}
             className={`flex w-full items-center rounded px-2 py-1.5 text-sm ${
               item.danger
-                ? 'text-[#ed4245] hover:bg-[#ed4245] hover:text-white'
-                : 'text-[#dcddde] hover:bg-[#5865f2] hover:text-white'
+                ? 'text-th-red hover:bg-th-red hover:text-white'
+                : 'text-th-text-primary hover:bg-th-brand hover:text-white'
             } transition-colors`}
             onClick={() => {
               item.onClick();

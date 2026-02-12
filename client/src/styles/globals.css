@@ -11,8 +11,9 @@
     margin: 0;
     padding: 0;
     overflow: hidden;
-    background-color: #36393f;
-    color: #dcddde;
+    background-color: var(--bg-primary);
+    color: var(--text-primary);
+    font-family: var(--font-family);
   }
 
   /* Custom scrollbar */
@@ -22,16 +23,16 @@
   }
 
   ::-webkit-scrollbar-track {
-    background: #2f3136;
+    background: var(--bg-secondary);
     border-radius: 4px;
   }
 
   ::-webkit-scrollbar-thumb {
-    background: #202225;
+    background: var(--bg-tertiary);
     border-radius: 4px;
   }
 
   ::-webkit-scrollbar-thumb:hover {
-    background: #18191c;
+    background: var(--bg-floating);
   }
 }

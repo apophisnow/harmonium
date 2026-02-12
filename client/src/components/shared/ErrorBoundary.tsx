@@ -38,11 +38,11 @@ export class ErrorBoundary extends Component<
       }
 
       return (
-        <div className="flex h-full w-full flex-col items-center justify-center bg-[#36393f] p-8">
+        <div className="flex h-full w-full flex-col items-center justify-center bg-th-bg-primary p-8">
           <div className="max-w-md text-center">
             <div className="mb-4 flex justify-center">
               <svg
-                className="h-16 w-16 text-[#ed4245]"
+                className="h-16 w-16 text-th-red"
                 viewBox="0 0 24 24"
                 fill="none"
                 stroke="currentColor"
@@ -56,13 +56,13 @@ export class ErrorBoundary extends Component<
             <h2 className="mb-2 text-xl font-semibold text-white">
               Something went wrong
             </h2>
-            <p className="mb-4 text-sm text-[#96989d]">
+            <p className="mb-4 text-sm text-th-text-secondary">
               {this.state.error?.message ??
                 'An unexpected error occurred. Please try again.'}
             </p>
             <button
               onClick={this.handleRetry}
-              className="rounded bg-[#5865f2] px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-[#4752c4]"
+              className="rounded bg-th-brand px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-th-brand-hover"
             >
               Try Again
             </button>

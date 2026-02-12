@@ -1,0 +1,47 @@
+/*
+ * Theme Token Contract
+ *
+ * Every theme must define ALL of these CSS custom properties
+ * in its dark.css and light.css files.
+ *
+ * To create a new theme:
+ * 1. Create a folder: src/themes/<name>/
+ * 2. Add dark.css with:  [data-theme="<name>"][data-mode="dark"] { ... }
+ * 3. Add light.css with: [data-theme="<name>"][data-mode="light"] { ... }
+ * 4. Optionally add effects.css for theme-specific CSS (e.g., fonts, animations)
+ * 5. Add index.ts exporting a ThemeDefinition object
+ * 6. Register in src/themes/index.ts
+ *
+ * Required tokens:
+ *
+ * --bg-primary          Main content area background
+ * --bg-secondary        Sidebar backgrounds
+ * --bg-tertiary         Input fields, modal backgrounds
+ * --bg-accent           Hover and active state backgrounds
+ * --bg-floating         Popup menus, floating elements
+ * --bg-card             Card and pill backgrounds
+ * --bg-message-hover    Message row hover background
+ *
+ * --text-primary        Main body text
+ * --text-secondary      Secondary/supporting text
+ * --text-tertiary       Labels, metadata text
+ * --text-muted          Hints, disabled, placeholder text
+ * --text-link           Hyperlink text
+ *
+ * --border              General borders and dividers
+ * --border-strong       Strong borders (e.g., input focus rings)
+ *
+ * --brand               Primary brand/action color
+ * --brand-hover         Brand color hover state
+ *
+ * --status-green        Online, success, speaking indicators
+ * --status-green-hover  Green hover state
+ * --status-yellow       Idle, warning indicators
+ * --status-red          Error, danger, DND indicators
+ * --status-red-hover    Red hover state
+ *
+ * --disabled            Disabled element color
+ * --role-default        Default role badge color
+ *
+ * --font-family         Base font stack
+ */

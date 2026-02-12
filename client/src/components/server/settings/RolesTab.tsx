@@ -80,7 +80,7 @@ export function RolesTab({
             value={newRoleName}
             onChange={(e) => setNewRoleName(e.target.value)}
             placeholder="New role name"
-            className="flex-1 rounded bg-[#202225] px-3 py-2 text-sm text-[#dcddde] placeholder-[#72767d] outline-none focus:ring-2 focus:ring-[#5865f2]"
+            className="flex-1 rounded bg-th-bg-tertiary px-3 py-2 text-sm text-th-text-primary placeholder-th-text-muted outline-none focus:ring-2 focus:ring-th-brand"
             maxLength={100}
             onKeyDown={(e) => {
               if (e.key === 'Enter') handleCreateRole();
@@ -89,7 +89,7 @@ export function RolesTab({
           <button
             onClick={handleCreateRole}
             disabled={isCreatingRole || !newRoleName.trim()}
-            className="flex items-center gap-1 rounded bg-[#3ba55d] px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-[#2d7d46] disabled:opacity-50 disabled:cursor-not-allowed"
+            className="flex items-center gap-1 rounded bg-th-green px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-th-green-hover disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {isCreatingRole && <LoadingSpinner size={14} />}
             Create Role
@@ -97,11 +97,11 @@ export function RolesTab({
         </div>
       )}
 
-      {roleError && <p className="text-sm text-[#ed4245]">{roleError}</p>}
+      {roleError && <p className="text-sm text-th-red">{roleError}</p>}
 
       {isLoadingRoles ? (
         <div className="flex justify-center py-8">
-          <LoadingSpinner size={24} className="text-[#96989d]" />
+          <LoadingSpinner size={24} className="text-th-text-secondary" />
         </div>
       ) : (
         <div className="flex gap-4">
@@ -118,8 +118,8 @@ export function RolesTab({
                   key={role.id}
                   className={`flex items-center gap-2 rounded px-2 py-1.5 transition-colors cursor-pointer ${
                     isActive
-                      ? 'bg-[#42444a] text-white'
-                      : 'text-[#96989d] hover:bg-[#36393f] hover:text-[#dcddde]'
+                      ? 'bg-th-bg-accent text-white'
+                      : 'text-th-text-secondary hover:bg-th-bg-primary hover:text-th-text-primary'
                   }`}
                   onClick={() => handleSelectRole(role)}
                 >
@@ -129,7 +129,7 @@ export function RolesTab({
                       <button
                         onClick={() => handleMoveRole(role.id, 'up')}
                         disabled={isFirst || isReordering}
-                        className="rounded p-0.5 text-[#96989d] transition-colors hover:text-[#dcddde] disabled:opacity-30 disabled:cursor-not-allowed"
+                        className="rounded p-0.5 text-th-text-secondary transition-colors hover:text-th-text-primary disabled:opacity-30 disabled:cursor-not-allowed"
                       >
                         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                           <path d="M18 15l-6-6-6 6" />
@@ -138,7 +138,7 @@ export function RolesTab({
                       <button
                         onClick={() => handleMoveRole(role.id, 'down')}
                         disabled={isLast || isReordering}
-                        className="rounded p-0.5 text-[#96989d] transition-colors hover:text-[#dcddde] disabled:opacity-30 disabled:cursor-not-allowed"
+                        className="rounded p-0.5 text-th-text-secondary transition-colors hover:text-th-text-primary disabled:opacity-30 disabled:cursor-not-allowed"
                       >
                         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                           <path d="M6 9l6 6 6-6" />
@@ -160,17 +160,17 @@ export function RolesTab({
               );
             })}
             {sortedRoles.length === 0 && (
-              <p className="py-4 text-center text-sm text-[#72767d]">No roles found.</p>
+              <p className="py-4 text-center text-sm text-th-text-muted">No roles found.</p>
             )}
           </div>
 
           {/* Right: Permission editor */}
           <div className="flex-1 min-w-0">
             {selectedRole && editingRoleId === selectedRole.id ? (
-              <div className="space-y-4 rounded-lg bg-[#2f3136] p-4">
+              <div className="space-y-4 rounded-lg bg-th-bg-secondary p-4">
                 {/* Name and Color */}
                 <div>
-                  <label className="mb-1 block text-xs font-bold uppercase text-[#b9bbbe]">
+                  <label className="mb-1 block text-xs font-bold uppercase text-th-text-tertiary">
                     Role Name
                   </label>
                   <div className="flex gap-2 items-center">
@@ -178,13 +178,13 @@ export function RolesTab({
                       type="text"
                       value={editRoleName}
                       onChange={(e) => setEditRoleName(e.target.value)}
-                      className="flex-1 rounded bg-[#202225] px-3 py-2 text-sm text-[#dcddde] outline-none focus:ring-2 focus:ring-[#5865f2] disabled:opacity-50"
+                      className="flex-1 rounded bg-th-bg-tertiary px-3 py-2 text-sm text-th-text-primary outline-none focus:ring-2 focus:ring-th-brand disabled:opacity-50"
                       placeholder="Role name"
                       maxLength={100}
                       disabled={selectedRole.isDefault}
                     />
                     <div className="flex items-center gap-2">
-                      <label className="text-xs text-[#b9bbbe]">Color</label>
+                      <label className="text-xs text-th-text-tertiary">Color</label>
                       <input
                         type="color"
                         value={editRoleColor}
@@ -198,24 +198,24 @@ export function RolesTab({
                 {/* Permission categories */}
                 {PERMISSION_CATEGORIES.map((category) => (
                   <div key={category.name}>
-                    <h4 className="mb-2 text-xs font-semibold uppercase text-[#b9bbbe]">
+                    <h4 className="mb-2 text-xs font-semibold uppercase text-th-text-tertiary">
                       {category.name}
                     </h4>
                     <div className="space-y-1">
                       {category.permissions.map(({ flag, label, description }) => (
                         <label
                           key={label}
-                          className="flex items-center justify-between rounded px-3 py-2 hover:bg-[#36393f] cursor-pointer"
+                          className="flex items-center justify-between rounded px-3 py-2 hover:bg-th-bg-primary cursor-pointer"
                         >
                           <div>
-                            <span className="text-sm text-[#dcddde]">{label}</span>
-                            <p className="text-xs text-[#72767d]">{description}</p>
+                            <span className="text-sm text-th-text-primary">{label}</span>
+                            <p className="text-xs text-th-text-muted">{description}</p>
                           </div>
                           <input
                             type="checkbox"
                             checked={checkPermission(editRolePermissions, flag)}
                             onChange={() => handleTogglePermission(flag)}
-                            className="h-4 w-4 accent-[#5865f2]"
+                            className="h-4 w-4 accent-th-brand"
                           />
                         </label>
                       ))}
@@ -224,17 +224,17 @@ export function RolesTab({
                 ))}
 
                 {/* Actions */}
-                <div className="flex items-center gap-2 border-t border-[#42444a] pt-3">
+                <div className="flex items-center gap-2 border-t border-th-border pt-3">
                   <button
                     onClick={handleCancelEdit}
-                    className="rounded px-4 py-2 text-sm text-[#dcddde] hover:underline"
+                    className="rounded px-4 py-2 text-sm text-th-text-primary hover:underline"
                   >
                     Cancel
                   </button>
                   <button
                     onClick={handleSaveRole}
                     disabled={isSavingRole}
-                    className="flex items-center gap-1 rounded bg-[#5865f2] px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-[#4752c4] disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="flex items-center gap-1 rounded bg-th-brand px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-th-brand-hover disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     {isSavingRole && <LoadingSpinner size={14} />}
                     Save Changes
@@ -243,7 +243,7 @@ export function RolesTab({
                     <button
                       onClick={() => handleDeleteRole(selectedRole.id)}
                       disabled={deletingRoleId === selectedRole.id}
-                      className="ml-auto flex items-center gap-1 rounded px-4 py-2 text-sm text-[#ed4245] transition-colors hover:bg-[#ed4245]/10 disabled:opacity-50"
+                      className="ml-auto flex items-center gap-1 rounded px-4 py-2 text-sm text-th-red transition-colors hover:bg-th-red/10 disabled:opacity-50"
                     >
                       {deletingRoleId === selectedRole.id && <LoadingSpinner size={14} />}
                       Delete Role
@@ -252,8 +252,8 @@ export function RolesTab({
                 </div>
               </div>
             ) : (
-              <div className="flex h-48 items-center justify-center rounded-lg bg-[#2f3136]">
-                <p className="text-sm text-[#72767d]">Select a role to edit its permissions</p>
+              <div className="flex h-48 items-center justify-center rounded-lg bg-th-bg-secondary">
+                <p className="text-sm text-th-text-muted">Select a role to edit its permissions</p>
               </div>
             )}
           </div>

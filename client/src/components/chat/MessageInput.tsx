@@ -77,26 +77,26 @@ export function MessageInput({
     <div className="px-4 pb-6 pt-2">
       {/* File previews */}
       {files.length > 0 && (
-        <div className="mb-2 flex flex-wrap gap-2 rounded-t-lg bg-[#40444b] px-3 pt-3 pb-1">
+        <div className="mb-2 flex flex-wrap gap-2 rounded-t-lg bg-th-bg-accent px-3 pt-3 pb-1">
           {files.map((file, index) => (
             <div
               key={`${file.name}-${index}`}
-              className="flex items-center gap-2 rounded bg-[#2f3136] px-3 py-2 text-sm text-[#dcddde]"
+              className="flex items-center gap-2 rounded bg-th-bg-secondary px-3 py-2 text-sm text-th-text-primary"
             >
               {file.type.startsWith('image/') ? (
-                <svg className="h-4 w-4 flex-shrink-0 text-[#96989d]" viewBox="0 0 24 24" fill="currentColor">
+                <svg className="h-4 w-4 flex-shrink-0 text-th-text-secondary" viewBox="0 0 24 24" fill="currentColor">
                   <path d="M21 3H3a1 1 0 0 0-1 1v16a1 1 0 0 0 1 1h18a1 1 0 0 0 1-1V4a1 1 0 0 0-1-1zM4 19l4-5 2.77 3.46L14 13l6 6H4z" />
                 </svg>
               ) : (
-                <svg className="h-4 w-4 flex-shrink-0 text-[#96989d]" viewBox="0 0 24 24" fill="currentColor">
+                <svg className="h-4 w-4 flex-shrink-0 text-th-text-secondary" viewBox="0 0 24 24" fill="currentColor">
                   <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6zM6 20V4h7v5h5v11H6z" />
                 </svg>
               )}
               <span className="max-w-[150px] truncate">{file.name}</span>
-              <span className="text-xs text-[#72767d]">{formatFileSize(file.size)}</span>
+              <span className="text-xs text-th-text-muted">{formatFileSize(file.size)}</span>
               <button
                 onClick={() => removeFile(index)}
-                className="ml-1 text-[#96989d] hover:text-[#ed4245] transition-colors"
+                className="ml-1 text-th-text-secondary hover:text-th-red transition-colors"
                 title="Remove attachment"
               >
                 <svg className="h-4 w-4" viewBox="0 0 24 24" fill="currentColor">
@@ -108,11 +108,11 @@ export function MessageInput({
         </div>
       )}
 
-      <div className={`flex items-end bg-[#40444b] ${files.length > 0 ? 'rounded-b-lg' : 'rounded-lg'}`}>
+      <div className={`flex items-end bg-th-bg-accent ${files.length > 0 ? 'rounded-b-lg' : 'rounded-lg'}`}>
         {/* Attachment button */}
         <button
           onClick={() => fileInputRef.current?.click()}
-          className="flex-shrink-0 p-2.5 text-[#96989d] hover:text-[#dcddde] transition-colors"
+          className="flex-shrink-0 p-2.5 text-th-text-secondary hover:text-th-text-primary transition-colors"
           title="Attach a file"
         >
           <svg className="h-5 w-5" viewBox="0 0 24 24" fill="currentColor">
@@ -135,7 +135,7 @@ export function MessageInput({
           onKeyDown={handleKeyDown}
           placeholder={`Message #${channelName}`}
           rows={1}
-          className="max-h-[200px] flex-1 resize-none bg-transparent px-2 py-2.5 text-sm text-[#dcddde] placeholder-[#72767d] outline-none"
+          className="max-h-[200px] flex-1 resize-none bg-transparent px-2 py-2.5 text-sm text-th-text-primary placeholder-th-text-muted outline-none"
         />
       </div>
     </div>

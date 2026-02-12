@@ -52,10 +52,10 @@ export function ScreenShareViewer({ compact = false }: ScreenShareViewerProps) {
   const maxHeight = compact ? '120px' : '50vh';
 
   return (
-    <div className="flex flex-col border-b border-[#202225]">
+    <div className="flex flex-col border-b border-th-border">
       {!compact && (
-        <div className="flex items-center gap-2 bg-[#2f3136] px-3 py-1.5">
-          <svg className="h-4 w-4 text-[#3ba55c]" viewBox="0 0 24 24" fill="currentColor">
+        <div className="flex items-center gap-2 bg-th-bg-secondary px-3 py-1.5">
+          <svg className="h-4 w-4 text-th-green" viewBox="0 0 24 24" fill="currentColor">
             <path d="M2 4v13h6v3h8v-3h6V4H2zm18 11H4V6h16v9z" />
           </svg>
           <span className="text-sm font-medium text-white">

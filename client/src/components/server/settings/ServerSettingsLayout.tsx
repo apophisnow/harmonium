@@ -45,7 +45,7 @@ export function ServerSettingsLayout() {
   return createPortal(
     <div className="fixed inset-0 z-50 flex" role="dialog" aria-modal="true">
       {/* Left half - sidebar background */}
-      <div className="flex flex-1 justify-end bg-[#2f3136]">
+      <div className="flex flex-1 justify-end bg-th-bg-secondary">
         <div className="w-[220px] overflow-y-auto px-2 py-[60px]">
           <ServerSettingsSidebar
             activeTab={activeTab}
@@ -57,7 +57,7 @@ export function ServerSettingsLayout() {
       </div>
 
       {/* Right half - content */}
-      <div className="flex flex-[1.5] bg-[#36393f]">
+      <div className="flex flex-[1.5] bg-th-bg-primary">
         <div className="w-[740px] max-w-full overflow-y-auto px-10 py-[60px]">
           {activeTab === 'overview' && (
             <OverviewTab
@@ -141,12 +141,12 @@ export function ServerSettingsLayout() {
             onClick={state.handleClose}
             className="group flex flex-col items-center gap-1"
           >
-            <div className="flex h-9 w-9 items-center justify-center rounded-full border-2 border-[#72767d] text-[#72767d] transition-colors group-hover:border-[#dcddde] group-hover:text-[#dcddde]">
+            <div className="flex h-9 w-9 items-center justify-center rounded-full border-2 border-th-text-muted text-th-text-muted transition-colors group-hover:border-th-text-primary group-hover:text-th-text-primary">
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <path d="M18 6L6 18M6 6l12 12" />
               </svg>
             </div>
-            <span className="text-[11px] font-semibold text-[#72767d] group-hover:text-[#dcddde]">
+            <span className="text-[11px] font-semibold text-th-text-muted group-hover:text-th-text-primary">
               ESC
             </span>
           </button>

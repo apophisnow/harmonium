@@ -19,7 +19,7 @@ export function Skeleton({
 
   return (
     <div
-      className={`animate-pulse bg-[#40444b] ${
+      className={`animate-pulse bg-th-bg-accent ${
         circle ? 'rounded-full' : rounded ? 'rounded-md' : 'rounded'
       } ${className}`}
       style={style}

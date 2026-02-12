@@ -44,17 +44,17 @@ export function VoiceControls({
     channels.find((c) => c.id === currentChannelId)?.name ?? 'Voice Channel';
 
   return (
-    <div className="border-t border-[#202225] bg-[#292b2f] px-2 py-2">
+    <div className="border-t border-th-border bg-th-bg-card px-2 py-2">
       {/* Connection info */}
       <div className="mb-1.5 flex items-center gap-2">
         <div className="min-w-0 flex-1">
           <p
             className={`text-xs font-semibold ${
               isConnected
-                ? 'text-[#3ba55c]'
+                ? 'text-th-green'
                 : isConnecting
-                  ? 'text-[#faa61a]'
-                  : 'text-[#ed4245]'
+                  ? 'text-th-yellow'
+                  : 'text-th-red'
             }`}
           >
             {isConnected
@@ -63,7 +63,7 @@ export function VoiceControls({
                 ? 'Connecting...'
                 : 'Disconnected'}
           </p>
-          <p className="truncate text-xs text-[#96989d]">{channelName}</p>
+          <p className="truncate text-xs text-th-text-secondary">{channelName}</p>
         </div>
       </div>
 
@@ -74,8 +74,8 @@ export function VoiceControls({
           onClick={onToggleMute}
           className={`flex-1 flex items-center justify-center rounded p-1.5 transition-colors ${
             isMuted
-              ? 'bg-[#ed4245]/20 text-[#ed4245] hover:bg-[#ed4245]/30'
-              : 'text-[#b9bbbe] hover:bg-[#36393f] hover:text-[#dcddde]'
+              ? 'bg-th-red/20 text-th-red hover:bg-th-red/30'
+              : 'text-th-text-tertiary hover:bg-th-bg-primary hover:text-th-text-primary'
           }`}
           title={isMuted ? 'Unmute' : 'Mute'}
         >
@@ -96,8 +96,8 @@ export function VoiceControls({
           onClick={onToggleDeafen}
           className={`flex-1 flex items-center justify-center rounded p-1.5 transition-colors ${
             isDeafened
-              ? 'bg-[#ed4245]/20 text-[#ed4245] hover:bg-[#ed4245]/30'
-              : 'text-[#b9bbbe] hover:bg-[#36393f] hover:text-[#dcddde]'
+              ? 'bg-th-red/20 text-th-red hover:bg-th-red/30'
+              : 'text-th-text-tertiary hover:bg-th-bg-primary hover:text-th-text-primary'
           }`}
           title={isDeafened ? 'Undeafen' : 'Deafen'}
         >
@@ -120,10 +120,10 @@ export function VoiceControls({
           disabled={!isConnected}
           className={`flex-1 flex items-center justify-center rounded p-1.5 transition-colors ${
             isWebcamOn
-              ? 'bg-[#3ba55c]/20 text-[#3ba55c] hover:bg-[#3ba55c]/30'
+              ? 'bg-th-green/20 text-th-green hover:bg-th-green/30'
               : !isConnected
-                ? 'text-[#4f5660] cursor-not-allowed'
-                : 'text-[#b9bbbe] hover:bg-[#36393f] hover:text-[#dcddde]'
+                ? 'text-th-disabled cursor-not-allowed'
+                : 'text-th-text-tertiary hover:bg-th-bg-primary hover:text-th-text-primary'
           }`}
           title={isWebcamOn ? 'Turn Off Camera' : 'Turn On Camera'}
         >
@@ -138,10 +138,10 @@ export function VoiceControls({
           disabled={!isConnected || (!isScreenSharing && screenShareUserId !== null)}
           className={`flex-1 flex items-center justify-center rounded p-1.5 transition-colors ${
             isScreenSharing
-              ? 'bg-[#3ba55c]/20 text-[#3ba55c] hover:bg-[#3ba55c]/30'
+              ? 'bg-th-green/20 text-th-green hover:bg-th-green/30'
               : !isConnected || screenShareUserId !== null
-                ? 'text-[#4f5660] cursor-not-allowed'
-                : 'text-[#b9bbbe] hover:bg-[#36393f] hover:text-[#dcddde]'
+                ? 'text-th-disabled cursor-not-allowed'
+                : 'text-th-text-tertiary hover:bg-th-bg-primary hover:text-th-text-primary'
           }`}
           title={
             isScreenSharing
@@ -159,7 +159,7 @@ export function VoiceControls({
         {/* Disconnect button */}
         <button
           onClick={onLeave}
-          className="flex-1 flex items-center justify-center rounded bg-[#ed4245]/20 p-1.5 text-[#ed4245] transition-colors hover:bg-[#ed4245]/30"
+          className="flex-1 flex items-center justify-center rounded bg-th-red/20 p-1.5 text-th-red transition-colors hover:bg-th-red/30"
           title="Disconnect"
         >
           <svg className="h-5 w-5" viewBox="0 0 24 24" fill="currentColor">

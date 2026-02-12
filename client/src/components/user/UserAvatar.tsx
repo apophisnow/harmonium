@@ -11,10 +11,10 @@ interface UserAvatarProps {
 }
 
 const statusColors: Record<UserStatus, string> = {
-  online: 'bg-[#3ba55c]',
-  idle: 'bg-[#faa61a]',
-  dnd: 'bg-[#ed4245]',
-  offline: 'bg-[#747f8d]',
+  online: 'bg-th-green',
+  idle: 'bg-th-yellow',
+  dnd: 'bg-th-red',
+  offline: 'bg-th-text-muted',
 };
 
 export function UserAvatar({
@@ -41,7 +41,7 @@ export function UserAvatar({
         />
       ) : (
         <div
-          className="flex h-full w-full items-center justify-center rounded-full bg-[#5865f2] text-white font-medium"
+          className="flex h-full w-full items-center justify-center rounded-full bg-th-brand text-white font-medium"
           style={{ fontSize: size * 0.4 }}
         >
           {getInitials(username)}
@@ -49,7 +49,7 @@ export function UserAvatar({
       )}
       {showStatus && (
         <div
-          className={`absolute rounded-full border-[3px] border-[#2f3136] ${statusColors[status]}`}
+          className={`absolute rounded-full border-[3px] border-th-border ${statusColors[status]}`}
           style={{
             width: dotSize,
             height: dotSize,

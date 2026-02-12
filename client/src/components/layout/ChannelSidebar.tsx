@@ -50,9 +50,9 @@ export function ChannelSidebar({
   }, [currentServerId, fetchChannels]);
 
   return (
-    <div className="flex h-full w-60 flex-col bg-[#2f3136]">
+    <div className="flex h-full w-60 flex-col bg-th-bg-secondary">
       {/* Server header */}
-      <div className="flex h-12 items-center border-b border-[#202225] px-4 shadow-sm">
+      <div className="flex h-12 items-center border-b border-th-border px-4 shadow-sm">
         {server ? (
           <div className="flex w-full items-center justify-between">
             <h2 className="truncate text-base font-semibold text-white">
@@ -60,7 +60,7 @@ export function ChannelSidebar({
             </h2>
             <button
               onClick={() => openModal('serverSettings')}
-              className="rounded p-1 text-[#96989d] hover:text-[#dcddde] transition-colors"
+              className="rounded p-1 text-th-text-secondary hover:text-th-text-primary transition-colors"
               title="Server Settings"
             >
               <svg
@@ -91,7 +91,7 @@ export function ChannelSidebar({
             <div className="px-2 py-2 space-y-0.5">
               <button
                 onClick={() => openModal('invite')}
-                className="flex w-full items-center gap-1 rounded px-2 py-1 text-xs text-[#96989d] hover:text-[#dcddde] transition-colors"
+                className="flex w-full items-center gap-1 rounded px-2 py-1 text-xs text-th-text-secondary hover:text-th-text-primary transition-colors"
               >
                 <svg
                   className="h-4 w-4"
@@ -109,7 +109,7 @@ export function ChannelSidebar({
               </button>
               <button
                 onClick={() => openModal('createChannel')}
-                className="flex w-full items-center gap-1 rounded px-2 py-1 text-xs text-[#96989d] hover:text-[#dcddde] transition-colors"
+                className="flex w-full items-center gap-1 rounded px-2 py-1 text-xs text-th-text-secondary hover:text-th-text-primary transition-colors"
               >
                 <svg
                   className="h-4 w-4"
@@ -125,7 +125,7 @@ export function ChannelSidebar({
             </div>
           </>
         ) : (
-          <div className="p-4 text-sm text-[#96989d]">
+          <div className="p-4 text-sm text-th-text-secondary">
             Select a server to see channels
           </div>
         )}
@@ -146,7 +146,7 @@ export function ChannelSidebar({
       )}
 
       {/* User panel at bottom */}
-      <div className="flex items-center gap-2 border-t border-[#202225] bg-[#292b2f] px-2 py-2">
+      <div className="flex items-center gap-2 border-t border-th-border bg-th-bg-card px-2 py-2">
         <UserAvatar
           username={user?.username ?? ''}
           avatarUrl={user?.avatarUrl}
@@ -157,13 +157,13 @@ export function ChannelSidebar({
           <p className="truncate text-sm font-medium text-white">
             {user?.username}
           </p>
-          <p className="truncate text-xs text-[#96989d]">
+          <p className="truncate text-xs text-th-text-secondary">
             #{user?.discriminator}
           </p>
         </div>
         <button
-          onClick={() => openModal('editProfile')}
-          className="rounded p-1.5 text-[#96989d] hover:text-[#dcddde] transition-colors"
+          onClick={() => openModal('userSettings')}
+          className="rounded p-1.5 text-th-text-secondary hover:text-th-text-primary transition-colors"
           title="User Settings"
         >
           <svg
@@ -179,7 +179,7 @@ export function ChannelSidebar({
         </button>
         <button
           onClick={logout}
-          className="rounded p-1.5 text-[#96989d] hover:text-[#dcddde] transition-colors"
+          className="rounded p-1.5 text-th-text-secondary hover:text-th-text-primary transition-colors"
           title="Log Out"
         >
           <svg

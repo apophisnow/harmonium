@@ -85,31 +85,31 @@ export function InviteModal() {
 
   return (
     <Modal isOpen={isOpen} onClose={handleClose} title="Invite Friends">
-      <p className="mb-4 text-sm text-[#96989d]">
+      <p className="mb-4 text-sm text-th-text-secondary">
         Share this link with others to grant access to your server.
       </p>
 
       {isLoading ? (
         <div className="flex items-center justify-center py-4">
-          <LoadingSpinner size={24} className="text-[#5865f2]" />
+          <LoadingSpinner size={24} className="text-th-brand" />
         </div>
       ) : error ? (
-        <p className="py-4 text-sm text-[#ed4245]">{error}</p>
+        <p className="py-4 text-sm text-th-red">{error}</p>
       ) : (
         <div className="flex gap-2">
           <input
             type="text"
             readOnly
             value={inviteUrl}
-            className="flex-1 rounded bg-[#202225] px-3 py-2 text-sm text-[#dcddde] outline-none"
+            className="flex-1 rounded bg-th-bg-tertiary px-3 py-2 text-sm text-th-text-primary outline-none"
             onClick={(e) => (e.target as HTMLInputElement).select()}
           />
           <button
             onClick={handleCopy}
             className={`rounded px-4 py-2 text-sm font-medium text-white transition-colors ${
               copied
-                ? 'bg-[#3ba55c]'
-                : 'bg-[#5865f2] hover:bg-[#4752c4]'
+                ? 'bg-th-green'
+                : 'bg-th-brand hover:bg-th-brand-hover'
             }`}
           >
             {copied ? 'Copied!' : 'Copy'}

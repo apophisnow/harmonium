@@ -34,8 +34,8 @@ export function ServerIcon({
           onClick={onClick}
           className={`flex h-12 w-12 items-center justify-center overflow-hidden transition-all duration-200 ${
             isActive
-              ? 'rounded-2xl bg-[#5865f2]'
-              : 'rounded-3xl hover:rounded-2xl bg-[#36393f] hover:bg-[#5865f2]'
+              ? 'rounded-2xl bg-th-brand'
+              : 'rounded-3xl hover:rounded-2xl bg-th-bg-primary hover:bg-th-brand'
           }`}
         >
           {iconUrl ? (

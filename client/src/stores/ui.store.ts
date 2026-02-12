@@ -5,6 +5,7 @@ type ModalType =
   | 'createChannel'
   | 'invite'
   | 'editProfile'
+  | 'userSettings'
   | 'serverSettings'
   | null;
 

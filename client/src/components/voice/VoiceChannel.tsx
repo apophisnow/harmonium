@@ -43,14 +43,14 @@ export function VoiceChannel({ channel, serverId, onJoin }: VoiceChannelProps) {
         onClick={handleClick}
         className={`group flex w-full items-center gap-1.5 rounded px-2 py-1.5 text-sm transition-colors ${
           isActive
-            ? 'bg-[#40444b]/50 text-[#3ba55c]'
-            : 'text-[#96989d] hover:bg-[#36393f] hover:text-[#dcddde]'
+            ? 'bg-th-bg-accent/50 text-th-green'
+            : 'text-th-text-secondary hover:bg-th-bg-primary hover:text-th-text-primary'
         }`}
       >
         {/* Speaker icon */}
         <svg
           className={`h-5 w-5 flex-shrink-0 ${
-            isActive ? 'text-[#3ba55c]' : 'text-[#96989d]'
+            isActive ? 'text-th-green' : 'text-th-text-secondary'
           }`}
           viewBox="0 0 24 24"
           fill="currentColor"
@@ -59,7 +59,7 @@ export function VoiceChannel({ channel, serverId, onJoin }: VoiceChannelProps) {
         </svg>
         <span className="truncate">{channel.name}</span>
         {isConnecting && isActive && (
-          <span className="ml-auto text-xs text-[#faa61a]">Connecting...</span>
+          <span className="ml-auto text-xs text-th-yellow">Connecting...</span>
         )}
       </button>
 

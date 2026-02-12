@@ -26,7 +26,7 @@ export function ServerSettingsSidebar({
 
   return (
     <nav className="flex flex-col gap-0.5">
-      <h3 className="mb-1 truncate px-2.5 text-xs font-bold uppercase text-[#96989d]">
+      <h3 className="mb-1 truncate px-2.5 text-xs font-bold uppercase text-th-text-secondary">
         {serverName}
       </h3>
       {mainItems.map((item) => (
@@ -35,8 +35,8 @@ export function ServerSettingsSidebar({
           onClick={() => onTabChange(item.id)}
           className={`rounded px-2.5 py-1.5 text-left text-sm font-medium transition-colors ${
             activeTab === item.id
-              ? 'bg-[#42444a] text-white'
-              : 'text-[#96989d] hover:bg-[#36393f] hover:text-[#dcddde]'
+              ? 'bg-th-bg-accent text-white'
+              : 'text-th-text-secondary hover:bg-th-bg-primary hover:text-th-text-primary'
           }`}
         >
           {item.label}
@@ -44,15 +44,15 @@ export function ServerSettingsSidebar({
       ))}
       {dangerItems.length > 0 && (
         <>
-          <div className="my-1 border-t border-[#42444a]" />
+          <div className="my-1 border-t border-th-border" />
           {dangerItems.map((item) => (
             <button
               key={item.id}
               onClick={() => onTabChange(item.id)}
               className={`rounded px-2.5 py-1.5 text-left text-sm font-medium transition-colors ${
                 activeTab === item.id
-                  ? 'bg-[#ed4245]/20 text-[#ed4245]'
-                  : 'text-[#ed4245] hover:bg-[#ed4245]/10'
+                  ? 'bg-th-red/20 text-th-red'
+                  : 'text-th-red hover:bg-th-red/10'
               }`}
             >
               {item.label}

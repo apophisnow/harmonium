@@ -32,10 +32,10 @@ const iconsByType: Record<ToastVariant, ReactNode> = {
 };
 
 const colorsByType: Record<ToastVariant, string> = {
-  success: 'border-[#3ba55c] text-[#3ba55c]',
-  error: 'border-[#ed4245] text-[#ed4245]',
-  warning: 'border-[#faa61a] text-[#faa61a]',
-  info: 'border-[#5865f2] text-[#5865f2]',
+  success: 'border-th-green text-th-green',
+  error: 'border-th-red text-th-red',
+  warning: 'border-th-yellow text-th-yellow',
+  info: 'border-th-brand text-th-brand',
 };
 
 function ToastItem({ toast }: { toast: ToastType }) {
@@ -55,7 +55,7 @@ function ToastItem({ toast }: { toast: ToastType }) {
 
   return (
     <div
-      className={`flex items-center gap-3 rounded-lg border-l-4 bg-[#2f3136] px-4 py-3 shadow-lg transition-all duration-200 ${
+      className={`flex items-center gap-3 rounded-lg border-l-4 bg-th-bg-secondary px-4 py-3 shadow-lg transition-all duration-200 ${
         colorsByType[toast.type]
       } ${
         isVisible
@@ -64,10 +64,10 @@ function ToastItem({ toast }: { toast: ToastType }) {
       }`}
     >
       <div className="flex-shrink-0">{iconsByType[toast.type]}</div>
-      <p className="flex-1 text-sm text-[#dcddde]">{toast.message}</p>
+      <p className="flex-1 text-sm text-th-text-primary">{toast.message}</p>
       <button
         onClick={handleClose}
-        className="flex-shrink-0 text-[#96989d] transition-colors hover:text-[#dcddde]"
+        className="flex-shrink-0 text-th-text-secondary transition-colors hover:text-th-text-primary"
       >
         <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
           <line x1="18" y1="6" x2="6" y2="18" />

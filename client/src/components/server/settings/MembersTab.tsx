@@ -102,7 +102,7 @@ export function MembersTab({ roles, currentServerId, isOwner }: MembersTabProps)
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <h2 className="text-xl font-bold text-white">Members</h2>
-        <span className="text-sm text-[#96989d]">
+        <span className="text-sm text-th-text-secondary">
           {members.length} member{members.length !== 1 ? 's' : ''}
         </span>
       </div>
@@ -113,10 +113,10 @@ export function MembersTab({ roles, currentServerId, isOwner }: MembersTabProps)
         value={search}
         onChange={(e) => setSearch(e.target.value)}
         placeholder="Search members"
-        className="w-full rounded bg-[#202225] px-3 py-2 text-sm text-[#dcddde] placeholder-[#72767d] outline-none focus:ring-2 focus:ring-[#5865f2]"
+        className="w-full rounded bg-th-bg-tertiary px-3 py-2 text-sm text-th-text-primary placeholder-th-text-muted outline-none focus:ring-2 focus:ring-th-brand"
       />
 
-      {error && <p className="text-sm text-[#ed4245]">{error}</p>}
+      {error && <p className="text-sm text-th-red">{error}</p>}
 
       {/* Member list */}
       <div className="space-y-1">
@@ -131,9 +131,9 @@ export function MembersTab({ roles, currentServerId, isOwner }: MembersTabProps)
           const isExpanded = expandedUserId === member.userId;
 
           return (
-            <div key={member.userId} className="rounded-lg bg-[#2f3136]">
+            <div key={member.userId} className="rounded-lg bg-th-bg-secondary">
               <div
-                className={`flex items-center gap-3 rounded-lg px-3 py-2 transition-colors hover:bg-[#36393f] cursor-pointer ${
+                className={`flex items-center gap-3 rounded-lg px-3 py-2 transition-colors hover:bg-th-bg-primary cursor-pointer ${
                   isOffline ? 'opacity-60' : ''
                 }`}
                 onClick={() => setExpandedUserId(isExpanded ? null : member.userId)}
@@ -146,16 +146,16 @@ export function MembersTab({ roles, currentServerId, isOwner }: MembersTabProps)
                 />
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-1.5">
-                    <span className="truncate text-sm font-medium text-[#dcddde]">
+                    <span className="truncate text-sm font-medium text-th-text-primary">
                       {username}
                     </span>
                     {isMemberOwner && (
-                      <svg className="h-3.5 w-3.5 flex-shrink-0 text-[#faa61a]" viewBox="0 0 24 24" fill="currentColor">
+                      <svg className="h-3.5 w-3.5 flex-shrink-0 text-th-yellow" viewBox="0 0 24 24" fill="currentColor">
                         <path d="M2 19h20l-2-8-5 4-3-6-3 6-5-4-2 8z" />
                       </svg>
                     )}
                     {member.user?.discriminator && (
-                      <span className="text-xs text-[#72767d]">#{member.user.discriminator}</span>
+                      <span className="text-xs text-th-text-muted">#{member.user.discriminator}</span>
                     )}
                   </div>
                   {memberRoles.length > 0 && (
@@ -163,7 +163,7 @@ export function MembersTab({ roles, currentServerId, isOwner }: MembersTabProps)
                       {memberRoles.map((role) => (
                         <span
                           key={role.id}
-                          className="inline-flex items-center gap-0.5 rounded-full bg-[#292b2f] px-1.5 py-0 text-[10px] text-[#96989d]"
+                          className="inline-flex items-center gap-0.5 rounded-full bg-th-bg-card px-1.5 py-0 text-[10px] text-th-text-secondary"
                         >
                           <span
                             className="inline-block h-2 w-2 rounded-full"
@@ -183,10 +183,10 @@ export function MembersTab({ roles, currentServerId, isOwner }: MembersTabProps)
 
               {/* Expanded: role management + kick */}
               {isExpanded && (
-                <div className="border-t border-[#42444a] px-3 py-2 space-y-2">
+                <div className="border-t border-th-border px-3 py-2 space-y-2">
                   {canManageRoles && !isSelf && (
                     <div>
-                      <h4 className="mb-1 text-xs font-semibold uppercase text-[#96989d]">Roles</h4>
+                      <h4 className="mb-1 text-xs font-semibold uppercase text-th-text-secondary">Roles</h4>
                       {nonDefaultRoles.length > 0 ? (
                         <div className="flex flex-wrap gap-1">
                           {nonDefaultRoles.map((role) => {
@@ -198,8 +198,8 @@ export function MembersTab({ roles, currentServerId, isOwner }: MembersTabProps)
                                 disabled={togglingRoleId === role.id}
                                 className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-xs transition-colors disabled:opacity-50 ${
                                   has
-                                    ? 'border-[#5865f2] bg-[#5865f2]/20 text-[#dcddde]'
-                                    : 'border-[#42444a] text-[#96989d] hover:border-[#5865f2]'
+                                    ? 'border-th-brand bg-th-brand/20 text-th-text-primary'
+                                    : 'border-th-border text-th-text-secondary hover:border-th-brand'
                                 }`}
                               >
                                 <span
@@ -217,7 +217,7 @@ export function MembersTab({ roles, currentServerId, isOwner }: MembersTabProps)
                           })}
                         </div>
                       ) : (
-                        <p className="text-xs text-[#72767d]">No roles created yet. Create roles in the Roles tab.</p>
+                        <p className="text-xs text-th-text-muted">No roles created yet. Create roles in the Roles tab.</p>
                       )}
                     </div>
                   )}
@@ -226,17 +226,17 @@ export function MembersTab({ roles, currentServerId, isOwner }: MembersTabProps)
                     <div>
                       {confirmKickUserId === member.userId ? (
                         <div className="flex items-center gap-2">
-                          <span className="text-xs text-[#ed4245]">Kick {username}?</span>
+                          <span className="text-xs text-th-red">Kick {username}?</span>
                           <button
                             onClick={() => setConfirmKickUserId(null)}
-                            className="text-xs text-[#96989d] hover:underline"
+                            className="text-xs text-th-text-secondary hover:underline"
                           >
                             Cancel
                           </button>
                           <button
                             onClick={() => handleKick(member.userId)}
                             disabled={kickingUserId === member.userId}
-                            className="flex items-center gap-1 rounded bg-[#ed4245] px-2 py-0.5 text-xs font-medium text-white hover:bg-[#c03537] disabled:opacity-50"
+                            className="flex items-center gap-1 rounded bg-th-red px-2 py-0.5 text-xs font-medium text-white hover:bg-th-red-hover disabled:opacity-50"
                           >
                             {kickingUserId === member.userId && <LoadingSpinner size={10} />}
                             Confirm
@@ -245,7 +245,7 @@ export function MembersTab({ roles, currentServerId, isOwner }: MembersTabProps)
                       ) : (
                         <button
                           onClick={() => setConfirmKickUserId(member.userId)}
-                          className="text-xs text-[#ed4245] hover:underline"
+                          className="text-xs text-th-red hover:underline"
                         >
                           Kick Member
                         </button>
@@ -258,8 +258,8 @@ export function MembersTab({ roles, currentServerId, isOwner }: MembersTabProps)
           );
         })}
         {sorted.length === 0 && (
-          <div className="flex h-32 items-center justify-center rounded-lg bg-[#2f3136]">
-            <p className="text-sm text-[#72767d]">
+          <div className="flex h-32 items-center justify-center rounded-lg bg-th-bg-secondary">
+            <p className="text-sm text-th-text-muted">
               {search ? 'No members match your search' : 'No members'}
             </p>
           </div>

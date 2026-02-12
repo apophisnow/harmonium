@@ -1,0 +1,32 @@
+[data-theme="harmonium"][data-mode="dark"] {
+  --bg-primary: #36393f;
+  --bg-secondary: #2f3136;
+  --bg-tertiary: #202225;
+  --bg-accent: #40444b;
+  --bg-floating: #18191c;
+  --bg-card: #292b2f;
+  --bg-message-hover: #32353b;
+
+  --text-primary: #dcddde;
+  --text-secondary: #96989d;
+  --text-tertiary: #b9bbbe;
+  --text-muted: #72767d;
+  --text-link: #00aff4;
+
+  --border: #42444a;
+  --border-strong: #040405;
+
+  --brand: #5865f2;
+  --brand-hover: #4752c4;
+
+  --status-green: #3ba55c;
+  --status-green-hover: #2d7d46;
+  --status-yellow: #faa61a;
+  --status-red: #ed4245;
+  --status-red-hover: #c03537;
+
+  --disabled: #4f5660;
+  --role-default: #99aab5;
+
+  --font-family: "gg sans", "Noto Sans", "Helvetica Neue", Helvetica, Arial, sans-serif;
+}

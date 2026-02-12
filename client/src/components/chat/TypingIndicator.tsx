@@ -25,7 +25,7 @@ export function TypingIndicator({ typingUsers }: TypingIndicatorProps) {
   })();
 
   return (
-    <div className="absolute bottom-0 left-4 right-4 flex items-center gap-1.5 pb-0.5 text-xs text-[#dcddde]">
+    <div className="absolute bottom-0 left-4 right-4 flex items-center gap-1.5 pb-0.5 text-xs text-th-text-primary">
       {/* Animated dots */}
       <span className="flex gap-0.5">
         <span className="inline-block h-1 w-1 animate-bounce rounded-full bg-white [animation-delay:0ms]" />

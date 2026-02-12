@@ -16,8 +16,8 @@ function AuthGuard({ children }: { children: ReactNode }) {
 
   if (isLoading) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-[#202225]">
-        <LoadingSpinner size={48} className="text-[#5865f2]" />
+      <div className="flex min-h-screen items-center justify-center bg-th-bg-tertiary">
+        <LoadingSpinner size={48} className="text-th-brand" />
       </div>
     );
   }
@@ -35,8 +35,8 @@ function RootRedirect() {
 
   if (isLoading) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-[#202225]">
-        <LoadingSpinner size={48} className="text-[#5865f2]" />
+      <div className="flex min-h-screen items-center justify-center bg-th-bg-tertiary">
+        <LoadingSpinner size={48} className="text-th-brand" />
       </div>
     );
   }

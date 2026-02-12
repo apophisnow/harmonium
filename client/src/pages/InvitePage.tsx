@@ -46,36 +46,36 @@ export function InvitePage() {
 
   if (isLoading) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-[#202225]">
-        <LoadingSpinner size={48} className="text-[#5865f2]" />
+      <div className="flex min-h-screen items-center justify-center bg-th-bg-tertiary">
+        <LoadingSpinner size={48} className="text-th-brand" />
       </div>
     );
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-[#202225] p-4">
-      <div className="w-full max-w-md rounded-lg bg-[#2f3136] p-8 text-center shadow-xl">
+    <div className="flex min-h-screen items-center justify-center bg-th-bg-tertiary p-4">
+      <div className="w-full max-w-md rounded-lg bg-th-bg-secondary p-8 text-center shadow-xl">
         {error && !invite ? (
           <>
             <h2 className="mb-2 text-2xl font-bold text-white">
               Invalid Invite
             </h2>
-            <p className="mb-6 text-[#96989d]">{error}</p>
+            <p className="mb-6 text-th-text-secondary">{error}</p>
             <button
               onClick={() => navigate('/')}
-              className="rounded bg-[#5865f2] px-6 py-2 text-sm font-medium text-white hover:bg-[#4752c4] transition-colors"
+              className="rounded bg-th-brand px-6 py-2 text-sm font-medium text-white hover:bg-th-brand-hover transition-colors"
             >
               Go Home
             </button>
           </>
         ) : invite ? (
           <>
-            <p className="mb-4 text-sm uppercase text-[#96989d]">
+            <p className="mb-4 text-sm uppercase text-th-text-secondary">
               You have been invited to join
             </p>
 
             {/* Server icon */}
-            <div className="mx-auto mb-4 flex h-20 w-20 items-center justify-center rounded-2xl bg-[#36393f]">
+            <div className="mx-auto mb-4 flex h-20 w-20 items-center justify-center rounded-2xl bg-th-bg-primary">
               {invite.server?.iconUrl ? (
                 <img
                   src={invite.server.iconUrl}
@@ -94,17 +94,17 @@ export function InvitePage() {
             </h2>
 
             {invite.inviter && (
-              <p className="mb-6 text-sm text-[#96989d]">
+              <p className="mb-6 text-sm text-th-text-secondary">
                 Invited by {invite.inviter.username}
               </p>
             )}
 
-            {error && <p className="mb-4 text-sm text-[#ed4245]">{error}</p>}
+            {error && <p className="mb-4 text-sm text-th-red">{error}</p>}
 
             <button
               onClick={handleAccept}
               disabled={isAccepting}
-              className="flex w-full items-center justify-center gap-2 rounded bg-[#5865f2] px-6 py-3 text-sm font-medium text-white transition-colors hover:bg-[#4752c4] disabled:opacity-50 disabled:cursor-not-allowed"
+              className="flex w-full items-center justify-center gap-2 rounded bg-th-brand px-6 py-3 text-sm font-medium text-white transition-colors hover:bg-th-brand-hover disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {isAccepting && <LoadingSpinner size={16} />}
               {isAuthenticated ? 'Accept Invite' : 'Log In to Accept'}

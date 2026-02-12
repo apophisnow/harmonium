@@ -1,0 +1,55 @@
+/* Crayon theme visual effects — applied in both dark and light modes */
+
+[data-theme="crayon"] {
+  /* Wobbly hand-drawn borders on common rounded elements */
+  & button,
+  & input,
+  & textarea,
+  & [class*="rounded"] {
+    border-radius: 255px 15px 225px 15px / 15px 225px 15px 255px !important;
+  }
+
+  /* Keep circular elements circular (avatars, status dots) */
+  & [class*="rounded-full"] {
+    border-radius: 50% !important;
+  }
+
+  /* Thicker visible borders on panels and cards */
+  & [class*="border"] {
+    border-width: 2px;
+    border-style: solid;
+  }
+
+  /* Subtle crayon scribble shadow on cards and floating elements */
+  & [class*="shadow"],
+  & [class*="bg-th-bg-card"],
+  & [class*="bg-th-bg-floating"] {
+    box-shadow:
+      3px 3px 0 var(--border),
+      -1px -1px 0 var(--border);
+  }
+
+  /* Slight random rotation on sidebar items for hand-drawn feel */
+  & nav li:nth-child(odd),
+  & [class*="flex"][class*="items-center"][class*="gap"]:nth-child(odd) > :first-child {
+    transform: rotate(-0.5deg);
+  }
+
+  & nav li:nth-child(even),
+  & [class*="flex"][class*="items-center"][class*="gap"]:nth-child(even) > :first-child {
+    transform: rotate(0.5deg);
+  }
+
+  /* Fun hover wiggle animation */
+  & button:hover {
+    animation: crayon-wiggle 0.3s ease-in-out;
+  }
+}
+
+@keyframes crayon-wiggle {
+  0% { transform: rotate(0deg); }
+  25% { transform: rotate(-2deg); }
+  50% { transform: rotate(2deg); }
+  75% { transform: rotate(-1deg); }
+  100% { transform: rotate(0deg); }
+}

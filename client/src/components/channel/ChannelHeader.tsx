@@ -16,12 +16,12 @@ export function ChannelHeader({ channel }: ChannelHeaderProps) {
 
   if (!channel) {
     return (
-      <div className="flex h-12 items-center border-b border-[#202225] bg-[#36393f] px-4 shadow-sm">
+      <div className="flex h-12 items-center border-b border-th-border bg-th-bg-primary px-4 shadow-sm">
         {/* Hamburger menu - mobile only */}
         {isMobile && (
           <button
             onClick={toggleMobileSidebar}
-            className="mr-3 rounded p-1.5 text-[#96989d] hover:text-[#dcddde] transition-colors md:hidden"
+            className="mr-3 rounded p-1.5 text-th-text-secondary hover:text-th-text-primary transition-colors md:hidden"
             title="Toggle Sidebar"
           >
             <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -29,18 +29,18 @@ export function ChannelHeader({ channel }: ChannelHeaderProps) {
             </svg>
           </button>
         )}
-        <span className="text-sm text-[#96989d]">Select a channel</span>
+        <span className="text-sm text-th-text-secondary">Select a channel</span>
       </div>
     );
   }
 
   return (
-    <div className="flex h-12 items-center border-b border-[#202225] bg-[#36393f] px-4 shadow-sm">
+    <div className="flex h-12 items-center border-b border-th-border bg-th-bg-primary px-4 shadow-sm">
       {/* Hamburger menu - mobile only */}
       {isMobile && (
         <button
           onClick={toggleMobileSidebar}
-          className="mr-3 rounded p-1.5 text-[#96989d] hover:text-[#dcddde] transition-colors md:hidden"
+          className="mr-3 rounded p-1.5 text-th-text-secondary hover:text-th-text-primary transition-colors md:hidden"
           title="Toggle Sidebar"
         >
           <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -52,10 +52,10 @@ export function ChannelHeader({ channel }: ChannelHeaderProps) {
       {/* Channel name */}
       <div className="flex items-center gap-2">
         {channel.type === 'text' ? (
-          <span className="text-xl text-[#96989d]">#</span>
+          <span className="text-xl text-th-text-secondary">#</span>
         ) : (
           <svg
-            className="h-5 w-5 text-[#96989d]"
+            className="h-5 w-5 text-th-text-secondary"
             viewBox="0 0 24 24"
             fill="currentColor"
           >
@@ -64,7 +64,7 @@ export function ChannelHeader({ channel }: ChannelHeaderProps) {
         )}
         <h2 className="font-semibold text-white">{channel.name}</h2>
         {channel.type === 'voice' && voiceParticipantCount > 0 && (
-          <span className="text-xs text-[#96989d]">
+          <span className="text-xs text-th-text-secondary">
             {voiceParticipantCount} participant{voiceParticipantCount !== 1 ? 's' : ''}
           </span>
         )}
@@ -73,8 +73,8 @@ export function ChannelHeader({ channel }: ChannelHeaderProps) {
       {/* Topic divider */}
       {channel.topic && (
         <>
-          <div className="mx-3 h-6 w-px bg-[#40444b]" />
-          <p className="truncate text-sm text-[#96989d]">{channel.topic}</p>
+          <div className="mx-3 h-6 w-px bg-th-bg-accent" />
+          <p className="truncate text-sm text-th-text-secondary">{channel.topic}</p>
         </>
       )}
 
@@ -86,8 +86,8 @@ export function ChannelHeader({ channel }: ChannelHeaderProps) {
         onClick={toggleMemberSidebar}
         className={`hidden rounded p-1.5 transition-colors md:block ${
           showMemberSidebar
-            ? 'text-white bg-[#40444b]'
-            : 'text-[#96989d] hover:text-[#dcddde]'
+            ? 'text-white bg-th-bg-accent'
+            : 'text-th-text-secondary hover:text-th-text-primary'
         }`}
         title="Toggle Member List"
       >

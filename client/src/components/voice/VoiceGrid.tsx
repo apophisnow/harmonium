@@ -116,14 +116,14 @@ export function VoiceGrid({ compact = false, expanded = false }: VoiceGridProps)
   const avatarText = compact ? 'text-sm' : expanded ? 'text-3xl' : 'text-2xl';
 
   const containerClass = expanded
-    ? 'flex flex-1 flex-col items-center justify-center bg-[#2f3136] p-4'
+    ? 'flex flex-1 flex-col items-center justify-center bg-th-bg-secondary p-4'
     : compact
       ? 'flex flex-col'
-      : 'flex flex-col border-b border-[#202225]';
+      : 'flex flex-col border-b border-th-border';
 
   const gridClass = expanded
     ? `grid ${gridCols} gap-3 w-full max-w-4xl`
-    : `grid ${gridCols} gap-1.5 bg-[#2f3136] p-1.5`;
+    : `grid ${gridCols} gap-1.5 bg-th-bg-secondary p-1.5`;
 
   return (
     <div className={containerClass}>
@@ -134,10 +134,10 @@ export function VoiceGrid({ compact = false, expanded = false }: VoiceGridProps)
           return (
             <div
               key={participant.userId}
-              className={`relative overflow-hidden rounded-lg bg-[#202225] aspect-video transition-shadow ${
+              className={`relative overflow-hidden rounded-lg bg-th-bg-tertiary aspect-video transition-shadow ${
                 participant.isSpeaking
-                  ? 'ring-2 ring-[#3ba55c]'
-                  : 'ring-1 ring-[#2f3136]'
+                  ? 'ring-2 ring-th-green'
+                  : 'ring-1 ring-th-bg-secondary'
               }`}
             >
               {hasStream ? (
@@ -157,7 +157,7 @@ export function VoiceGrid({ compact = false, expanded = false }: VoiceGridProps)
                       className={`${avatarSize} rounded-full object-cover`}
                     />
                   ) : (
-                    <div className={`flex ${avatarSize} items-center justify-center rounded-full bg-[#5865f2] ${avatarText} font-semibold text-white`}>
+                    <div className={`flex ${avatarSize} items-center justify-center rounded-full bg-th-brand ${avatarText} font-semibold text-white`}>
                       {participant.username.charAt(0).toUpperCase()}
                     </div>
                   )}
@@ -173,7 +173,7 @@ export function VoiceGrid({ compact = false, expanded = false }: VoiceGridProps)
                   <div className="ml-auto flex items-center gap-0.5">
                     {participant.isMuted && (
                       <svg
-                        className={`${compact ? 'h-2.5 w-2.5' : 'h-3 w-3'} text-[#ed4245]`}
+                        className={`${compact ? 'h-2.5 w-2.5' : 'h-3 w-3'} text-th-red`}
                         viewBox="0 0 24 24"
                         fill="currentColor"
                       >
@@ -183,7 +183,7 @@ export function VoiceGrid({ compact = false, expanded = false }: VoiceGridProps)
                     )}
                     {!compact && participant.isDeafened && (
                       <svg
-                        className="h-3 w-3 text-[#ed4245]"
+                        className="h-3 w-3 text-th-red"
                         viewBox="0 0 24 24"
                         fill="currentColor"
                       >
@@ -192,7 +192,7 @@ export function VoiceGrid({ compact = false, expanded = false }: VoiceGridProps)
                     )}
                     {!compact && participant.isScreenSharing && (
                       <svg
-                        className="h-3 w-3 text-[#3ba55c]"
+                        className="h-3 w-3 text-th-green"
                         viewBox="0 0 24 24"
                         fill="currentColor"
                       >
@@ -207,7 +207,7 @@ export function VoiceGrid({ compact = false, expanded = false }: VoiceGridProps)
         })}
       </div>
       {overflow > 0 && (
-        <p className="py-1 text-center text-[10px] text-[#96989d]">
+        <p className="py-1 text-center text-[10px] text-th-text-secondary">
           +{overflow} more
         </p>
       )}

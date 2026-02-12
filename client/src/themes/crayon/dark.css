@@ -1,0 +1,32 @@
+[data-theme="crayon"][data-mode="dark"] {
+  --bg-primary: #2a1f3d;
+  --bg-secondary: #231a33;
+  --bg-tertiary: #1c142a;
+  --bg-accent: #352a4a;
+  --bg-floating: #150f22;
+  --bg-card: #1f1630;
+  --bg-message-hover: #312647;
+
+  --text-primary: #f0e6d3;
+  --text-secondary: #c4a882;
+  --text-tertiary: #a88f6f;
+  --text-muted: #8b7355;
+  --text-link: #45b7d1;
+
+  --border: #5c4033;
+  --border-strong: #3d2a1e;
+
+  --brand: #ff6b6b;
+  --brand-hover: #e05555;
+
+  --status-green: #4ecdc4;
+  --status-green-hover: #3ab5ad;
+  --status-yellow: #ffe66d;
+  --status-red: #ff6b6b;
+  --status-red-hover: #e05555;
+
+  --disabled: #6b5a4e;
+  --role-default: #c4a882;
+
+  --font-family: "Comic Sans MS", "Comic Sans", cursive, "Noto Sans", sans-serif;
+}

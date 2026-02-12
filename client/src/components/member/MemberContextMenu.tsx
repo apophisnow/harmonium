@@ -108,11 +108,11 @@ export function MemberContextMenu({ member, roles, position, onClose }: MemberCo
   return (
     <div
       ref={menuRef}
-      className="fixed z-50 w-64 rounded-lg bg-[#18191c] shadow-xl border border-[#2f3136]"
+      className="fixed z-50 w-64 rounded-lg bg-th-bg-floating shadow-xl border border-th-border"
       style={{ left: adjustedPosition.x, top: adjustedPosition.y }}
     >
       {/* Header */}
-      <div className="flex items-center gap-3 border-b border-[#2f3136] px-3 py-3">
+      <div className="flex items-center gap-3 border-b border-th-border px-3 py-3">
         <UserAvatar
           username={username}
           avatarUrl={member.user?.avatarUrl}
@@ -123,33 +123,33 @@ export function MemberContextMenu({ member, roles, position, onClose }: MemberCo
           <div className="flex items-center gap-1">
             <span className="truncate text-sm font-semibold text-white">{username}</span>
             {isTargetOwner && (
-              <svg className="h-4 w-4 flex-shrink-0 text-[#faa61a]" viewBox="0 0 24 24" fill="currentColor">
+              <svg className="h-4 w-4 flex-shrink-0 text-th-yellow" viewBox="0 0 24 24" fill="currentColor">
                 <path d="M2 19h20l-2-8-5 4-3-6-3 6-5-4-2 8z" />
               </svg>
             )}
           </div>
           {member.user?.discriminator && (
-            <span className="text-xs text-[#96989d]">#{member.user.discriminator}</span>
+            <span className="text-xs text-th-text-secondary">#{member.user.discriminator}</span>
           )}
         </div>
       </div>
 
       {/* Roles section */}
       {canManageRoles && !isSelf && nonDefaultRoles.length > 0 && (
-        <div className="border-b border-[#2f3136] px-3 py-2">
-          <h4 className="mb-1.5 text-xs font-semibold uppercase text-[#96989d]">Roles</h4>
+        <div className="border-b border-th-border px-3 py-2">
+          <h4 className="mb-1.5 text-xs font-semibold uppercase text-th-text-secondary">Roles</h4>
           <div className="max-h-40 space-y-0.5 overflow-y-auto">
             {nonDefaultRoles.map((role) => (
               <label
                 key={role.id}
-                className="flex items-center gap-2 rounded px-1.5 py-1 hover:bg-[#2f3136] cursor-pointer"
+                className="flex items-center gap-2 rounded px-1.5 py-1 hover:bg-th-bg-secondary cursor-pointer"
               >
                 <input
                   type="checkbox"
                   checked={memberRoleIds.has(role.id)}
                   onChange={() => handleToggleRole(role.id)}
                   disabled={togglingRoleId === role.id}
-                  className="h-3.5 w-3.5 accent-[#5865f2]"
+                  className="h-3.5 w-3.5 accent-th-brand"
                 />
                 <span
                   className="inline-block h-2.5 w-2.5 flex-shrink-0 rounded-full"
@@ -159,7 +159,7 @@ export function MemberContextMenu({ member, roles, position, onClose }: MemberCo
                       : '#99aab5',
                   }}
                 />
-                <span className="truncate text-sm text-[#dcddde]">{role.name}</span>
+                <span className="truncate text-sm text-th-text-primary">{role.name}</span>
                 {togglingRoleId === role.id && <LoadingSpinner size={12} />}
               </label>
             ))}
@@ -173,27 +173,27 @@ export function MemberContextMenu({ member, roles, position, onClose }: MemberCo
           {!showKickConfirm ? (
             <button
               onClick={() => setShowKickConfirm(true)}
-              className="w-full rounded px-2 py-1.5 text-left text-sm text-[#ed4245] hover:bg-[#ed4245]/10 transition-colors"
+              className="w-full rounded px-2 py-1.5 text-left text-sm text-th-red hover:bg-th-red/10 transition-colors"
             >
               Kick {username}
             </button>
           ) : (
             <div className="space-y-2">
-              <p className="text-xs text-[#ed4245]">
+              <p className="text-xs text-th-red">
                 Kick <span className="font-semibold">{username}</span> from the server?
               </p>
               <div className="flex gap-2">
                 <button
                   onClick={() => setShowKickConfirm(false)}
                   disabled={isKicking}
-                  className="flex-1 rounded px-2 py-1 text-xs text-[#dcddde] hover:underline"
+                  className="flex-1 rounded px-2 py-1 text-xs text-th-text-primary hover:underline"
                 >
                   Cancel
                 </button>
                 <button
                   onClick={handleKick}
                   disabled={isKicking}
-                  className="flex flex-1 items-center justify-center gap-1 rounded bg-[#ed4245] px-2 py-1 text-xs font-medium text-white transition-colors hover:bg-[#c03537] disabled:opacity-50"
+                  className="flex flex-1 items-center justify-center gap-1 rounded bg-th-red px-2 py-1 text-xs font-medium text-white transition-colors hover:bg-th-red-hover disabled:opacity-50"
                 >
                   {isKicking && <LoadingSpinner size={12} />}
                   Kick
@@ -205,7 +205,7 @@ export function MemberContextMenu({ member, roles, position, onClose }: MemberCo
       )}
 
       {error && (
-        <p className="px-3 pb-2 text-xs text-[#ed4245]">{error}</p>
+        <p className="px-3 pb-2 text-xs text-th-red">{error}</p>
       )}
     </div>
   );

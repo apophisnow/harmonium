@@ -141,7 +141,7 @@ export function MemberUserCard({ member, roles, position, onClose }: MemberUserC
   return createPortal(
     <div
       ref={cardRef}
-      className="fixed z-50 w-[300px] overflow-hidden rounded-lg bg-[#292b2f] shadow-xl"
+      className="fixed z-50 w-[300px] overflow-hidden rounded-lg bg-th-bg-card shadow-xl"
       style={{ left: adjustedPosition.x, top: adjustedPosition.y }}
     >
       {/* Banner */}
@@ -149,7 +149,7 @@ export function MemberUserCard({ member, roles, position, onClose }: MemberUserC
 
       {/* Avatar — overlapping the banner */}
       <div className="relative px-4">
-        <div className="-mt-10 mb-2 w-fit rounded-full border-[5px] border-[#292b2f]">
+        <div className="-mt-10 mb-2 w-fit rounded-full border-[5px] border-th-bg-card">
           <UserAvatar
             username={username}
             avatarUrl={member.user?.avatarUrl}
@@ -164,33 +164,33 @@ export function MemberUserCard({ member, roles, position, onClose }: MemberUserC
         <div className="flex items-center gap-1">
           <span className="text-xl font-bold text-white">{username}</span>
           {isTargetOwner && (
-            <svg className="h-5 w-5 flex-shrink-0 text-[#faa61a]" viewBox="0 0 24 24" fill="currentColor">
+            <svg className="h-5 w-5 flex-shrink-0 text-th-yellow" viewBox="0 0 24 24" fill="currentColor">
               <path d="M2 19h20l-2-8-5 4-3-6-3 6-5-4-2 8z" />
             </svg>
           )}
         </div>
         {discriminator && (
-          <span className="text-sm text-[#b9bbbe]">{username}#{discriminator}</span>
+          <span className="text-sm text-th-text-tertiary">{username}#{discriminator}</span>
         )}
         {customStatus && (
-          <p className="mt-1 text-sm text-[#b9bbbe]">{customStatus}</p>
+          <p className="mt-1 text-sm text-th-text-tertiary">{customStatus}</p>
         )}
       </div>
 
-      <div className="mx-4 border-t border-[#3f4147]" />
+      <div className="mx-4 border-t border-th-border" />
 
       {/* About Me */}
       {aboutMe && (
         <div className="px-4 py-3">
           <h4 className="mb-1 text-xs font-bold uppercase text-white">About Me</h4>
-          <p className="whitespace-pre-wrap text-sm text-[#b9bbbe]">{aboutMe}</p>
+          <p className="whitespace-pre-wrap text-sm text-th-text-tertiary">{aboutMe}</p>
         </div>
       )}
 
       {/* Member Since */}
       <div className="px-4 py-3">
         <h4 className="mb-1 text-xs font-bold uppercase text-white">Member Since</h4>
-        <p className="text-sm text-[#b9bbbe]">{formatDate(member.joinedAt)}</p>
+        <p className="text-sm text-th-text-tertiary">{formatDate(member.joinedAt)}</p>
       </div>
 
       {/* Roles */}
@@ -204,7 +204,7 @@ export function MemberUserCard({ member, roles, position, onClose }: MemberUserC
               {memberRoles.map((role) => (
                 <span
                   key={role.id}
-                  className="inline-flex items-center gap-1 rounded bg-[#202225] px-2 py-0.5 text-xs text-[#dcddde]"
+                  className="inline-flex items-center gap-1 rounded bg-th-bg-tertiary px-2 py-0.5 text-xs text-th-text-primary"
                 >
                   <span
                     className="inline-block h-3 w-3 rounded-full"
@@ -218,27 +218,27 @@ export function MemberUserCard({ member, roles, position, onClose }: MemberUserC
 
           {/* Role checkboxes shown directly for role managers */}
           {canManageRoles && !isSelf && (
-            <div className="max-h-40 space-y-0.5 overflow-y-auto rounded bg-[#202225] p-2">
+            <div className="max-h-40 space-y-0.5 overflow-y-auto rounded bg-th-bg-tertiary p-2">
               {nonDefaultRoles.length === 0 ? (
-                <p className="text-center text-xs text-[#72767d]">No roles created yet</p>
+                <p className="text-center text-xs text-th-text-muted">No roles created yet</p>
               ) : (
                 nonDefaultRoles.map((role) => (
                   <label
                     key={role.id}
-                    className="flex items-center gap-2 rounded px-2 py-1 hover:bg-[#36393f] cursor-pointer"
+                    className="flex items-center gap-2 rounded px-2 py-1 hover:bg-th-bg-primary cursor-pointer"
                   >
                     <input
                       type="checkbox"
                       checked={memberRoleIds.has(role.id)}
                       onChange={() => handleToggleRole(role.id)}
                       disabled={togglingRoleId === role.id}
-                      className="h-3.5 w-3.5 accent-[#5865f2]"
+                      className="h-3.5 w-3.5 accent-th-brand"
                     />
                     <span
                       className="inline-block h-2.5 w-2.5 flex-shrink-0 rounded-full"
                       style={{ backgroundColor: roleColorHex(role.color) }}
                     />
-                    <span className="truncate text-sm text-[#dcddde]">{role.name}</span>
+                    <span className="truncate text-sm text-th-text-primary">{role.name}</span>
                     {togglingRoleId === role.id && <LoadingSpinner size={12} />}
                   </label>
                 ))
@@ -251,32 +251,32 @@ export function MemberUserCard({ member, roles, position, onClose }: MemberUserC
       {/* Kick button */}
       {canKick && (
         <>
-          <div className="mx-4 border-t border-[#3f4147]" />
+          <div className="mx-4 border-t border-th-border" />
           <div className="px-4 py-3">
             {!showKickConfirm ? (
               <button
                 onClick={() => setShowKickConfirm(true)}
-                className="w-full rounded px-2 py-1.5 text-left text-sm text-[#ed4245] hover:bg-[#ed4245]/10 transition-colors"
+                className="w-full rounded px-2 py-1.5 text-left text-sm text-th-red hover:bg-th-red/10 transition-colors"
               >
                 Kick {username}
               </button>
             ) : (
               <div className="space-y-2">
-                <p className="text-xs text-[#ed4245]">
+                <p className="text-xs text-th-red">
                   Kick <span className="font-semibold">{username}</span> from the server?
                 </p>
                 <div className="flex gap-2">
                   <button
                     onClick={() => setShowKickConfirm(false)}
                     disabled={isKicking}
-                    className="flex-1 rounded px-2 py-1 text-xs text-[#dcddde] hover:underline"
+                    className="flex-1 rounded px-2 py-1 text-xs text-th-text-primary hover:underline"
                   >
                     Cancel
                   </button>
                   <button
                     onClick={handleKick}
                     disabled={isKicking}
-                    className="flex flex-1 items-center justify-center gap-1 rounded bg-[#ed4245] px-2 py-1 text-xs font-medium text-white transition-colors hover:bg-[#c03537] disabled:opacity-50"
+                    className="flex flex-1 items-center justify-center gap-1 rounded bg-th-red px-2 py-1 text-xs font-medium text-white transition-colors hover:bg-th-red-hover disabled:opacity-50"
                   >
                     {isKicking && <LoadingSpinner size={12} />}
                     Kick
@@ -289,7 +289,7 @@ export function MemberUserCard({ member, roles, position, onClose }: MemberUserC
       )}
 
       {error && (
-        <p className="px-4 pb-3 text-xs text-[#ed4245]">{error}</p>
+        <p className="px-4 pb-3 text-xs text-th-red">{error}</p>
       )}
     </div>,
     document.body,

@@ -21,6 +21,7 @@ import { CreateChannelModal } from '../channel/CreateChannelModal.js';
 import { InviteModal } from '../server/InviteModal.js';
 import { ServerSettings } from '../server/ServerSettings.js';
 import { EditProfileModal } from '../user/EditProfileModal.js';
+import { UserSettingsLayout } from '../user/settings/UserSettingsLayout.js';
 import { ScreenShareViewer } from '../voice/ScreenShareViewer.js';
 import { VoiceGrid } from '../voice/VoiceGrid.js';
 import { VoicePiP } from '../voice/VoicePiP.js';
@@ -156,7 +157,7 @@ export function AppLayout({ sendEvent, isConnected }: AppLayoutProps) {
   return (
     <div className="flex h-screen w-screen flex-col overflow-hidden">
       {!isConnected && (
-        <div className="flex items-center justify-center bg-[#faa61a] px-4 py-1 text-sm font-medium text-white">
+        <div className="flex items-center justify-center bg-th-yellow px-4 py-1 text-sm font-medium text-white">
           Connecting to server...
         </div>
       )}
@@ -215,7 +216,7 @@ export function AppLayout({ sendEvent, isConnected }: AppLayoutProps) {
       )}
 
       {/* Main content area */}
-      <div className="flex min-w-0 flex-1 flex-col bg-[#36393f]">
+      <div className="flex min-w-0 flex-1 flex-col bg-th-bg-primary">
         <ChannelHeader channel={currentChannel} />
 
         {isViewingVoiceChannel ? (
@@ -246,7 +247,7 @@ export function AppLayout({ sendEvent, isConnected }: AppLayoutProps) {
           </>
         ) : (
           <div className="flex flex-1 flex-col items-center justify-center">
-            <p className="text-[#96989d]">
+            <p className="text-th-text-secondary">
               {currentServerId
                 ? 'Select a channel to start chatting'
                 : 'Select a server to get started'}
@@ -254,7 +255,7 @@ export function AppLayout({ sendEvent, isConnected }: AppLayoutProps) {
             {currentServerId && (
               <button
                 onClick={() => openModal('invite')}
-                className="mt-4 rounded bg-[#5865f2] px-4 py-2 text-sm font-medium text-white hover:bg-[#4752c4] transition-colors"
+                className="mt-4 rounded bg-th-brand px-4 py-2 text-sm font-medium text-white hover:bg-th-brand-hover transition-colors"
               >
                 Invite Friends
               </button>
@@ -272,6 +273,7 @@ export function AppLayout({ sendEvent, isConnected }: AppLayoutProps) {
       <InviteModal />
       <ServerSettings />
       <EditProfileModal />
+      <UserSettingsLayout />
       </div>
     </div>
   );

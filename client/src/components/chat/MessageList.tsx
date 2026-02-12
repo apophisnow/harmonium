@@ -85,7 +85,7 @@ export function MessageList({
       {/* Load more indicator */}
       {isLoading && (
         <div className="flex justify-center py-4">
-          <LoadingSpinner size={24} className="text-[#5865f2]" />
+          <LoadingSpinner size={24} className="text-th-brand" />
         </div>
       )}
 
@@ -94,7 +94,7 @@ export function MessageList({
           <h3 className="text-2xl font-bold text-white">
             Welcome to the beginning!
           </h3>
-          <p className="text-sm text-[#96989d]">
+          <p className="text-sm text-th-text-secondary">
             This is the start of this channel.
           </p>
         </div>
@@ -102,7 +102,7 @@ export function MessageList({
 
       {messages.length === 0 && !isLoading && (
         <div className="flex h-full items-center justify-center">
-          <p className="text-[#96989d]">
+          <p className="text-th-text-secondary">
             No messages yet. Start the conversation!
           </p>
         </div>

@@ -36,8 +36,8 @@ function AttachmentDisplay({ attachment }: { attachment: Attachment }) {
   }
 
   return (
-    <div className="mt-1 flex items-center gap-3 rounded bg-[#2f3136] border border-[#202225] px-3 py-2 max-w-[400px]">
-      <svg className="h-8 w-8 flex-shrink-0 text-[#96989d]" viewBox="0 0 24 24" fill="currentColor">
+    <div className="mt-1 flex items-center gap-3 rounded bg-th-bg-secondary border border-th-border px-3 py-2 max-w-[400px]">
+      <svg className="h-8 w-8 flex-shrink-0 text-th-text-secondary" viewBox="0 0 24 24" fill="currentColor">
         <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6zM6 20V4h7v5h5v11H6z" />
       </svg>
       <div className="min-w-0 flex-1">
@@ -45,16 +45,16 @@ function AttachmentDisplay({ attachment }: { attachment: Attachment }) {
           href={attachment.url}
           target="_blank"
           rel="noopener noreferrer"
-          className="block truncate text-sm text-[#00aff4] hover:underline"
+          className="block truncate text-sm text-th-text-link hover:underline"
         >
           {attachment.filename}
         </a>
-        <span className="text-xs text-[#72767d]">{formatFileSize(attachment.sizeBytes)}</span>
+        <span className="text-xs text-th-text-muted">{formatFileSize(attachment.sizeBytes)}</span>
       </div>
       <a
         href={attachment.url}
         download={attachment.filename}
-        className="flex-shrink-0 p-1 text-[#96989d] hover:text-[#dcddde] transition-colors"
+        className="flex-shrink-0 p-1 text-th-text-secondary hover:text-th-text-primary transition-colors"
         title="Download"
       >
         <svg className="h-5 w-5" viewBox="0 0 24 24" fill="currentColor">
@@ -151,14 +151,14 @@ export function MessageItem({ message, isGrouped }: MessageItemProps) {
   if (isGrouped) {
     return (
       <div
-        className="group relative flex items-start px-4 py-0.5 hover:bg-[#32353b]"
+        className="group relative flex items-start px-4 py-0.5 hover:bg-th-bg-message-hover"
         onMouseEnter={() => setIsHovering(true)}
         onMouseLeave={() => setIsHovering(false)}
         onContextMenu={handleContextMenu}
       >
         {/* Timestamp on hover in grouped mode */}
         <span className="w-[72px] flex-shrink-0 pt-0.5 text-right opacity-0 group-hover:opacity-100">
-          <span className="text-[10px] text-[#72767d]">
+          <span className="text-[10px] text-th-text-muted">
             {new Date(message.createdAt).toLocaleTimeString('en-US', {
               hour: 'numeric',
               minute: '2-digit',
@@ -169,26 +169,26 @@ export function MessageItem({ message, isGrouped }: MessageItemProps) {
 
         <div className="min-w-0 flex-1">
           {isEditing ? (
-            <div className="rounded bg-[#40444b] p-2">
+            <div className="rounded bg-th-bg-accent p-2">
               <textarea
                 value={editContent}
                 onChange={(e) => setEditContent(e.target.value)}
                 onKeyDown={handleEditKeyDown}
-                className="w-full resize-none bg-transparent text-sm text-[#dcddde] outline-none"
+                className="w-full resize-none bg-transparent text-sm text-th-text-primary outline-none"
                 autoFocus
                 rows={1}
               />
-              <p className="mt-1 text-xs text-[#96989d]">
+              <p className="mt-1 text-xs text-th-text-secondary">
                 Press Enter to save, Escape to cancel
               </p>
             </div>
           ) : (
             <>
               {message.content && (
-                <p className="text-sm text-[#dcddde] break-words">
+                <p className="text-sm text-th-text-primary break-words">
                   {message.content}
                   {message.editedAt && (
-                    <span className="ml-1 text-[10px] text-[#72767d]">
+                    <span className="ml-1 text-[10px] text-th-text-muted">
                       (edited)
                     </span>
                   )}
@@ -223,7 +223,7 @@ export function MessageItem({ message, isGrouped }: MessageItemProps) {
 
   return (
     <div
-      className="group relative mt-4 flex items-start px-4 py-0.5 hover:bg-[#32353b]"
+      className="group relative mt-4 flex items-start px-4 py-0.5 hover:bg-th-bg-message-hover"
       onMouseEnter={() => setIsHovering(true)}
       onMouseLeave={() => setIsHovering(false)}
       onContextMenu={handleContextMenu}
@@ -242,32 +242,32 @@ export function MessageItem({ message, isGrouped }: MessageItemProps) {
           <span className="font-medium text-white hover:underline cursor-pointer">
             {message.author?.username ?? 'Unknown'}
           </span>
-          <span className="text-xs text-[#72767d]">
+          <span className="text-xs text-th-text-muted">
             {formatDate(message.createdAt)}
           </span>
         </div>
 
         {isEditing ? (
-          <div className="mt-1 rounded bg-[#40444b] p-2">
+          <div className="mt-1 rounded bg-th-bg-accent p-2">
             <textarea
               value={editContent}
               onChange={(e) => setEditContent(e.target.value)}
               onKeyDown={handleEditKeyDown}
-              className="w-full resize-none bg-transparent text-sm text-[#dcddde] outline-none"
+              className="w-full resize-none bg-transparent text-sm text-th-text-primary outline-none"
               autoFocus
               rows={1}
             />
-            <p className="mt-1 text-xs text-[#96989d]">
+            <p className="mt-1 text-xs text-th-text-secondary">
               Press Enter to save, Escape to cancel
             </p>
           </div>
         ) : (
           <>
             {message.content && (
-              <p className="text-sm text-[#dcddde] break-words">
+              <p className="text-sm text-th-text-primary break-words">
                 {message.content}
                 {message.editedAt && (
-                  <span className="ml-1 text-[10px] text-[#72767d]">
+                  <span className="ml-1 text-[10px] text-th-text-muted">
                     (edited)
                   </span>
                 )}
@@ -308,10 +308,10 @@ function MessageActions({
   onDelete: () => void;
 }) {
   return (
-    <div className="absolute -top-3 right-4 flex rounded bg-[#2f3136] shadow-md border border-[#202225]">
+    <div className="absolute -top-3 right-4 flex rounded bg-th-bg-secondary shadow-md border border-th-border">
       <button
         onClick={onEdit}
-        className="rounded-l p-1.5 text-[#96989d] hover:text-[#dcddde] hover:bg-[#36393f] transition-colors"
+        className="rounded-l p-1.5 text-th-text-secondary hover:text-th-text-primary hover:bg-th-bg-primary transition-colors"
         title="Edit"
       >
         <svg className="h-4 w-4" viewBox="0 0 24 24" fill="currentColor">
@@ -320,7 +320,7 @@ function MessageActions({
       </button>
       <button
         onClick={onDelete}
-        className="rounded-r p-1.5 text-[#96989d] hover:text-[#ed4245] hover:bg-[#36393f] transition-colors"
+        className="rounded-r p-1.5 text-th-text-secondary hover:text-th-red hover:bg-th-bg-primary transition-colors"
         title="Delete"
       >
         <svg className="h-4 w-4" viewBox="0 0 24 24" fill="currentColor">

@@ -40,14 +40,14 @@ export function Modal({ isOpen, onClose, title, children }: ModalProps) {
       />
 
       {/* Panel */}
-      <div className="relative z-10 w-full max-w-md rounded-lg bg-[#2f3136] p-6 shadow-xl">
+      <div className="relative z-10 w-full max-w-md rounded-lg bg-th-bg-secondary p-6 shadow-xl">
         {/* Header */}
         {title && (
           <div className="mb-4 flex items-center justify-between">
-            <h2 className="text-xl font-bold text-[#dcddde]">{title}</h2>
+            <h2 className="text-xl font-bold text-th-text-primary">{title}</h2>
             <button
               onClick={onClose}
-              className="rounded p-1 text-[#72767d] hover:text-[#dcddde] transition-colors"
+              className="rounded p-1 text-th-text-muted hover:text-th-text-primary transition-colors"
               aria-label="Close"
             >
               <svg
@@ -68,7 +68,7 @@ export function Modal({ isOpen, onClose, title, children }: ModalProps) {
         {!title && (
           <button
             onClick={onClose}
-            className="absolute right-4 top-4 rounded p-1 text-[#72767d] hover:text-[#dcddde] transition-colors"
+            className="absolute right-4 top-4 rounded p-1 text-th-text-muted hover:text-th-text-primary transition-colors"
             aria-label="Close"
           >
             <svg

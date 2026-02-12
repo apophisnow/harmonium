@@ -119,7 +119,7 @@ export function VoicePiP() {
     return (
       <div
         ref={containerRef}
-        className="absolute bottom-20 right-4 z-30 flex items-center gap-2 rounded-lg border border-[#202225] bg-[#2f3136] px-3 py-2 shadow-lg"
+        className="absolute bottom-20 right-4 z-30 flex items-center gap-2 rounded-lg border border-th-border bg-th-bg-secondary px-3 py-2 shadow-lg"
         style={positionStyle}
       >
         <div
@@ -128,13 +128,13 @@ export function VoicePiP() {
           onPointerMove={handlePointerMove}
           onPointerUp={handlePointerUp}
         >
-          <div className="h-2 w-2 flex-shrink-0 rounded-full bg-[#3ba55c]" />
+          <div className="h-2 w-2 flex-shrink-0 rounded-full bg-th-green" />
           <span className="text-xs font-medium text-white">{channelName}</span>
-          <span className="text-xs text-[#96989d]">({participantCount})</span>
+          <span className="text-xs text-th-text-secondary">({participantCount})</span>
         </div>
         <button
           onClick={() => setIsMinimized(false)}
-          className="rounded p-0.5 text-[#96989d] transition-colors hover:text-white"
+          className="rounded p-0.5 text-th-text-secondary transition-colors hover:text-white"
           title="Show preview"
         >
           <svg className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -143,7 +143,7 @@ export function VoicePiP() {
         </button>
         <button
           onClick={handleExpand}
-          className="rounded p-0.5 text-[#96989d] transition-colors hover:text-white"
+          className="rounded p-0.5 text-th-text-secondary transition-colors hover:text-white"
           title="Open full view"
         >
           <svg className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -157,25 +157,25 @@ export function VoicePiP() {
   return (
     <div
       ref={containerRef}
-      className="absolute bottom-20 right-4 z-30 w-80 overflow-hidden rounded-lg border border-[#202225] bg-[#2f3136] shadow-lg"
+      className="absolute bottom-20 right-4 z-30 w-80 overflow-hidden rounded-lg border border-th-border bg-th-bg-secondary shadow-lg"
       style={positionStyle}
     >
       {/* PiP header — drag handle */}
       <div
-        className="flex cursor-grab items-center justify-between bg-[#292b2f] px-3 py-1.5 active:cursor-grabbing"
+        className="flex cursor-grab items-center justify-between bg-th-bg-card px-3 py-1.5 active:cursor-grabbing"
         onPointerDown={handlePointerDown}
         onPointerMove={handlePointerMove}
         onPointerUp={handlePointerUp}
       >
         <div className="flex min-w-0 items-center gap-1.5">
-          <div className="h-2 w-2 flex-shrink-0 rounded-full bg-[#3ba55c]" />
+          <div className="h-2 w-2 flex-shrink-0 rounded-full bg-th-green" />
           <span className="truncate text-xs font-medium text-white">{channelName}</span>
-          <span className="flex-shrink-0 text-xs text-[#96989d]">({participantCount})</span>
+          <span className="flex-shrink-0 text-xs text-th-text-secondary">({participantCount})</span>
         </div>
         <div className="flex items-center gap-0.5">
           <button
             onClick={() => setIsMinimized(true)}
-            className="rounded p-1 text-[#96989d] transition-colors hover:text-white"
+            className="rounded p-1 text-th-text-secondary transition-colors hover:text-white"
             title="Minimize"
           >
             <svg className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -184,7 +184,7 @@ export function VoicePiP() {
           </button>
           <button
             onClick={handleExpand}
-            className="rounded p-1 text-[#96989d] transition-colors hover:text-white"
+            className="rounded p-1 text-th-text-secondary transition-colors hover:text-white"
             title="Open full view"
           >
             <svg className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">

@@ -29,7 +29,7 @@ export function Tooltip({
       {children}
       {isVisible && (
         <div
-          className={`absolute z-50 whitespace-nowrap rounded-md bg-[#18191c] px-3 py-2 text-sm font-medium text-[#dcddde] shadow-lg pointer-events-none ${positionClasses[position]}`}
+          className={`absolute z-50 whitespace-nowrap rounded-md bg-th-bg-floating px-3 py-2 text-sm font-medium text-th-text-primary shadow-lg pointer-events-none ${positionClasses[position]}`}
           role="tooltip"
         >
           {content}

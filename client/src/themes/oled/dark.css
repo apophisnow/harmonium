@@ -1,0 +1,32 @@
+[data-theme="oled"][data-mode="dark"] {
+  --bg-primary: #000000;
+  --bg-secondary: #0a0a0a;
+  --bg-tertiary: #111111;
+  --bg-accent: #1a1a1a;
+  --bg-floating: #000000;
+  --bg-card: #0d0d0d;
+  --bg-message-hover: #0f0f0f;
+
+  --text-primary: #e0e0e0;
+  --text-secondary: #999999;
+  --text-tertiary: #b3b3b3;
+  --text-muted: #666666;
+  --text-link: #4db8ff;
+
+  --border: #222222;
+  --border-strong: #111111;
+
+  --brand: #5865f2;
+  --brand-hover: #4752c4;
+
+  --status-green: #43b581;
+  --status-green-hover: #369968;
+  --status-yellow: #faa61a;
+  --status-red: #f04747;
+  --status-red-hover: #d83c3c;
+
+  --disabled: #444444;
+  --role-default: #888888;
+
+  --font-family: "gg sans", "Noto Sans", "Helvetica Neue", Helvetica, Arial, sans-serif;
+}

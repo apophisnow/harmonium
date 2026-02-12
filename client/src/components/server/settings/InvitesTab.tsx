@@ -36,7 +36,7 @@ export function InvitesTab({
           <button
             onClick={handleCreateInvite}
             disabled={isCreatingInvite}
-            className="flex items-center gap-2 rounded bg-[#5865f2] px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-[#4752c4] disabled:opacity-50 disabled:cursor-not-allowed"
+            className="flex items-center gap-2 rounded bg-th-brand px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-th-brand-hover disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {isCreatingInvite ? (
               <LoadingSpinner size={14} />
@@ -51,11 +51,11 @@ export function InvitesTab({
         )}
       </div>
 
-      {inviteError && <p className="text-sm text-[#ed4245]">{inviteError}</p>}
+      {inviteError && <p className="text-sm text-th-red">{inviteError}</p>}
 
       {isLoadingInvites ? (
         <div className="flex justify-center py-8">
-          <LoadingSpinner size={24} className="text-[#96989d]" />
+          <LoadingSpinner size={24} className="text-th-text-secondary" />
         </div>
       ) : invites.length > 0 ? (
         <div className="space-y-2">
@@ -66,13 +66,13 @@ export function InvitesTab({
             return (
               <div
                 key={invite.code}
-                className={`flex items-center gap-3 rounded-lg bg-[#2f3136] px-4 py-3 ${isExpired || isMaxed ? 'opacity-50' : ''}`}
+                className={`flex items-center gap-3 rounded-lg bg-th-bg-secondary px-4 py-3 ${isExpired || isMaxed ? 'opacity-50' : ''}`}
               >
                 <div className="min-w-0 flex-1">
-                  <p className="truncate text-sm font-mono text-[#dcddde]">
+                  <p className="truncate text-sm font-mono text-th-text-primary">
                     {window.location.origin}/invite/{invite.code}
                   </p>
-                  <p className="text-xs text-[#72767d]">
+                  <p className="text-xs text-th-text-muted">
                     {invite.useCount} use{invite.useCount !== 1 ? 's' : ''}
                     {invite.maxUses !== null && ` / ${invite.maxUses} max`}
                     {isExpired && ' \u00b7 Expired'}
@@ -80,11 +80,11 @@ export function InvitesTab({
                 </div>
                 <button
                   onClick={() => handleCopyInvite(invite.code)}
-                  className="rounded p-2 text-[#96989d] transition-colors hover:text-[#dcddde]"
+                  className="rounded p-2 text-th-text-secondary transition-colors hover:text-th-text-primary"
                   title="Copy invite link"
                 >
                   {copiedCode === invite.code ? (
-                    <svg className="h-4 w-4 text-[#3ba55c]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <svg className="h-4 w-4 text-th-green" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                       <path d="M20 6L9 17l-5-5" />
                     </svg>
                   ) : (
@@ -98,7 +98,7 @@ export function InvitesTab({
                   <button
                     onClick={() => handleDeleteInvite(invite.code)}
                     disabled={deletingInviteCode === invite.code}
-                    className="rounded p-2 text-[#96989d] transition-colors hover:text-[#ed4245] disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="rounded p-2 text-th-text-secondary transition-colors hover:text-th-red disabled:opacity-50 disabled:cursor-not-allowed"
                     title="Delete invite"
                   >
                     {deletingInviteCode === invite.code ? (
@@ -115,8 +115,8 @@ export function InvitesTab({
           })}
         </div>
       ) : (
-        <div className="flex h-32 items-center justify-center rounded-lg bg-[#2f3136]">
-          <p className="text-sm text-[#72767d]">No active invites.</p>
+        <div className="flex h-32 items-center justify-center rounded-lg bg-th-bg-secondary">
+          <p className="text-sm text-th-text-muted">No active invites.</p>
         </div>
       )}
     </div>
