@@ -23,7 +23,8 @@ RUN npm run build --workspace=packages/shared
 RUN npm run build --workspace=server
 
 # Prune dev dependencies in-place (reuses already-compiled native modules)
-RUN npm prune --omit=dev
+RUN npm prune --omit=dev && \
+    mkdir -p /app/packages/shared/node_modules /app/server/node_modules
 
 # Production stage
 FROM node:22-alpine
