@@ -2,6 +2,7 @@ import { useState, type FormEvent } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../../stores/auth.store.js';
 import { LoadingSpinner } from '../shared/LoadingSpinner.js';
+import { HarmoniumLogo } from '../shared/HarmoniumLogo.js';
 import { AxiosError } from 'axios';
 
 export function RegisterForm() {
@@ -64,6 +65,7 @@ export function RegisterForm() {
   return (
     <div className="w-full max-w-md rounded-lg bg-th-bg-primary p-8 shadow-lg">
       <div className="mb-6 text-center">
+        <HarmoniumLogo size={72} className="mx-auto mb-3 text-th-brand" animate />
         <h1 className="text-2xl font-bold text-th-text-primary">Create an account</h1>
       </div>
 
