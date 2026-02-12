@@ -930,6 +930,18 @@
           "primaryKey": false,
           "notNull": true
         },
+        "default_theme": {
+          "name": "default_theme",
+          "type": "varchar(50)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "default_mode": {
+          "name": "default_mode",
+          "type": "varchar(10)",
+          "primaryKey": false,
+          "notNull": false
+        },
         "created_at": {
           "name": "created_at",
           "type": "timestamp with time zone",

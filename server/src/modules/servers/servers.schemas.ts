@@ -18,6 +18,8 @@ export const updateServerSchema = z.object({
       .max(100, 'Server name must be at most 100 characters'),
   ).optional(),
   iconUrl: z.string().url('Invalid icon URL').max(512).optional(),
+  defaultTheme: z.string().max(50).nullable().optional(),
+  defaultMode: z.enum(['dark', 'light']).nullable().optional(),
 });
 
 export const serverParamsSchema = z.object({

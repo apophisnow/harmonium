@@ -17,6 +17,7 @@ import { messageRoutes } from './modules/messages/messages.routes.js';
 import { registerGateway } from './ws/gateway.js';
 import { voiceRoutes } from './modules/voice/voice.routes.js';
 import { getVoiceServer } from './voice/voice-server.js';
+import { configRoutes } from './modules/config/config.routes.js';
 import { AppError } from './utils/errors.js';
 
 export async function buildApp(): Promise<FastifyInstance> {
@@ -85,6 +86,7 @@ export async function buildApp(): Promise<FastifyInstance> {
   app.get('/health', { config: { rateLimit: false } }, async () => ({ status: 'ok' }));
 
   // Register route modules
+  await app.register(configRoutes);
   await app.register(authRoutes);
   await app.register(serverRoutes);
   await app.register(userRoutes);

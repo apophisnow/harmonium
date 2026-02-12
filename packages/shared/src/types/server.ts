@@ -5,6 +5,8 @@ export interface Server {
   name: string;
   iconUrl: string | null;
   ownerId: string;
+  defaultTheme: string | null;
+  defaultMode: string | null;
   createdAt: string;
   updatedAt: string;
 }

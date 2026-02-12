@@ -99,6 +99,8 @@ CREATE TABLE "servers" (
 	"name" varchar(100) NOT NULL,
 	"icon_url" varchar(512),
 	"owner_id" bigint NOT NULL,
+	"default_theme" varchar(50),
+	"default_mode" varchar(10),
 	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
 	"updated_at" timestamp with time zone DEFAULT now() NOT NULL
 );

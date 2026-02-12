@@ -14,6 +14,8 @@ function serverToResponse(server: typeof schema.servers.$inferSelect) {
     name: server.name,
     iconUrl: server.iconUrl,
     ownerId: server.ownerId.toString(),
+    defaultTheme: server.defaultTheme ?? null,
+    defaultMode: server.defaultMode ?? null,
     createdAt: server.createdAt.toISOString(),
     updatedAt: server.updatedAt.toISOString(),
   };

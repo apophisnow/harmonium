@@ -1,5 +1,10 @@
+import { useState } from 'react';
 import type { Server } from '@harmonium/shared';
 import { LoadingSpinner } from '../../shared/LoadingSpinner.js';
+import { themes } from '../../../themes/index.js';
+import type { Mode } from '../../../themes/index.js';
+import { updateServer } from '../../../api/servers.js';
+import { useServerStore } from '../../../stores/server.store.js';
 
 interface OverviewTabProps {
   server: Server | undefined;
@@ -24,7 +29,24 @@ export function OverviewTab({
   handleSaveName,
   error,
 }: OverviewTabProps) {
+  const storeUpdateServer = useServerStore((s) => s.updateServer);
+  const [isSavingTheme, setIsSavingTheme] = useState(false);
+  const [themeError, setThemeError] = useState('');
+
   if (!server) return null;
+
+  const handleThemeChange = async (defaultTheme: string | null, defaultMode: string | null) => {
+    setIsSavingTheme(true);
+    setThemeError('');
+    try {
+      const updated = await updateServer(server.id, { defaultTheme, defaultMode });
+      storeUpdateServer(updated);
+    } catch {
+      setThemeError('Failed to update default theme.');
+    } finally {
+      setIsSavingTheme(false);
+    }
+  };
 
   return (
     <div className="space-y-8">
@@ -85,6 +107,61 @@ export function OverviewTab({
       </div>
 
       {error && <p className="text-sm text-th-red">{error}</p>}
+
+      {/* Default Theme section (owner only) */}
+      {isOwner && (
+        <div className="space-y-4 border-t border-th-border pt-6">
+          <div>
+            <h3 className="text-base font-semibold text-th-text-primary">Default Theme</h3>
+            <p className="mt-1 text-sm text-th-text-secondary">
+              Set a default theme for members who haven't chosen their own.
+            </p>
+          </div>
+
+          <div className="flex items-center gap-4">
+            <div className="flex-1">
+              <label className="mb-1 block text-xs font-bold uppercase text-th-text-tertiary">
+                Theme
+              </label>
+              <select
+                value={server.defaultTheme ?? ''}
+                onChange={(e) => handleThemeChange(e.target.value || null, server.defaultMode)}
+                disabled={isSavingTheme}
+                className="w-full rounded bg-th-bg-tertiary px-3 py-2 text-th-text-primary outline-none focus:ring-2 focus:ring-th-brand disabled:opacity-50"
+              >
+                <option value="">None (use host default)</option>
+                {themes.map((t) => (
+                  <option key={t.id} value={t.id}>{t.name}</option>
+                ))}
+              </select>
+            </div>
+
+            <div className="flex-1">
+              <label className="mb-1 block text-xs font-bold uppercase text-th-text-tertiary">
+                Mode
+              </label>
+              <select
+                value={server.defaultMode ?? ''}
+                onChange={(e) => handleThemeChange(server.defaultTheme, (e.target.value || null) as Mode | null)}
+                disabled={isSavingTheme}
+                className="w-full rounded bg-th-bg-tertiary px-3 py-2 text-th-text-primary outline-none focus:ring-2 focus:ring-th-brand disabled:opacity-50"
+              >
+                <option value="">None (use host default)</option>
+                <option value="dark">Dark</option>
+                <option value="light">Light</option>
+              </select>
+            </div>
+          </div>
+
+          {isSavingTheme && (
+            <div className="flex items-center gap-2 text-sm text-th-text-secondary">
+              <LoadingSpinner size={14} />
+              Saving...
+            </div>
+          )}
+          {themeError && <p className="text-sm text-th-red">{themeError}</p>}
+        </div>
+      )}
     </div>
   );
 }

@@ -25,7 +25,7 @@ export async function createServer(
 
 export async function updateServer(
   id: string,
-  data: Partial<Pick<Server, 'name' | 'iconUrl'>>,
+  data: Partial<Pick<Server, 'name' | 'iconUrl' | 'defaultTheme' | 'defaultMode'>>,
 ): Promise<Server> {
   const response = await apiClient.patch<Server>(`/servers/${id}`, data);
   return response.data;

@@ -6,6 +6,8 @@ export const servers = pgTable('servers', {
   name: varchar('name', { length: 100 }).notNull(),
   iconUrl: varchar('icon_url', { length: 512 }),
   ownerId: bigint('owner_id', { mode: 'bigint' }).notNull().references(() => users.id),
+  defaultTheme: varchar('default_theme', { length: 50 }),
+  defaultMode: varchar('default_mode', { length: 10 }),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
 });

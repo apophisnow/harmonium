@@ -11,6 +11,8 @@ const envSchema = z.object({
   MEDIASOUP_PREFER_TCP: z.coerce.boolean().default(false),
   UPLOAD_DIR: z.string().default('./uploads'),
   MAX_UPLOAD_SIZE: z.coerce.number().default(10_485_760), // 10MB
+  DEFAULT_THEME: z.string().default('harmonium'),
+  DEFAULT_MODE: z.string().default('dark'),
 });
 
 export type Config = z.infer<typeof envSchema>;
