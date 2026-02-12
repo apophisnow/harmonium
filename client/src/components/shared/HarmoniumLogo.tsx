@@ -40,8 +40,8 @@ export function HarmoniumLogo({
             }
 
             /* Arcs scale outward from their source dot */
-            .h-arc-l { transform-origin: 28px 50px; }
-            .h-arc-r { transform-origin: 72px 50px; }
+            .h-arc-l { transform-origin: 24px 50px; }
+            .h-arc-r { transform-origin: 76px 50px; }
 
             .h-arc {
               animation:
@@ -101,7 +101,7 @@ export function HarmoniumLogo({
 
       {/* Left wave source */}
       <circle
-        cx="28"
+        cx="24"
         cy="50"
         r="3.5"
         fill="currentColor"
@@ -110,14 +110,14 @@ export function HarmoniumLogo({
 
       {/* Left emanating arcs */}
       <path
-        d="M35 39 A13 13 0 0 1 35 61"
+        d="M33 41 A11 11 0 0 1 33 59"
         stroke="currentColor"
         strokeWidth="2.5"
         strokeLinecap="round"
         className={animate ? 'h-arc h-arc-l h-a1l' : undefined}
       />
       <path
-        d="M42 30 A22 22 0 0 1 42 70"
+        d="M40 33 A19 19 0 0 1 40 67"
         stroke="currentColor"
         strokeWidth="2.5"
         strokeLinecap="round"
@@ -125,7 +125,7 @@ export function HarmoniumLogo({
         className={animate ? 'h-arc h-arc-l h-a2l' : undefined}
       />
       <path
-        d="M49 22 A30 30 0 0 1 49 78"
+        d="M47 24 A28 28 0 0 1 47 76"
         stroke="currentColor"
         strokeWidth="2.5"
         strokeLinecap="round"
@@ -135,7 +135,7 @@ export function HarmoniumLogo({
 
       {/* Right wave source */}
       <circle
-        cx="72"
+        cx="76"
         cy="50"
         r="3.5"
         fill="currentColor"
@@ -144,14 +144,14 @@ export function HarmoniumLogo({
 
       {/* Right emanating arcs */}
       <path
-        d="M65 39 A13 13 0 0 0 65 61"
+        d="M67 41 A11 11 0 0 0 67 59"
         stroke="currentColor"
         strokeWidth="2.5"
         strokeLinecap="round"
         className={animate ? 'h-arc h-arc-r h-a1r' : undefined}
       />
       <path
-        d="M58 30 A22 22 0 0 0 58 70"
+        d="M60 33 A19 19 0 0 0 60 67"
         stroke="currentColor"
         strokeWidth="2.5"
         strokeLinecap="round"
@@ -159,7 +159,7 @@ export function HarmoniumLogo({
         className={animate ? 'h-arc h-arc-r h-a2r' : undefined}
       />
       <path
-        d="M51 22 A30 30 0 0 0 51 78"
+        d="M53 24 A28 28 0 0 0 53 76"
         stroke="currentColor"
         strokeWidth="2.5"
         strokeLinecap="round"
