@@ -8,7 +8,9 @@ import { useMemberStore } from '../stores/member.store.js';
 import { useChannelStore } from '../stores/channel.store.js';
 import { useServerStore } from '../stores/server.store.js';
 
-const WS_URL = import.meta.env.VITE_WS_URL ?? 'ws://localhost:3001/ws/gateway';
+const WS_URL =
+  import.meta.env.VITE_WS_URL ??
+  `${location.protocol === 'https:' ? 'wss:' : 'ws:'}//${location.host}/ws/gateway`;
 
 const MAX_RECONNECT_DELAY = 30_000;
 const BASE_RECONNECT_DELAY = 1_000;
