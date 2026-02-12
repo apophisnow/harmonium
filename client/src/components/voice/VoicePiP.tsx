@@ -66,13 +66,17 @@ export function VoicePiP() {
         setPosition({ x: currentX, y: currentY });
       }
 
-      el.setPointerCapture(e.pointerId);
+      // Listen on document so we never miss the pointerup even if the
+      // cursor leaves the drag handle element.
+      document.addEventListener('pointermove', onDocumentPointerMove);
+      document.addEventListener('pointerup', onDocumentPointerUp);
     },
-    [position],
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [position, clampPosition],
   );
 
-  const handlePointerMove = useCallback(
-    (e: React.PointerEvent) => {
+  const onDocumentPointerMove = useCallback(
+    (e: PointerEvent) => {
       if (!dragRef.current) return;
       const dx = e.clientX - dragRef.current.startX;
       const dy = e.clientY - dragRef.current.startY;
@@ -85,9 +89,20 @@ export function VoicePiP() {
     [clampPosition],
   );
 
-  const handlePointerUp = useCallback(() => {
+  const onDocumentPointerUp = useCallback(() => {
     dragRef.current = null;
-  }, []);
+    document.removeEventListener('pointermove', onDocumentPointerMove);
+    document.removeEventListener('pointerup', onDocumentPointerUp);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [onDocumentPointerMove]);
+
+  // Clean up document listeners on unmount
+  useEffect(() => {
+    return () => {
+      document.removeEventListener('pointermove', onDocumentPointerMove);
+      document.removeEventListener('pointerup', onDocumentPointerUp);
+    };
+  }, [onDocumentPointerMove, onDocumentPointerUp]);
 
   // Keep PiP within viewport on window resize
   useEffect(() => {
@@ -125,8 +140,6 @@ export function VoicePiP() {
         <div
           className="flex cursor-grab items-center gap-2 active:cursor-grabbing"
           onPointerDown={handlePointerDown}
-          onPointerMove={handlePointerMove}
-          onPointerUp={handlePointerUp}
         >
           <div className="h-2 w-2 flex-shrink-0 rounded-full bg-th-green" />
           <span className="text-xs font-medium text-white">{channelName}</span>
@@ -164,8 +177,6 @@ export function VoicePiP() {
       <div
         className="flex cursor-grab items-center justify-between bg-th-bg-card px-3 py-1.5 active:cursor-grabbing"
         onPointerDown={handlePointerDown}
-        onPointerMove={handlePointerMove}
-        onPointerUp={handlePointerUp}
       >
         <div className="flex min-w-0 items-center gap-1.5">
           <div className="h-2 w-2 flex-shrink-0 rounded-full bg-th-green" />

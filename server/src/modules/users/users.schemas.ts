@@ -12,8 +12,8 @@ export const updateUserSchema = z.object({
       z.string().regex(/^[a-zA-Z0-9_]+$/, 'Username must be alphanumeric with underscores only'),
     )
     .optional(),
-  aboutMe: safeText(z.string().max(2000, 'About me must be at most 2000 characters')).optional(),
-  customStatus: safeLine(z.string().max(128, 'Custom status must be at most 128 characters')).optional(),
+  aboutMe: safeText(z.string().max(2000, 'About me must be at most 2000 characters')).nullable().optional(),
+  customStatus: safeLine(z.string().max(128, 'Custom status must be at most 128 characters')).nullable().optional(),
 });
 
 export const userParamsSchema = z.object({
