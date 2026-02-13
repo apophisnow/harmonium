@@ -147,18 +147,7 @@ export function CreateServerModal() {
           <input
             type="text"
             value={name}
-            onChange={(e) => {
-              const val = e.target.value;
-              // Detect invite link pasted into name field
-              if (val.includes('/invite/') || /^[a-zA-Z0-9]{6,10}$/.test(val.trim())) {
-                setInviteInput(val);
-                setName('');
-                setError('');
-                setView('join');
-                return;
-              }
-              setName(val);
-            }}
+            onChange={(e) => setName(e.target.value)}
             placeholder="My Awesome Server"
             className="mb-4 w-full rounded bg-th-bg-tertiary px-3 py-2 text-th-text-primary placeholder-th-text-muted outline-none focus:ring-2 focus:ring-th-brand"
             autoFocus
