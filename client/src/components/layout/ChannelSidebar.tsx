@@ -8,6 +8,7 @@ import { useVoiceStore } from '../../stores/voice.store.js';
 import { ChannelList } from '../channel/ChannelList.js';
 import { VoiceControls } from '../voice/VoiceControls.js';
 import { UserAvatar } from '../user/UserAvatar.js';
+import { getVoiceStates } from '../../api/voice.js';
 
 interface ChannelSidebarProps {
   onJoinVoice?: (channelId: string, serverId: string) => void;
@@ -42,12 +43,25 @@ export function ChannelSidebar({
   const logout = useAuthStore((s) => s.logout);
   const ownPresence = usePresenceStore((s) => user ? s.presences.get(user.id) : undefined);
   const voiceChannelId = useVoiceStore((s) => s.currentChannelId);
+  const setChannelVoiceStates = useVoiceStore((s) => s.setChannelVoiceStates);
+  const clearChannelVoiceStates = useVoiceStore((s) => s.clearChannelVoiceStates);
 
   useEffect(() => {
     if (currentServerId) {
       fetchChannels(currentServerId);
     }
   }, [currentServerId, fetchChannels]);
+
+  // Fetch voice states for the current server
+  useEffect(() => {
+    if (currentServerId) {
+      getVoiceStates(currentServerId)
+        .then((states) => setChannelVoiceStates(states))
+        .catch(() => {});
+    } else {
+      clearChannelVoiceStates();
+    }
+  }, [currentServerId, setChannelVoiceStates, clearChannelVoiceStates]);
 
   return (
     <div className="flex h-full w-60 flex-col bg-th-bg-secondary">

@@ -27,6 +27,8 @@ function userToResponse(user: typeof schema.users.$inferSelect) {
     aboutMe: user.aboutMe,
     status: user.status,
     customStatus: user.customStatus,
+    theme: user.theme,
+    mode: user.mode,
     createdAt: user.createdAt.toISOString(),
     updatedAt: user.updatedAt.toISOString(),
   };

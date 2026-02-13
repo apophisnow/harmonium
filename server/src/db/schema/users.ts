@@ -11,6 +11,8 @@ export const users = pgTable('users', {
   aboutMe: varchar('about_me', { length: 2000 }),
   status: varchar('status', { length: 10 }).notNull().default('offline'),
   customStatus: varchar('custom_status', { length: 128 }),
+  theme: varchar('theme', { length: 50 }),
+  mode: varchar('mode', { length: 10 }),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
 }, (table) => [

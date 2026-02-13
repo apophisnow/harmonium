@@ -14,6 +14,8 @@ export const updateUserSchema = z.object({
     .optional(),
   aboutMe: safeText(z.string().max(2000, 'About me must be at most 2000 characters')).nullable().optional(),
   customStatus: safeLine(z.string().max(128, 'Custom status must be at most 128 characters')).nullable().optional(),
+  theme: z.string().max(50).nullable().optional(),
+  mode: z.enum(['dark', 'light']).nullable().optional(),
 });
 
 export const userParamsSchema = z.object({

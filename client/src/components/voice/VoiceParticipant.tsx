@@ -41,6 +41,11 @@ export function VoiceParticipant({ participant }: VoiceParticipantProps) {
 
       {/* Status icons */}
       <div className="ml-auto flex items-center gap-0.5">
+        {(isScreenSharing || hasWebcam) && (
+          <span className="rounded bg-th-red px-1 py-px text-[9px] font-bold uppercase leading-tight text-white">
+            LIVE
+          </span>
+        )}
         {isMuted && (
           <svg
             className="h-3.5 w-3.5 text-th-red"

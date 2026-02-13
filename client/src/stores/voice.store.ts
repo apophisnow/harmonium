@@ -12,6 +12,17 @@ export interface VoiceParticipant {
   hasWebcam: boolean;
 }
 
+/** Lightweight voice state for sidebar display (all channels in a server) */
+export interface ChannelVoiceUser {
+  userId: string;
+  username: string;
+  avatarUrl: string | null;
+  selfMute: boolean;
+  selfDeaf: boolean;
+  isScreenSharing: boolean;
+  hasWebcam: boolean;
+}
+
 interface VoiceState {
   currentChannelId: string | null;
   currentServerId: string | null;
@@ -24,6 +35,9 @@ interface VoiceState {
   participants: Map<string, VoiceParticipant>;
   webcamStreams: Map<string, MediaStream>;
   isWebcamOn: boolean;
+
+  /** Server-wide voice states: channelId -> userId -> ChannelVoiceUser */
+  channelVoiceStates: Map<string, Map<string, ChannelVoiceUser>>;
 
   joinChannel: (channelId: string, serverId: string) => void;
   leaveChannel: () => void;
@@ -43,6 +57,17 @@ interface VoiceState {
   setWebcamStream: (userId: string, stream: MediaStream) => void;
   removeWebcamStream: (userId: string) => void;
   setWebcamOn: (on: boolean) => void;
+
+  /** Populate channel voice states from API response */
+  setChannelVoiceStates: (states: Array<{ userId: string; channelId: string; username: string; selfMute: boolean; selfDeaf: boolean }>) => void;
+  /** Add/update a user in a channel's voice state */
+  addChannelVoiceUser: (channelId: string, user: ChannelVoiceUser) => void;
+  /** Remove a user from all channel voice states */
+  removeChannelVoiceUser: (userId: string) => void;
+  /** Update a user's producer state (screen share, webcam) in channel voice states */
+  updateChannelVoiceUser: (channelId: string, userId: string, updates: Partial<ChannelVoiceUser>) => void;
+  /** Clear all channel voice states (e.g. when switching server) */
+  clearChannelVoiceStates: () => void;
 }
 
 export const useVoiceStore = create<VoiceState>((set, get) => ({
@@ -57,6 +82,7 @@ export const useVoiceStore = create<VoiceState>((set, get) => ({
   participants: new Map(),
   webcamStreams: new Map(),
   isWebcamOn: false,
+  channelVoiceStates: new Map(),
 
   joinChannel: (channelId, serverId) => {
     set({
@@ -166,5 +192,85 @@ export const useVoiceStore = create<VoiceState>((set, get) => ({
 
   setWebcamOn: (on) => {
     set({ isWebcamOn: on });
+  },
+
+  // --- Channel voice states (server-wide, for sidebar display) ---
+
+  setChannelVoiceStates: (states) => {
+    const channelVoiceStates = new Map<string, Map<string, ChannelVoiceUser>>();
+    for (const s of states) {
+      if (!channelVoiceStates.has(s.channelId)) {
+        channelVoiceStates.set(s.channelId, new Map());
+      }
+      channelVoiceStates.get(s.channelId)!.set(s.userId, {
+        userId: s.userId,
+        username: s.username,
+        avatarUrl: null,
+        selfMute: s.selfMute,
+        selfDeaf: s.selfDeaf,
+        isScreenSharing: false,
+        hasWebcam: false,
+      });
+    }
+    set({ channelVoiceStates });
+  },
+
+  addChannelVoiceUser: (channelId, user) => {
+    const channelVoiceStates = new Map(get().channelVoiceStates);
+    // Remove user from any other channel first
+    for (const [chId, users] of channelVoiceStates) {
+      if (users.has(user.userId)) {
+        const newUsers = new Map(users);
+        newUsers.delete(user.userId);
+        if (newUsers.size === 0) {
+          channelVoiceStates.delete(chId);
+        } else {
+          channelVoiceStates.set(chId, newUsers);
+        }
+      }
+    }
+    // Add to new channel
+    if (!channelVoiceStates.has(channelId)) {
+      channelVoiceStates.set(channelId, new Map());
+    }
+    const channelUsers = new Map(channelVoiceStates.get(channelId)!);
+    channelUsers.set(user.userId, user);
+    channelVoiceStates.set(channelId, channelUsers);
+    set({ channelVoiceStates });
+  },
+
+  removeChannelVoiceUser: (userId) => {
+    const channelVoiceStates = new Map(get().channelVoiceStates);
+    for (const [chId, users] of channelVoiceStates) {
+      if (users.has(userId)) {
+        const newUsers = new Map(users);
+        newUsers.delete(userId);
+        if (newUsers.size === 0) {
+          channelVoiceStates.delete(chId);
+        } else {
+          channelVoiceStates.set(chId, newUsers);
+        }
+        break;
+      }
+    }
+    set({ channelVoiceStates });
+  },
+
+  updateChannelVoiceUser: (channelId, userId, updates) => {
+    const channelVoiceStates = new Map(get().channelVoiceStates);
+    const channelUsers = channelVoiceStates.get(channelId);
+    if (channelUsers) {
+      const existing = channelUsers.get(userId);
+      if (existing) {
+        const newUsers = new Map(channelUsers);
+        newUsers.set(userId, { ...existing, ...updates });
+        channelVoiceStates.set(channelId, newUsers);
+        set({ channelVoiceStates });
+      }
+    }
+  },
+
+  clearChannelVoiceStates: () => {
+    set({ channelVoiceStates: new Map() });
   },
 }));

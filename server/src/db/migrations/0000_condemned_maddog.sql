@@ -125,6 +125,8 @@ CREATE TABLE "users" (
 	"about_me" varchar(2000),
 	"status" varchar(10) DEFAULT 'offline' NOT NULL,
 	"custom_status" varchar(128),
+	"theme" varchar(50),
+	"mode" varchar(10),
 	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
 	"updated_at" timestamp with time zone DEFAULT now() NOT NULL,
 	CONSTRAINT "users_email_unique" UNIQUE("email")

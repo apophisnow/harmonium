@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import type { PublicUser } from '@harmonium/shared';
 import { loginApi, registerApi, logoutApi } from '../api/auth.js';
+import { useThemeStore } from './theme.store.js';
 
 interface AuthState {
   user: PublicUser | null;
@@ -40,6 +41,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       refreshToken: response.refreshToken,
       isAuthenticated: true,
     });
+    useThemeStore.getState().loadFromUser(response.user);
   },
 
   register: async (username: string, email: string, password: string) => {
@@ -89,6 +91,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       refreshToken: response.refreshToken,
       isAuthenticated: true,
     });
+    useThemeStore.getState().loadFromUser(response.user);
   },
 
   hydrate: () => {
@@ -106,6 +109,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
           isAuthenticated: true,
           isLoading: false,
         });
+        useThemeStore.getState().loadFromUser(user);
       } catch {
         localStorage.removeItem('accessToken');
         localStorage.removeItem('refreshToken');

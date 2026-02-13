@@ -7,7 +7,7 @@ export async function getProfile(): Promise<PublicUser> {
 }
 
 export async function updateProfile(
-  data: Partial<Pick<PublicUser, 'username' | 'aboutMe' | 'customStatus'>>,
+  data: Partial<Pick<PublicUser, 'username' | 'aboutMe' | 'customStatus'>> & { theme?: string | null; mode?: string | null },
 ): Promise<PublicUser> {
   const response = await apiClient.patch<PublicUser>('/users/@me', data);
   return response.data;

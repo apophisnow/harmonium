@@ -7,6 +7,8 @@ export interface User {
   aboutMe: string | null;
   status: UserStatus;
   customStatus: string | null;
+  theme?: string | null;
+  mode?: string | null;
   createdAt: string;
   updatedAt: string;
 }

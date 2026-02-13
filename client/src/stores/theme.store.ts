@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { themes, DEFAULT_THEME, DEFAULT_MODE } from '../themes/index.js';
 import type { Mode } from '../themes/index.js';
+import { updateProfile } from '../api/users.js';
 
 type ThemeId = (typeof themes)[number]['id'];
 
@@ -22,6 +23,7 @@ interface ThemeState {
   setHostDefault: (config: ThemeDefault) => void;
   setServerDefault: (config: ThemeDefault | null) => void;
   clearUserPreference: () => void;
+  loadFromUser: (user: { theme?: string | null; mode?: string | null }) => void;
 }
 
 function applyTheme(theme: string, mode: string) {
@@ -91,6 +93,13 @@ function loadInitial(): { theme: ThemeId; mode: Mode; hasUserPreference: boolean
   return { theme: DEFAULT_THEME, mode: DEFAULT_MODE, hasUserPreference: false };
 }
 
+/** Persist theme preferences to the API (fire-and-forget) */
+function persistToApi(theme: string, mode: string) {
+  updateProfile({ theme, mode }).catch(() => {
+    // Non-critical — localStorage is the primary cache
+  });
+}
+
 const initial = loadInitial();
 applyTheme(initial.theme, initial.mode);
 
@@ -102,19 +111,23 @@ export const useThemeStore = create<ThemeState>((set, get) => ({
   hasUserPreference: initial.hasUserPreference,
 
   setTheme: (theme) => {
-    localStorage.setItem('app-theme', theme);
-    localStorage.setItem('app-theme-explicit', 'true');
     set((state) => {
+      localStorage.setItem('app-theme', theme);
+      localStorage.setItem('app-mode', state.mode);
+      localStorage.setItem('app-theme-explicit', 'true');
       applyTheme(theme, state.mode);
+      persistToApi(theme, state.mode);
       return { theme, hasUserPreference: true };
     });
   },
 
   setMode: (mode) => {
-    localStorage.setItem('app-mode', mode);
-    localStorage.setItem('app-theme-explicit', 'true');
     set((state) => {
+      localStorage.setItem('app-theme', state.theme);
+      localStorage.setItem('app-mode', mode);
+      localStorage.setItem('app-theme-explicit', 'true');
       applyTheme(state.theme, mode);
+      persistToApi(state.theme, mode);
       return { mode, hasUserPreference: true };
     });
   },
@@ -122,9 +135,11 @@ export const useThemeStore = create<ThemeState>((set, get) => ({
   toggleMode: () => {
     set((state) => {
       const newMode = state.mode === 'dark' ? 'light' : 'dark';
+      localStorage.setItem('app-theme', state.theme);
       localStorage.setItem('app-mode', newMode);
       localStorage.setItem('app-theme-explicit', 'true');
       applyTheme(state.theme, newMode);
+      persistToApi(state.theme, newMode);
       return { mode: newMode, hasUserPreference: true };
     });
   },
@@ -153,9 +168,22 @@ export const useThemeStore = create<ThemeState>((set, get) => ({
     localStorage.removeItem('app-theme');
     localStorage.removeItem('app-mode');
     localStorage.removeItem('app-theme-explicit');
+    persistToApi('', '');
     const state = get();
     const resolved = resolve(false, null, null, state.serverDefault, state.hostDefault);
     applyTheme(resolved.theme, resolved.mode);
     set({ theme: resolved.theme, mode: resolved.mode, hasUserPreference: false });
+  },
+
+  loadFromUser: (user) => {
+    if (user.theme && user.mode) {
+      const theme = isValidTheme(user.theme) ? user.theme : DEFAULT_THEME;
+      const mode = isValidMode(user.mode) ? user.mode : DEFAULT_MODE;
+      localStorage.setItem('app-theme', theme);
+      localStorage.setItem('app-mode', mode);
+      localStorage.setItem('app-theme-explicit', 'true');
+      applyTheme(theme, mode);
+      set({ theme, mode, hasUserPreference: true });
+    }
   },
 }));

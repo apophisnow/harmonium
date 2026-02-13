@@ -1,6 +1,8 @@
+import { useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import type { Channel } from '@harmonium/shared';
 import { useVoiceStore } from '../../stores/voice.store.js';
+import type { VoiceParticipant as VoiceParticipantType } from '../../stores/voice.store.js';
 import { useChannelStore } from '../../stores/channel.store.js';
 import { useUIStore } from '../../stores/ui.store.js';
 import { VoiceParticipant } from './VoiceParticipant.js';
@@ -15,16 +17,32 @@ export function VoiceChannel({ channel, serverId, onJoin }: VoiceChannelProps) {
   const navigate = useNavigate();
   const currentChannelId = useVoiceStore((s) => s.currentChannelId);
   const participants = useVoiceStore((s) => s.participants);
+  const channelVoiceStates = useVoiceStore((s) => s.channelVoiceStates);
   const isConnecting = useVoiceStore((s) => s.isConnecting);
   const setCurrentChannel = useChannelStore((s) => s.setCurrentChannel);
   const closeMobileSidebar = useUIStore((s) => s.closeMobileSidebar);
 
   const isActive = channel.id === currentChannelId;
 
-  // Get participants in this voice channel
-  const channelParticipants = isActive
-    ? Array.from(participants.values())
-    : [];
+  // Get participants: use full participants for active channel (has speaking state),
+  // fall back to channelVoiceStates for other channels
+  const channelParticipants: VoiceParticipantType[] = useMemo(() => {
+    if (isActive) {
+      return Array.from(participants.values());
+    }
+    const voiceUsers = channelVoiceStates.get(channel.id);
+    if (!voiceUsers || voiceUsers.size === 0) return [];
+    return Array.from(voiceUsers.values()).map((u) => ({
+      userId: u.userId,
+      username: u.username,
+      avatarUrl: u.avatarUrl,
+      isMuted: u.selfMute,
+      isDeafened: u.selfDeaf,
+      isSpeaking: false,
+      isScreenSharing: u.isScreenSharing,
+      hasWebcam: u.hasWebcam,
+    }));
+  }, [isActive, participants, channelVoiceStates, channel.id]);
 
   const handleClick = () => {
     // If not connected to this channel, join it
