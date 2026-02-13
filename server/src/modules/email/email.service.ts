@@ -23,6 +23,10 @@ function getTransporter(): Transporter | null {
   return transporter;
 }
 
+export function isSmtpConfigured(): boolean {
+  return !!getConfig().SMTP_HOST;
+}
+
 export async function sendVerificationEmail(to: string, token: string): Promise<void> {
   const config = getConfig();
   const verifyUrl = `${config.CLIENT_URL}/verify-email?token=${token}`;

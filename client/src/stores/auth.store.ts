@@ -15,7 +15,7 @@ interface AuthState {
     username: string,
     email: string,
     password: string,
-  ) => Promise<string>;
+  ) => Promise<string | null>;
   logout: () => Promise<void>;
   setTokens: (accessToken: string, refreshToken: string) => void;
   setUser: (user: PublicUser) => void;
@@ -46,6 +46,20 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
   register: async (username: string, email: string, password: string) => {
     const response = await registerApi(username, email, password);
+    // If the server returned tokens, SMTP is off — log in immediately
+    if ('accessToken' in response) {
+      localStorage.setItem('accessToken', response.accessToken);
+      localStorage.setItem('refreshToken', response.refreshToken);
+      localStorage.setItem('user', JSON.stringify(response.user));
+      set({
+        user: response.user,
+        accessToken: response.accessToken,
+        refreshToken: response.refreshToken,
+        isAuthenticated: true,
+      });
+      useThemeStore.getState().loadFromUser(response.user);
+      return null; // signals: no verification needed
+    }
     return response.email;
   },
 

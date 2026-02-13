@@ -7,10 +7,12 @@ export interface AuthResponse {
   user: PublicUser;
 }
 
-export interface RegisterResponse {
+export interface RegisterVerifyResponse {
   message: string;
   email: string;
 }
+
+export type RegisterResponse = RegisterVerifyResponse | AuthResponse;
 
 export async function loginApi(
   email: string,

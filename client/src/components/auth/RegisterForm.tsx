@@ -50,7 +50,12 @@ export function RegisterForm() {
     setIsSubmitting(true);
     try {
       const registeredEmail = await register(username.trim(), email.trim(), password);
-      navigate('/verify-email', { state: { email: registeredEmail } });
+      if (registeredEmail) {
+        navigate('/verify-email', { state: { email: registeredEmail } });
+      } else {
+        // No verification needed — already logged in
+        navigate('/channels/@me', { replace: true });
+      }
     } catch (err) {
       if (err instanceof AxiosError && err.response?.data?.message) {
         setGeneralError(err.response.data.message);

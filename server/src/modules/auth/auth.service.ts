@@ -5,7 +5,7 @@ import { getDb, schema } from '../../db/index.js';
 import { generateId } from '../../utils/snowflake.js';
 import { hashPassword, verifyPassword } from './password.js';
 import { ConflictError, UnauthorizedError, ValidationError } from '../../utils/errors.js';
-import { sendVerificationEmail } from '../email/email.service.js';
+import { sendVerificationEmail, isSmtpConfigured } from '../email/email.service.js';
 import type { RegisterInput, LoginInput } from './auth.schemas.js';
 
 function generateDiscriminator(): string {
@@ -75,7 +75,7 @@ async function createVerificationToken(userId: bigint): Promise<string> {
   return token;
 }
 
-export async function register(_app: FastifyInstance, input: RegisterInput) {
+export async function register(app: FastifyInstance, input: RegisterInput) {
   const db = getDb();
 
   // Check email uniqueness
@@ -91,21 +91,32 @@ export async function register(_app: FastifyInstance, input: RegisterInput) {
   const discriminator = generateDiscriminator();
   const id = generateId();
 
+  const smtpEnabled = isSmtpConfigured();
+
   const [user] = await db.insert(schema.users).values({
     id,
     username: input.username,
     discriminator,
     email: input.email,
     passwordHash,
+    emailVerified: !smtpEnabled,
   }).returning();
 
-  // Generate verification token and send email
-  const token = await createVerificationToken(user.id);
-  await sendVerificationEmail(input.email, token);
+  if (smtpEnabled) {
+    const token = await createVerificationToken(user.id);
+    await sendVerificationEmail(input.email, token);
+    return {
+      message: 'Verification email sent. Please check your inbox.',
+      email: input.email,
+    };
+  }
 
+  // No SMTP — skip verification and log the user in immediately
+  const { accessToken, refreshToken } = await generateTokenPair(app, user);
   return {
-    message: 'Verification email sent. Please check your inbox.',
-    email: input.email,
+    user: userToResponse(user),
+    accessToken,
+    refreshToken,
   };
 }
 
