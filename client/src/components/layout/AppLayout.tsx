@@ -5,7 +5,6 @@ import { useServerStore } from '../../stores/server.store.js';
 import { useChannelStore } from '../../stores/channel.store.js';
 import { useUIStore } from '../../stores/ui.store.js';
 import { useThemeStore } from '../../stores/theme.store.js';
-import { fetchHostConfig } from '../../api/config.js';
 import { useVoiceStore } from '../../stores/voice.store.js';
 import { useInfiniteMessages } from '../../hooks/useInfiniteMessages.js';
 import { useTypingIndicator } from '../../hooks/useTypingIndicator.js';
@@ -100,7 +99,6 @@ export function AppLayout({ sendEvent, isConnected }: AppLayoutProps) {
   } = useVoice();
 
   const servers = useServerStore((s) => s.servers);
-  const setHostDefault = useThemeStore((s) => s.setHostDefault);
   const setServerDefault = useThemeStore((s) => s.setServerDefault);
 
   // Fetch servers on mount
@@ -108,12 +106,6 @@ export function AppLayout({ sendEvent, isConnected }: AppLayoutProps) {
     fetchServers();
   }, [fetchServers]);
 
-  // Fetch host theme config on mount
-  useEffect(() => {
-    fetchHostConfig()
-      .then((config) => setHostDefault({ theme: config.defaultTheme, mode: config.defaultMode }))
-      .catch(() => { /* host config is optional */ });
-  }, [setHostDefault]);
 
   // Apply server theme default when current server changes
   useEffect(() => {

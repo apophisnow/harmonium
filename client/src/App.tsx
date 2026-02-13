@@ -1,6 +1,8 @@
 import { useEffect, type ReactNode } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { useAuthStore } from './stores/auth.store.js';
+import { useThemeStore } from './stores/theme.store.js';
+import { fetchHostConfig } from './api/config.js';
 import { LoginPage } from './pages/LoginPage.js';
 import { RegisterPage } from './pages/RegisterPage.js';
 import { NotFoundPage } from './pages/NotFoundPage.js';
@@ -46,10 +48,17 @@ function RootRedirect() {
 
 export function App() {
   const hydrate = useAuthStore((s) => s.hydrate);
+  const setHostDefault = useThemeStore((s) => s.setHostDefault);
 
   useEffect(() => {
     hydrate();
   }, [hydrate]);
+
+  useEffect(() => {
+    fetchHostConfig()
+      .then((config) => setHostDefault({ theme: config.defaultTheme, mode: config.defaultMode }))
+      .catch(() => { /* host config is optional */ });
+  }, [setHostDefault]);
 
   return (
     <ErrorBoundary>
