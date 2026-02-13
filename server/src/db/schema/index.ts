@@ -1,4 +1,4 @@
-export { users, refreshTokens } from './users.js';
+export { users, refreshTokens, emailVerificationTokens } from './users.js';
 export { servers, serverMembers } from './servers.js';
 export { roles, memberRoles } from './roles.js';
 export { channelCategories, channels, channelPermissionOverrides } from './channels.js';

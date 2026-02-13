@@ -8,6 +8,7 @@ import { RegisterPage } from './pages/RegisterPage.js';
 import { NotFoundPage } from './pages/NotFoundPage.js';
 import { AppPage } from './pages/AppPage.js';
 import { InvitePage } from './pages/InvitePage.js';
+import { VerifyEmailPage } from './pages/VerifyEmailPage.js';
 import { LoadingSpinner } from './components/shared/LoadingSpinner.js';
 import { ErrorBoundary } from './components/shared/ErrorBoundary.js';
 import { ToastContainer } from './components/shared/Toast.js';
@@ -66,6 +67,7 @@ export function App() {
         <Routes>
           <Route path="/login" element={<LoginPage />} />
           <Route path="/register" element={<RegisterPage />} />
+          <Route path="/verify-email" element={<VerifyEmailPage />} />
           <Route path="/invite/:code" element={<InvitePage />} />
           <Route
             path="/channels/:serverId/:channelId?"

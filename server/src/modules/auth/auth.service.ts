@@ -4,7 +4,8 @@ import { eq, and } from 'drizzle-orm';
 import { getDb, schema } from '../../db/index.js';
 import { generateId } from '../../utils/snowflake.js';
 import { hashPassword, verifyPassword } from './password.js';
-import { ConflictError, UnauthorizedError } from '../../utils/errors.js';
+import { ConflictError, UnauthorizedError, ValidationError } from '../../utils/errors.js';
+import { sendVerificationEmail } from '../email/email.service.js';
 import type { RegisterInput, LoginInput } from './auth.schemas.js';
 
 function generateDiscriminator(): string {
@@ -56,7 +57,23 @@ async function generateTokenPair(
   return { accessToken, refreshToken };
 }
 
-export async function register(app: FastifyInstance, input: RegisterInput) {
+async function createVerificationToken(userId: bigint): Promise<string> {
+  const db = getDb();
+  const token = crypto.randomBytes(64).toString('hex');
+  const tokenHash = hashToken(token);
+  const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
+
+  await db.insert(schema.emailVerificationTokens).values({
+    id: generateId(),
+    userId,
+    tokenHash,
+    expiresAt,
+  });
+
+  return token;
+}
+
+export async function register(_app: FastifyInstance, input: RegisterInput) {
   const db = getDb();
 
   // Check email uniqueness
@@ -80,12 +97,13 @@ export async function register(app: FastifyInstance, input: RegisterInput) {
     passwordHash,
   }).returning();
 
-  const { accessToken, refreshToken } = await generateTokenPair(app, user);
+  // Generate verification token and send email
+  const token = await createVerificationToken(user.id);
+  await sendVerificationEmail(input.email, token);
 
   return {
-    user: userToResponse(user),
-    accessToken,
-    refreshToken,
+    message: 'Verification email sent. Please check your inbox.',
+    email: input.email,
   };
 }
 
@@ -105,6 +123,10 @@ export async function login(app: FastifyInstance, input: LoginInput) {
     throw new UnauthorizedError('Invalid email or password');
   }
 
+  if (!user.emailVerified) {
+    throw new ValidationError('Please verify your email before logging in');
+  }
+
   const { accessToken, refreshToken } = await generateTokenPair(app, user);
 
   return {
@@ -112,6 +134,82 @@ export async function login(app: FastifyInstance, input: LoginInput) {
     accessToken,
     refreshToken,
   };
+}
+
+export async function verifyEmail(app: FastifyInstance, token: string) {
+  const db = getDb();
+  const tokenHash = hashToken(token);
+
+  const storedToken = await db.query.emailVerificationTokens.findFirst({
+    where: eq(schema.emailVerificationTokens.tokenHash, tokenHash),
+  });
+
+  if (!storedToken) {
+    throw new ValidationError('Invalid or expired verification link');
+  }
+
+  if (storedToken.expiresAt < new Date()) {
+    // Clean up expired token
+    await db
+      .delete(schema.emailVerificationTokens)
+      .where(eq(schema.emailVerificationTokens.id, storedToken.id));
+    throw new ValidationError('Verification link has expired. Please request a new one.');
+  }
+
+  // Mark user as verified
+  await db
+    .update(schema.users)
+    .set({ emailVerified: true, updatedAt: new Date() })
+    .where(eq(schema.users.id, storedToken.userId));
+
+  // Delete all verification tokens for this user
+  await db
+    .delete(schema.emailVerificationTokens)
+    .where(eq(schema.emailVerificationTokens.userId, storedToken.userId));
+
+  // Find the user and generate tokens (log them in)
+  const user = await db.query.users.findFirst({
+    where: eq(schema.users.id, storedToken.userId),
+  });
+
+  if (!user) {
+    throw new UnauthorizedError('User not found');
+  }
+
+  const { accessToken, refreshToken } = await generateTokenPair(app, user);
+
+  return {
+    user: userToResponse(user),
+    accessToken,
+    refreshToken,
+  };
+}
+
+export async function resendVerification(email: string) {
+  const db = getDb();
+
+  const user = await db.query.users.findFirst({
+    where: and(
+      eq(schema.users.email, email),
+      eq(schema.users.emailVerified, false),
+    ),
+  });
+
+  if (!user) {
+    // Return success even if not found to prevent email enumeration
+    return { message: 'If an unverified account exists with that email, a new verification link has been sent.' };
+  }
+
+  // Delete old verification tokens for this user
+  await db
+    .delete(schema.emailVerificationTokens)
+    .where(eq(schema.emailVerificationTokens.userId, user.id));
+
+  // Generate new token and send email
+  const token = await createVerificationToken(user.id);
+  await sendVerificationEmail(email, token);
+
+  return { message: 'If an unverified account exists with that email, a new verification link has been sent.' };
 }
 
 export async function refresh(app: FastifyInstance, refreshToken: string) {

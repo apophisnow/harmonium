@@ -4,11 +4,14 @@ import { useAuthStore } from '../../stores/auth.store.js';
 import { LoadingSpinner } from '../shared/LoadingSpinner.js';
 import { HarmoniumLogo } from '../shared/HarmoniumLogo.js';
 import { AxiosError } from 'axios';
+import { resendVerificationApi } from '../../api/auth.js';
 
 export function LoginForm() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
+  const [needsVerification, setNeedsVerification] = useState(false);
+  const [resendStatus, setResendStatus] = useState<'idle' | 'sending' | 'sent'>('idle');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const login = useAuthStore((s) => s.login);
@@ -17,6 +20,8 @@ export function LoginForm() {
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     setError('');
+    setNeedsVerification(false);
+    setResendStatus('idle');
 
     if (!email.trim()) {
       setError('Email is required');
@@ -33,12 +38,26 @@ export function LoginForm() {
       navigate('/channels/@me');
     } catch (err) {
       if (err instanceof AxiosError && err.response?.data?.message) {
-        setError(err.response.data.message);
+        const message = err.response.data.message;
+        if (message.toLowerCase().includes('verify your email')) {
+          setNeedsVerification(true);
+        }
+        setError(message);
       } else {
         setError('Login failed. Please try again.');
       }
     } finally {
       setIsSubmitting(false);
+    }
+  };
+
+  const handleResend = async () => {
+    setResendStatus('sending');
+    try {
+      await resendVerificationApi(email.trim());
+      setResendStatus('sent');
+    } catch {
+      setResendStatus('idle');
     }
   };
 
@@ -53,7 +72,23 @@ export function LoginForm() {
       <form onSubmit={handleSubmit} className="space-y-4">
         {error && (
           <div className="rounded bg-red-500/10 p-3 text-sm text-red-400">
-            {error}
+            <p>{error}</p>
+            {needsVerification && (
+              <div className="mt-2">
+                {resendStatus === 'sent' ? (
+                  <p className="text-green-400">Verification email sent! Check your inbox.</p>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={handleResend}
+                    disabled={resendStatus === 'sending'}
+                    className="text-th-brand hover:underline disabled:opacity-50"
+                  >
+                    {resendStatus === 'sending' ? 'Sending...' : 'Resend verification email'}
+                  </button>
+                )}
+              </div>
+            )}
           </div>
         )}
 

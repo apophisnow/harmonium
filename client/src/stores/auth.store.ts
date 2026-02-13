@@ -14,10 +14,11 @@ interface AuthState {
     username: string,
     email: string,
     password: string,
-  ) => Promise<void>;
+  ) => Promise<string>;
   logout: () => Promise<void>;
   setTokens: (accessToken: string, refreshToken: string) => void;
   setUser: (user: PublicUser) => void;
+  loginWithAuthResponse: (response: { user: PublicUser; accessToken: string; refreshToken: string }) => void;
   hydrate: () => void;
 }
 
@@ -43,15 +44,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
   register: async (username: string, email: string, password: string) => {
     const response = await registerApi(username, email, password);
-    localStorage.setItem('accessToken', response.accessToken);
-    localStorage.setItem('refreshToken', response.refreshToken);
-    localStorage.setItem('user', JSON.stringify(response.user));
-    set({
-      user: response.user,
-      accessToken: response.accessToken,
-      refreshToken: response.refreshToken,
-      isAuthenticated: true,
-    });
+    return response.email;
   },
 
   logout: async () => {
@@ -84,6 +77,18 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   setUser: (user: PublicUser) => {
     localStorage.setItem('user', JSON.stringify(user));
     set({ user });
+  },
+
+  loginWithAuthResponse: (response) => {
+    localStorage.setItem('accessToken', response.accessToken);
+    localStorage.setItem('refreshToken', response.refreshToken);
+    localStorage.setItem('user', JSON.stringify(response.user));
+    set({
+      user: response.user,
+      accessToken: response.accessToken,
+      refreshToken: response.refreshToken,
+      isAuthenticated: true,
+    });
   },
 
   hydrate: () => {

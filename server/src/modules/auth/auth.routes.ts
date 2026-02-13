@@ -1,5 +1,5 @@
 import type { FastifyInstance } from 'fastify';
-import { registerSchema, loginSchema, refreshSchema } from './auth.schemas.js';
+import { registerSchema, loginSchema, refreshSchema, verifyEmailSchema, resendVerificationSchema } from './auth.schemas.js';
 import * as authService from './auth.service.js';
 import { ValidationError } from '../../utils/errors.js';
 
@@ -37,6 +37,42 @@ export async function authRoutes(app: FastifyInstance) {
     }
 
     const result = await authService.login(app, parsed.data);
+    return reply.send(result);
+  });
+
+  // POST /api/auth/verify-email
+  app.post('/api/auth/verify-email', {
+    config: {
+      rateLimit: {
+        max: 10,
+        timeWindow: '1 minute',
+      },
+    },
+  }, async (request, reply) => {
+    const parsed = verifyEmailSchema.safeParse(request.body);
+    if (!parsed.success) {
+      throw new ValidationError(parsed.error.errors[0].message);
+    }
+
+    const result = await authService.verifyEmail(app, parsed.data.token);
+    return reply.send(result);
+  });
+
+  // POST /api/auth/resend-verification
+  app.post('/api/auth/resend-verification', {
+    config: {
+      rateLimit: {
+        max: 2,
+        timeWindow: '1 minute',
+      },
+    },
+  }, async (request, reply) => {
+    const parsed = resendVerificationSchema.safeParse(request.body);
+    if (!parsed.success) {
+      throw new ValidationError(parsed.error.errors[0].message);
+    }
+
+    const result = await authService.resendVerification(parsed.data.email);
     return reply.send(result);
   });
 

@@ -78,18 +78,17 @@ describe('useAuthStore', () => {
     expect(localStorageMock.setItem).toHaveBeenCalledWith('user', JSON.stringify(mockUser));
   });
 
-  it('register calls API and sets user, tokens, isAuthenticated, and localStorage', async () => {
-    vi.mocked(registerApi).mockResolvedValue(mockAuthResponse);
+  it('register calls API and returns email without setting auth state', async () => {
+    vi.mocked(registerApi).mockResolvedValue({ message: 'Verification email sent', email: 'test@example.com' });
 
-    await useAuthStore.getState().register('testuser', 'test@example.com', 'password123');
+    const email = await useAuthStore.getState().register('testuser', 'test@example.com', 'password123');
 
     const state = useAuthStore.getState();
     expect(registerApi).toHaveBeenCalledWith('testuser', 'test@example.com', 'password123');
-    expect(state.user).toEqual(mockUser);
-    expect(state.accessToken).toBe('access-token-123');
-    expect(state.refreshToken).toBe('refresh-token-456');
-    expect(state.isAuthenticated).toBe(true);
-    expect(localStorageMock.setItem).toHaveBeenCalledWith('accessToken', 'access-token-123');
+    expect(email).toBe('test@example.com');
+    expect(state.user).toBeNull();
+    expect(state.accessToken).toBeNull();
+    expect(state.isAuthenticated).toBe(false);
   });
 
   it('logout clears state and localStorage and calls logoutApi', async () => {

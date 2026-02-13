@@ -13,6 +13,11 @@ const envSchema = z.object({
   MAX_UPLOAD_SIZE: z.coerce.number().default(10_485_760), // 10MB
   DEFAULT_THEME: z.string().default('harmonium'),
   DEFAULT_MODE: z.string().default('dark'),
+  SMTP_HOST: z.string().optional(),
+  SMTP_PORT: z.coerce.number().default(587),
+  SMTP_USER: z.string().optional(),
+  SMTP_PASS: z.string().optional(),
+  SMTP_FROM: z.string().default('noreply@harmonium.app'),
 });
 
 export type Config = z.infer<typeof envSchema>;

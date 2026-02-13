@@ -7,6 +7,11 @@ export interface AuthResponse {
   user: PublicUser;
 }
 
+export interface RegisterResponse {
+  message: string;
+  email: string;
+}
+
 export async function loginApi(
   email: string,
   password: string,
@@ -22,13 +27,24 @@ export async function registerApi(
   username: string,
   email: string,
   password: string,
-): Promise<AuthResponse> {
-  const response = await apiClient.post<AuthResponse>('/auth/register', {
+): Promise<RegisterResponse> {
+  const response = await apiClient.post<RegisterResponse>('/auth/register', {
     username,
     email,
     password,
   });
   return response.data;
+}
+
+export async function verifyEmailApi(token: string): Promise<AuthResponse> {
+  const response = await apiClient.post<AuthResponse>('/auth/verify-email', {
+    token,
+  });
+  return response.data;
+}
+
+export async function resendVerificationApi(email: string): Promise<void> {
+  await apiClient.post('/auth/resend-verification', { email });
 }
 
 export async function refreshTokenApi(

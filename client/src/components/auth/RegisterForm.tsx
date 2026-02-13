@@ -49,8 +49,8 @@ export function RegisterForm() {
 
     setIsSubmitting(true);
     try {
-      await register(username.trim(), email.trim(), password);
-      navigate('/channels/@me');
+      const registeredEmail = await register(username.trim(), email.trim(), password);
+      navigate('/verify-email', { state: { email: registeredEmail } });
     } catch (err) {
       if (err instanceof AxiosError && err.response?.data?.message) {
         setGeneralError(err.response.data.message);
