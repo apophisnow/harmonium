@@ -5,3 +5,4 @@ export { channelCategories, channels, channelPermissionOverrides } from './chann
 export { messages, attachments } from './messages.js';
 export { invites } from './invites.js';
 export { voiceStates } from './voice-states.js';
+export { dmChannels, dmChannelMembers, dmMessages } from './dm-channels.js';

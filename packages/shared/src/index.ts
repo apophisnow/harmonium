@@ -5,5 +5,6 @@ export * from './types/message.js';
 export * from './types/role.js';
 export * from './types/invite.js';
 export * from './types/voice.js';
+export * from './types/dm.js';
 export * from './permissions.js';
 export * from './ws-events.js';

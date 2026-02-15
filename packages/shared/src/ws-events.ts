@@ -4,6 +4,7 @@ import type { Channel } from './types/channel.js';
 import type { Server, ServerMember } from './types/server.js';
 import type { Role } from './types/role.js';
 import type { VoiceState, ProducerType } from './types/voice.js';
+import type { DMMessage, DMChannelWithUser } from './types/dm.js';
 
 // ===== Client-to-Server Events =====
 
@@ -42,6 +43,11 @@ export interface VoiceStateUpdateClientEvent {
   d: { channelId: string | null; selfMute: boolean; selfDeaf: boolean };
 }
 
+export interface DMTypingStartClientEvent {
+  op: 'DM_TYPING_START';
+  d: { dmChannelId: string };
+}
+
 export type ClientEvent =
   | IdentifyEvent
   | HeartbeatEvent
@@ -49,7 +55,8 @@ export type ClientEvent =
   | UnsubscribeServerEvent
   | TypingStartClientEvent
   | PresenceUpdateClientEvent
-  | VoiceStateUpdateClientEvent;
+  | VoiceStateUpdateClientEvent
+  | DMTypingStartClientEvent;
 
 // ===== Server-to-Client Events =====
 
@@ -177,6 +184,26 @@ export interface UserUpdateEvent {
   d: { user: PublicUser };
 }
 
+export interface DMChannelCreateEvent {
+  op: 'DM_CHANNEL_CREATE';
+  d: { dmChannelId: string; channel: DMChannelWithUser };
+}
+
+export interface DMMessageCreateEvent {
+  op: 'DM_MESSAGE_CREATE';
+  d: { dmChannelId: string; message: DMMessage };
+}
+
+export interface DMMessageDeleteEvent {
+  op: 'DM_MESSAGE_DELETE';
+  d: { dmChannelId: string; id: string };
+}
+
+export interface DMTypingStartServerEvent {
+  op: 'DM_TYPING_START';
+  d: { dmChannelId: string; userId: string; username: string; timestamp: number };
+}
+
 export interface ErrorEvent {
   op: 'ERROR';
   d: { code: number; message: string };
@@ -204,6 +231,10 @@ export type ServerEvent =
   | VoiceStateUpdateServerEvent
   | NewProducerServerEvent
   | ProducerClosedServerEvent
+  | DMChannelCreateEvent
+  | DMMessageCreateEvent
+  | DMMessageDeleteEvent
+  | DMTypingStartServerEvent
   | ErrorEvent;
 
 // Union of all events

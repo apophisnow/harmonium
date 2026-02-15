@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { createPortal } from 'react-dom';
 import type { ServerMember, Role } from '@harmonium/shared';
 import { Permission } from '@harmonium/shared';
@@ -6,6 +7,7 @@ import { usePermissions } from '../../hooks/usePermissions.js';
 import { useServerStore } from '../../stores/server.store.js';
 import { useAuthStore } from '../../stores/auth.store.js';
 import { usePresenceStore } from '../../stores/presence.store.js';
+import { useDMStore } from '../../stores/dm.store.js';
 import { UserAvatar } from '../user/UserAvatar.js';
 import { assignRole, removeRole } from '../../api/roles.js';
 import { kickMember } from '../../api/servers.js';
@@ -19,16 +21,20 @@ interface MemberUserCardProps {
 }
 
 export function MemberUserCard({ member, roles, position, onClose }: MemberUserCardProps) {
+  const navigate = useNavigate();
   const currentServerId = useServerStore((s) => s.currentServerId);
   const server = useServerStore((s) =>
     currentServerId ? s.servers.get(currentServerId) : undefined,
   );
   const currentUser = useAuthStore((s) => s.user);
   const presences = usePresenceStore((s) => s.presences);
+  const openChannel = useDMStore((s) => s.openChannel);
+  const setCurrentDMChannel = useDMStore((s) => s.setCurrentDMChannel);
   const { hasPermission } = usePermissions(currentServerId, roles);
   const cardRef = useRef<HTMLDivElement>(null);
 
   const [isKicking, setIsKicking] = useState(false);
+  const [isOpeningDM, setIsOpeningDM] = useState(false);
   const [showKickConfirm, setShowKickConfirm] = useState(false);
   const [togglingRoleId, setTogglingRoleId] = useState<string | null>(null);
   const [error, setError] = useState('');
@@ -92,6 +98,21 @@ export function MemberUserCard({ member, roles, position, onClose }: MemberUserC
       setAdjustedPosition({ x, y });
     }
   }, [position]);
+
+  const handleMessage = async () => {
+    setIsOpeningDM(true);
+    setError('');
+    try {
+      const channelId = await openChannel(member.userId);
+      setCurrentDMChannel(channelId);
+      onClose();
+      navigate(`/channels/@me/${channelId}`);
+    } catch {
+      setError('Failed to open DM.');
+    } finally {
+      setIsOpeningDM(false);
+    }
+  };
 
   const handleToggleRole = async (roleId: string) => {
     if (!currentServerId) return;
@@ -174,6 +195,22 @@ export function MemberUserCard({ member, roles, position, onClose }: MemberUserC
         )}
         {customStatus && (
           <p className="mt-1 text-sm text-th-text-tertiary">{customStatus}</p>
+        )}
+        {!isSelf && (
+          <button
+            onClick={handleMessage}
+            disabled={isOpeningDM}
+            className="mt-2 flex w-full items-center justify-center gap-1.5 rounded bg-th-brand px-3 py-1.5 text-sm font-medium text-white transition-colors hover:bg-th-brand-hover disabled:opacity-50"
+          >
+            {isOpeningDM ? (
+              <LoadingSpinner size={14} />
+            ) : (
+              <svg className="h-4 w-4" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2z" />
+              </svg>
+            )}
+            Message
+          </button>
         )}
       </div>
 

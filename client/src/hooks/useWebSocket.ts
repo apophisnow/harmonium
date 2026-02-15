@@ -8,6 +8,7 @@ import { useMemberStore } from '../stores/member.store.js';
 import { useChannelStore } from '../stores/channel.store.js';
 import { useServerStore } from '../stores/server.store.js';
 import { useVoiceStore } from '../stores/voice.store.js';
+import { useDMStore } from '../stores/dm.store.js';
 
 const WS_URL =
   import.meta.env.VITE_WS_URL ??
@@ -47,6 +48,10 @@ export function useWebSocket() {
 
   const removeServer = useServerStore((s) => s.removeServer);
   const updateServer = useServerStore((s) => s.updateServer);
+
+  const addDMMessage = useDMStore((s) => s.addMessage);
+  const deleteDMMessage = useDMStore((s) => s.deleteMessage);
+  const addDMChannel = useDMStore((s) => s.addChannel);
 
   const clearHeartbeat = useCallback(() => {
     if (heartbeatRef.current) {
@@ -200,6 +205,20 @@ export function useWebSocket() {
         );
         break;
       }
+      case 'DM_CHANNEL_CREATE':
+        addDMChannel(data.d.channel);
+        break;
+      case 'DM_MESSAGE_CREATE':
+        addDMMessage(data.d.dmChannelId, data.d.message);
+        break;
+      case 'DM_MESSAGE_DELETE':
+        deleteDMMessage(data.d.dmChannelId, data.d.id);
+        break;
+      case 'DM_TYPING_START':
+        window.dispatchEvent(
+          new CustomEvent('ws:dm_typing_start', { detail: data.d }),
+        );
+        break;
       case 'ERROR':
         console.error('[WS] Server error:', data.d.message);
         break;

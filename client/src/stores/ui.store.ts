@@ -7,6 +7,7 @@ type ModalType =
   | 'editProfile'
   | 'userSettings'
   | 'serverSettings'
+  | 'newDM'
   | null;
 
 interface UIState {

@@ -171,4 +171,31 @@ CREATE INDEX "refresh_tokens_user_id_idx" ON "refresh_tokens" USING btree ("user
 CREATE INDEX "roles_server_id_idx" ON "roles" USING btree ("server_id");--> statement-breakpoint
 CREATE INDEX "server_members_user_id_idx" ON "server_members" USING btree ("user_id");--> statement-breakpoint
 CREATE UNIQUE INDEX "users_username_discriminator_idx" ON "users" USING btree ("username","discriminator");--> statement-breakpoint
-CREATE INDEX "voice_states_channel_id_idx" ON "voice_states" USING btree ("channel_id");
+CREATE INDEX "voice_states_channel_id_idx" ON "voice_states" USING btree ("channel_id");--> statement-breakpoint
+CREATE TABLE "dm_channels" (
+	"id" bigint PRIMARY KEY NOT NULL,
+	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
+	"updated_at" timestamp with time zone DEFAULT now() NOT NULL
+);
+--> statement-breakpoint
+CREATE TABLE "dm_channel_members" (
+	"dm_channel_id" bigint NOT NULL,
+	"user_id" bigint NOT NULL,
+	CONSTRAINT "dm_channel_members_pkey" PRIMARY KEY("dm_channel_id","user_id")
+);
+--> statement-breakpoint
+CREATE TABLE "dm_messages" (
+	"id" bigint PRIMARY KEY NOT NULL,
+	"dm_channel_id" bigint NOT NULL,
+	"author_id" bigint NOT NULL,
+	"content" varchar(4000),
+	"is_deleted" boolean DEFAULT false NOT NULL,
+	"created_at" timestamp with time zone DEFAULT now() NOT NULL
+);
+--> statement-breakpoint
+ALTER TABLE "dm_channel_members" ADD CONSTRAINT "dm_channel_members_dm_channel_id_dm_channels_id_fk" FOREIGN KEY ("dm_channel_id") REFERENCES "public"."dm_channels"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "dm_channel_members" ADD CONSTRAINT "dm_channel_members_user_id_users_id_fk" FOREIGN KEY ("user_id") REFERENCES "public"."users"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "dm_messages" ADD CONSTRAINT "dm_messages_dm_channel_id_dm_channels_id_fk" FOREIGN KEY ("dm_channel_id") REFERENCES "public"."dm_channels"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "dm_messages" ADD CONSTRAINT "dm_messages_author_id_users_id_fk" FOREIGN KEY ("author_id") REFERENCES "public"."users"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
+CREATE INDEX "dm_channel_members_user_id_idx" ON "dm_channel_members" USING btree ("user_id");--> statement-breakpoint
+CREATE INDEX "dm_messages_dm_channel_id_id_idx" ON "dm_messages" USING btree ("dm_channel_id","id");

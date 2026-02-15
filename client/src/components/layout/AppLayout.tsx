@@ -6,6 +6,7 @@ import { useChannelStore } from '../../stores/channel.store.js';
 import { useUIStore } from '../../stores/ui.store.js';
 import { useThemeStore } from '../../stores/theme.store.js';
 import { useVoiceStore } from '../../stores/voice.store.js';
+import { useDMStore } from '../../stores/dm.store.js';
 import { useInfiniteMessages } from '../../hooks/useInfiniteMessages.js';
 import { useTypingIndicator } from '../../hooks/useTypingIndicator.js';
 import { useVoice } from '../../hooks/useVoice.js';
@@ -26,6 +27,9 @@ import { UserSettingsLayout } from '../user/settings/UserSettingsLayout.js';
 import { ScreenShareViewer } from '../voice/ScreenShareViewer.js';
 import { VoiceGrid } from '../voice/VoiceGrid.js';
 import { VoicePiP } from '../voice/VoicePiP.js';
+import { DMSidebar } from '../dm/DMSidebar.js';
+import { DMConversation } from '../dm/DMConversation.js';
+import { NewDMModal } from '../dm/NewDMModal.js';
 
 const EMPTY_CHANNELS: Channel[] = [];
 
@@ -60,7 +64,12 @@ export function AppLayout({ sendEvent, isConnected }: AppLayoutProps) {
   const voiceIsConnected = useVoiceStore((s) => s.isConnected);
   const voiceIsConnecting = useVoiceStore((s) => s.isConnecting);
 
+  const dmChannels = useDMStore((s) => s.channels);
+  const setCurrentDMChannel = useDMStore((s) => s.setCurrentDMChannel);
+  const currentDMChannelId = useDMStore((s) => s.currentDMChannelId);
+
   const isMobile = useIsMobile();
+  const isDMView = serverId === '@me';
 
   // Find the current channel object
   const currentChannel = useMemo(
@@ -133,8 +142,23 @@ export function AppLayout({ sendEvent, isConnected }: AppLayoutProps) {
     }
   }, [serverId, setCurrentServer]);
 
+  // Sync DM channel from URL
   useEffect(() => {
-    if (channelId) {
+    if (isDMView && channelId) {
+      setCurrentDMChannel(channelId);
+    } else if (isDMView) {
+      setCurrentDMChannel(null);
+    }
+  }, [isDMView, channelId, setCurrentDMChannel]);
+
+  // Find the current DM channel object
+  const currentDMChannel = useMemo(
+    () => isDMView && channelId ? dmChannels.find((c) => c.id === channelId) ?? null : null,
+    [isDMView, channelId, dmChannels],
+  );
+
+  useEffect(() => {
+    if (channelId && !isDMView) {
       setCurrentChannel(channelId);
     } else if (currentServerId && channels.length > 0) {
       // Auto-select first text channel
@@ -201,6 +225,35 @@ export function AppLayout({ sendEvent, isConnected }: AppLayoutProps) {
             }`}
           >
             <ServerSidebar />
+            {isDMView ? (
+              <DMSidebar />
+            ) : (
+              <ChannelSidebar
+                onJoinVoice={joinVoice}
+                onLeaveVoice={leaveVoice}
+                onToggleMute={toggleMute}
+                onToggleDeafen={toggleDeafen}
+                onStartScreenShare={startScreenShare}
+                onStopScreenShare={stopScreenShare}
+                onStartWebcam={startWebcam}
+                onStopWebcam={stopWebcam}
+                isWebcamOn={isWebcamOn}
+              />
+            )}
+          </div>
+        </>
+      )}
+
+      {/* Desktop sidebars (hidden on mobile) */}
+      {!isMobile && (
+        <>
+          {/* Server sidebar - 72px */}
+          <ServerSidebar />
+
+          {/* Channel/DM sidebar - 240px */}
+          {isDMView ? (
+            <DMSidebar />
+          ) : (
             <ChannelSidebar
               onJoinVoice={joinVoice}
               onLeaveVoice={leaveVoice}
@@ -212,79 +265,75 @@ export function AppLayout({ sendEvent, isConnected }: AppLayoutProps) {
               onStopWebcam={stopWebcam}
               isWebcamOn={isWebcamOn}
             />
-          </div>
-        </>
-      )}
-
-      {/* Desktop sidebars (hidden on mobile) */}
-      {!isMobile && (
-        <>
-          {/* Server sidebar - 72px */}
-          <ServerSidebar />
-
-          {/* Channel sidebar - 240px */}
-          <ChannelSidebar
-            onJoinVoice={joinVoice}
-            onLeaveVoice={leaveVoice}
-            onToggleMute={toggleMute}
-            onToggleDeafen={toggleDeafen}
-            onStartScreenShare={startScreenShare}
-            onStopScreenShare={stopScreenShare}
-            onStartWebcam={startWebcam}
-            onStopWebcam={stopWebcam}
-            isWebcamOn={isWebcamOn}
-          />
+          )}
         </>
       )}
 
       {/* Main content area */}
-      <div className="flex min-w-0 flex-1 flex-col bg-th-bg-primary">
-        <ChannelHeader channel={currentChannel} />
-
-        {isViewingVoiceChannel ? (
-          // Voice channel full view
-          <>
-            <ScreenShareViewer />
-            <VoiceGrid expanded />
-          </>
-        ) : currentChannel ? (
-          // Text channel view (with PiP overlay if in voice)
-          <>
-            <div className="relative flex min-h-0 flex-1 flex-col">
-              <MessageList
-                messages={messages}
-                isLoading={isLoading}
-                hasMore={hasMore}
-                loadMore={loadMore}
-              />
-              <TypingIndicator typingUsers={typingUsers} />
-              {showVoicePiP && <VoicePiP />}
-            </div>
-
-            <MessageInput
-              channelId={currentChannel.id}
-              channelName={currentChannel.name}
-              onTyping={sendTyping}
-            />
-          </>
+      {isDMView ? (
+        // DM view
+        currentDMChannel ? (
+          <DMConversation
+            dmChannelId={currentDMChannel.id}
+            channel={currentDMChannel}
+            sendEvent={sendEvent}
+          />
         ) : (
-          <div className="flex flex-1 flex-col items-center justify-center">
+          <div className="flex min-w-0 flex-1 flex-col items-center justify-center bg-th-bg-primary">
             <p className="text-th-text-secondary">
-              {currentServerId
-                ? 'Select a channel to start chatting'
-                : 'Select a server to get started'}
+              Select a conversation or start a new one
             </p>
-            {currentServerId && (
-              <button
-                onClick={() => openModal('invite')}
-                className="mt-4 rounded bg-th-brand px-4 py-2 text-sm font-medium text-white hover:bg-th-brand-hover transition-colors"
-              >
-                Invite Friends
-              </button>
-            )}
           </div>
-        )}
-      </div>
+        )
+      ) : (
+        <div className="flex min-w-0 flex-1 flex-col bg-th-bg-primary">
+          <ChannelHeader channel={currentChannel} />
+
+          {isViewingVoiceChannel ? (
+            // Voice channel full view
+            <>
+              <ScreenShareViewer />
+              <VoiceGrid expanded />
+            </>
+          ) : currentChannel ? (
+            // Text channel view (with PiP overlay if in voice)
+            <>
+              <div className="relative flex min-h-0 flex-1 flex-col">
+                <MessageList
+                  messages={messages}
+                  isLoading={isLoading}
+                  hasMore={hasMore}
+                  loadMore={loadMore}
+                />
+                <TypingIndicator typingUsers={typingUsers} />
+                {showVoicePiP && <VoicePiP />}
+              </div>
+
+              <MessageInput
+                channelId={currentChannel.id}
+                channelName={currentChannel.name}
+                onTyping={sendTyping}
+              />
+            </>
+          ) : (
+            <div className="flex flex-1 flex-col items-center justify-center">
+              <p className="text-th-text-secondary">
+                {currentServerId
+                  ? 'Select a channel to start chatting'
+                  : 'Select a server to get started'}
+              </p>
+              {currentServerId && (
+                <button
+                  onClick={() => openModal('invite')}
+                  className="mt-4 rounded bg-th-brand px-4 py-2 text-sm font-medium text-white hover:bg-th-brand-hover transition-colors"
+                >
+                  Invite Friends
+                </button>
+              )}
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Member sidebar - 240px (toggleable, hidden on mobile) */}
       {showMemberSidebar && currentServerId && !isMobile && <MemberSidebar />}
@@ -296,6 +345,7 @@ export function AppLayout({ sendEvent, isConnected }: AppLayoutProps) {
       <ServerSettings />
       <EditProfileModal />
       <UserSettingsLayout />
+      <NewDMModal />
       </div>
     </div>
   );

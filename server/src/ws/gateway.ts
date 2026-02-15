@@ -14,6 +14,7 @@ import { getPubSubManager } from './pubsub.js';
 import { handleTypingStart } from './handlers/typing.handler.js';
 import { handlePresenceUpdate, handleConnect, handleDisconnect } from './handlers/presence.handler.js';
 import { handleVoiceStateUpdate } from './handlers/voice-signal.handler.js';
+import { broadcastDMTypingStart } from './handlers/dm.handler.js';
 import { leaveVoice } from '../modules/voice/voice.service.js';
 import { isValidSnowflake } from '../utils/validation.js';
 import { getDb, schema } from '../db/index.js';
@@ -117,6 +118,35 @@ export async function registerGateway(app: FastifyInstance): Promise<void> {
           case 'VOICE_STATE_UPDATE':
             await handleVoiceStateUpdate(app, ws, message.d);
             break;
+          case 'DM_TYPING_START': {
+            if (!isValidSnowflake(message.d?.dmChannelId)) {
+              sendError(ws, 4002, 'Invalid dmChannelId');
+              break;
+            }
+            const dmMeta = connectionManager.getMeta(ws);
+            if (!dmMeta) break;
+            // Look up participant IDs and broadcast typing
+            const dmDb = getDb();
+            const dmMembers = await dmDb
+              .select({ userId: schema.dmChannelMembers.userId })
+              .from(schema.dmChannelMembers)
+              .where(eq(schema.dmChannelMembers.dmChannelId, BigInt(message.d.dmChannelId)));
+            const dmParticipantIds = dmMembers.map((m) => m.userId.toString());
+            if (dmParticipantIds.includes(dmMeta.userId)) {
+              const dmUser = await dmDb.query.users.findFirst({
+                where: eq(schema.users.id, BigInt(dmMeta.userId)),
+              });
+              const pubsub = getPubSubManager();
+              broadcastDMTypingStart(
+                pubsub,
+                dmParticipantIds,
+                message.d.dmChannelId,
+                dmMeta.userId,
+                dmUser?.username ?? 'Unknown',
+              );
+            }
+            break;
+          }
           default:
             sendError(ws, 4004, `Unknown op: ${(message as ClientEvent).op}`);
         }
