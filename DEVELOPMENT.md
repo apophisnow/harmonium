@@ -18,17 +18,7 @@ xcode-select --install
 
 ## Local Development Setup
 
-### 1. Start databases with Docker
-
-The easiest way to get PostgreSQL and Redis running:
-
-```bash
-docker compose up postgres redis -d
-```
-
-This starts just the databases without building the full app containers.
-
-### 2. Install dependencies
+### 1. Install dependencies
 
 From the project root:
 
@@ -38,21 +28,7 @@ npm install
 
 This installs all three workspaces (`packages/shared`, `server`, `client`) in one command. mediasoup will compile its native worker during install -- this takes a minute on the first run.
 
-### 3. Build the shared package
-
-The shared types package must be built before the server or client can import from it:
-
-```bash
-npm run build --workspace=packages/shared
-```
-
-For ongoing development, run it in watch mode in a separate terminal:
-
-```bash
-npm run dev --workspace=packages/shared
-```
-
-### 4. Configure environment
+### 2. Configure environment
 
 ```bash
 cp .env.example .env
@@ -60,35 +36,48 @@ cp .env.example .env
 
 The defaults work for local development with the Docker databases. Make sure `JWT_SECRET` and `JWT_REFRESH_SECRET` are at least 16 characters.
 
-### 5. Run database migrations
+### 3. Sync database schema
 
-Generate and apply the Drizzle schema:
+Push the Drizzle schema directly to the database:
 
 ```bash
-cd server
-npx drizzle-kit generate
-npx drizzle-kit migrate
+npm run db:push
 ```
+
+This uses `drizzle-kit push` to sync schema changes without migration files -- ideal while the schema is still evolving. When the schema is stable and you're ready to deploy, switch to `npm run db:generate` and `npm run db:migrate` to create versioned migration files.
 
 To inspect the database visually:
 
 ```bash
-npx drizzle-kit studio
+npm run db:studio --workspace=server
 ```
 
-### 6. Start the dev servers
+### 4. Start development
 
-In separate terminals:
+A single command starts everything -- databases, shared package watcher, server, and client:
 
 ```bash
-# Terminal 1: Server (auto-restarts on changes)
-npm run dev --workspace=server
-
-# Terminal 2: Client (Vite HMR)
-npm run dev --workspace=client
+npm run dev
 ```
 
-The server runs on **http://localhost:3001** and the client on **http://localhost:5173**.
+This will:
+
+1. Start PostgreSQL and Redis via Docker Compose (waits until healthy)
+2. Build the shared types package
+3. Watch all three workspaces in parallel with colored, labeled output:
+   - **shared** (blue) -- rebuilds types on change
+   - **server** (green) -- auto-restarts on changes via tsx watch (http://localhost:3001)
+   - **client** (cyan) -- Vite HMR (http://localhost:5173)
+
+Press `Ctrl+C` to stop all processes.
+
+You can also run individual pieces separately:
+
+```bash
+npm run dev:services    # Start just PostgreSQL and Redis
+npm run dev:server      # Start just the server
+npm run dev:client      # Start just the client
+```
 
 ## Workspace Structure
 

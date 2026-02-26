@@ -62,6 +62,19 @@ After starting the containers for the first time (or after schema changes):
 docker compose exec server npx drizzle-kit migrate
 ```
 
+## Development
+
+For local development with hot reloading:
+
+```bash
+npm install
+cp .env.example .env    # Edit secrets as needed
+npm run db:push
+npm run dev
+```
+
+`npm run dev` starts PostgreSQL and Redis via Docker, builds the shared package, then watches all workspaces in parallel with hot reloading. See [DEVELOPMENT.md](DEVELOPMENT.md) for the full guide.
+
 ## Environment Variables
 
 | Variable | Default | Description |
@@ -75,6 +88,15 @@ docker compose exec server npx drizzle-kit migrate
 | `MEDIASOUP_ANNOUNCED_IP` | `127.0.0.1` | Public IP for WebRTC (must be reachable by clients) |
 | `UPLOAD_DIR` | `./uploads` | Directory for file uploads |
 | `MAX_UPLOAD_SIZE` | `10485760` | Max upload size in bytes (default 10MB) |
+| `DEFAULT_THEME` | `harmonium` | Default them if no server or user theme preference |
+| `DEFAULT_MODE` | `dark` | Default mode light/dark |
+| `DOMAIN` | `example.com`  | Domain used for  | ACME_EMAIL=admin@YOUR_DOMAIN
+# SMTP (optional — if not set, verification URLs are logged to console)
+SMTP_HOST=
+SMTP_PORT=587
+SMTP_USER=
+SMTP_PASS=
+SMTP_FROM=noreply@harmonium.app
 
 ## Project Structure
 

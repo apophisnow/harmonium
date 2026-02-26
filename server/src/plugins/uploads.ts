@@ -1,4 +1,5 @@
 import { resolve } from 'node:path';
+import { mkdirSync } from 'node:fs';
 import fp from 'fastify-plugin';
 import multipart from '@fastify/multipart';
 import fastifyStatic from '@fastify/static';
@@ -15,6 +16,8 @@ declare module 'fastify' {
 export default fp(async (app) => {
   const config = getConfig();
   const uploadDir = resolve(config.UPLOAD_DIR);
+
+  mkdirSync(uploadDir, { recursive: true });
 
   // Register multipart support for file uploads
   await app.register(multipart, {
