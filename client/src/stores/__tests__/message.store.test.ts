@@ -14,6 +14,7 @@ const makeMessage = (id: string, channelId: string, content: string) => ({
   content,
   editedAt: null,
   isDeleted: false,
+  replyToId: null,
   createdAt: '2025-01-01T00:00:00Z',
 });
 
@@ -22,6 +23,7 @@ describe('useMessageStore', () => {
     useMessageStore.setState({
       messages: new Map(),
       hasMore: new Map(),
+      replyingTo: null,
     });
     vi.clearAllMocks();
   });
@@ -108,5 +110,20 @@ describe('useMessageStore', () => {
 
     const state = useMessageStore.getState();
     expect(state.messages.get('c1')).toEqual([msg2]);
+  });
+
+  it('setReplyingTo sets the message being replied to', () => {
+    const msg = makeMessage('m1', 'c1', 'Hello');
+    useMessageStore.getState().setReplyingTo(msg);
+
+    expect(useMessageStore.getState().replyingTo).toEqual(msg);
+  });
+
+  it('setReplyingTo clears reply when set to null', () => {
+    const msg = makeMessage('m1', 'c1', 'Hello');
+    useMessageStore.getState().setReplyingTo(msg);
+    useMessageStore.getState().setReplyingTo(null);
+
+    expect(useMessageStore.getState().replyingTo).toBeNull();
   });
 });

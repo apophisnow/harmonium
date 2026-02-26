@@ -38,6 +38,7 @@ export async function messageRoutes(app: FastifyInstance) {
       }
 
       let content: string | undefined;
+      let replyToId: string | undefined;
       const files: AttachmentInput[] = [];
 
       // Check if the request is multipart
@@ -47,6 +48,8 @@ export async function messageRoutes(app: FastifyInstance) {
           if (part.type === 'field') {
             if (part.fieldname === 'content' && typeof part.value === 'string') {
               content = part.value;
+            } else if (part.fieldname === 'replyToId' && typeof part.value === 'string') {
+              replyToId = part.value;
             }
           } else if (part.type === 'file') {
             const buffer = await part.toBuffer();
@@ -65,6 +68,7 @@ export async function messageRoutes(app: FastifyInstance) {
           throw new ValidationError(bodyParsed.error.errors[0].message);
         }
         content = bodyParsed.data.content;
+        replyToId = bodyParsed.data.replyToId;
       }
 
       // Validate: at least one of content or files must be present
@@ -83,7 +87,7 @@ export async function messageRoutes(app: FastifyInstance) {
       const message = await messagesService.createMessage(
         paramsParsed.data.channelId,
         request.user.userId,
-        { content },
+        { content, replyToId },
         files,
         app.storage,
       );

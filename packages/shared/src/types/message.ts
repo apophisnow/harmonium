@@ -7,6 +7,8 @@ export interface Message {
   content: string | null;
   editedAt: string | null;
   isDeleted: boolean;
+  replyToId: string | null;
+  replyTo?: Message | null;
   createdAt: string;
   author?: PublicUser;
   attachments?: Attachment[];

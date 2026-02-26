@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import type { Message, Attachment } from '@harmonium/shared';
 import { useAuthStore } from '../../stores/auth.store.js';
+import { useMessageStore } from '../../stores/message.store.js';
 import { editMessage, deleteMessage } from '../../api/messages.js';
 import { UserAvatar } from '../user/UserAvatar.js';
 import { formatDate } from '../../lib/formatters.js';
@@ -76,14 +77,68 @@ function MessageAttachments({ attachments }: { attachments?: Attachment[] }) {
   );
 }
 
+function getReplyPreviewText(replyTo: Message): string {
+  if (replyTo.isDeleted) return '';
+  if (replyTo.content) {
+    return replyTo.content.length > 80 ? replyTo.content.slice(0, 80) + '...' : replyTo.content;
+  }
+  if (replyTo.attachments && replyTo.attachments.length > 0) {
+    return '[attachment]';
+  }
+  return '';
+}
+
+function ReplyPreview({ replyTo }: { replyTo: Message }) {
+  const handleClick = () => {
+    const el = document.querySelector(`[data-message-id="${replyTo.id}"]`);
+    if (el) {
+      el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      el.classList.add('bg-th-bg-message-hover');
+      setTimeout(() => el.classList.remove('bg-th-bg-message-hover'), 1500);
+    }
+  };
+
+  return (
+    <div
+      className="mb-1 flex items-center gap-1.5 cursor-pointer text-sm text-th-text-muted hover:text-th-text-secondary"
+      onClick={handleClick}
+    >
+      <svg className="h-3 w-3 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+        <path d="M9 17l-5-5 5-5M4 12h16" />
+      </svg>
+      {replyTo.isDeleted ? (
+        <span className="italic">Original message was deleted</span>
+      ) : (
+        <>
+          <UserAvatar
+            username={replyTo.author?.username ?? 'Unknown'}
+            avatarUrl={replyTo.author?.avatarUrl}
+            size={16}
+            showStatus={false}
+          />
+          <span className="font-medium text-th-text-secondary text-xs">
+            {replyTo.author?.username ?? 'Unknown'}
+          </span>
+          <span className="truncate text-xs">{getReplyPreviewText(replyTo)}</span>
+        </>
+      )}
+    </div>
+  );
+}
+
 export function MessageItem({ message, isGrouped }: MessageItemProps) {
   const [isHovering, setIsHovering] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [editContent, setEditContent] = useState(message.content ?? '');
   const [contextMenu, setContextMenu] = useState<ContextMenuState | null>(null);
   const currentUserId = useAuthStore((s) => s.user?.id);
+  const setReplyingTo = useMessageStore((s) => s.setReplyingTo);
 
   const isOwnMessage = message.authorId === currentUserId;
+
+  const handleReply = () => {
+    setReplyingTo(message);
+  };
 
   const handleEditSubmit = async () => {
     if (!editContent.trim()) return;
@@ -119,6 +174,11 @@ export function MessageItem({ message, isGrouped }: MessageItemProps) {
 
     const items: ContextMenuState['items'] = [];
 
+    items.push({
+      label: 'Reply',
+      onClick: handleReply,
+    });
+
     if (isOwnMessage) {
       items.push({
         label: 'Edit',
@@ -148,6 +208,8 @@ export function MessageItem({ message, isGrouped }: MessageItemProps) {
     setContextMenu({ x: e.clientX, y: e.clientY, items });
   };
 
+  const hasReply = message.replyTo !== undefined && message.replyTo !== null;
+
   if (isGrouped) {
     return (
       <div
@@ -155,6 +217,7 @@ export function MessageItem({ message, isGrouped }: MessageItemProps) {
         onMouseEnter={() => setIsHovering(true)}
         onMouseLeave={() => setIsHovering(false)}
         onContextMenu={handleContextMenu}
+        data-message-id={message.id}
       >
         {/* Timestamp on hover in grouped mode */}
         <span className="w-[72px] flex-shrink-0 pt-0.5 text-right opacity-0 group-hover:opacity-100">
@@ -168,6 +231,7 @@ export function MessageItem({ message, isGrouped }: MessageItemProps) {
         </span>
 
         <div className="min-w-0 flex-1">
+          {hasReply && <ReplyPreview replyTo={message.replyTo!} />}
           {isEditing ? (
             <div className="rounded bg-th-bg-accent p-2">
               <textarea
@@ -200,8 +264,10 @@ export function MessageItem({ message, isGrouped }: MessageItemProps) {
         </div>
 
         {/* Action buttons */}
-        {isHovering && isOwnMessage && !isEditing && (
+        {isHovering && !isEditing && (
           <MessageActions
+            isOwnMessage={isOwnMessage}
+            onReply={handleReply}
             onEdit={() => {
               setEditContent(message.content ?? '');
               setIsEditing(true);
@@ -227,6 +293,7 @@ export function MessageItem({ message, isGrouped }: MessageItemProps) {
       onMouseEnter={() => setIsHovering(true)}
       onMouseLeave={() => setIsHovering(false)}
       onContextMenu={handleContextMenu}
+      data-message-id={message.id}
     >
       <div className="mr-4 mt-0.5 flex-shrink-0">
         <UserAvatar
@@ -238,6 +305,7 @@ export function MessageItem({ message, isGrouped }: MessageItemProps) {
       </div>
 
       <div className="min-w-0 flex-1">
+        {hasReply && <ReplyPreview replyTo={message.replyTo!} />}
         <div className="flex items-baseline gap-2">
           <span className="font-medium text-white hover:underline cursor-pointer">
             {message.author?.username ?? 'Unknown'}
@@ -279,8 +347,10 @@ export function MessageItem({ message, isGrouped }: MessageItemProps) {
       </div>
 
       {/* Action buttons */}
-      {isHovering && isOwnMessage && !isEditing && (
+      {isHovering && !isEditing && (
         <MessageActions
+          isOwnMessage={isOwnMessage}
+          onReply={handleReply}
           onEdit={() => {
             setEditContent(message.content ?? '');
             setIsEditing(true);
@@ -301,32 +371,49 @@ export function MessageItem({ message, isGrouped }: MessageItemProps) {
 }
 
 function MessageActions({
+  isOwnMessage,
+  onReply,
   onEdit,
   onDelete,
 }: {
+  isOwnMessage: boolean;
+  onReply: () => void;
   onEdit: () => void;
   onDelete: () => void;
 }) {
   return (
     <div className="absolute -top-3 right-4 flex rounded bg-th-bg-secondary shadow-md border border-th-border">
       <button
-        onClick={onEdit}
-        className="rounded-l p-1.5 text-th-text-secondary hover:text-th-text-primary hover:bg-th-bg-primary transition-colors"
-        title="Edit"
+        onClick={onReply}
+        className={`${isOwnMessage ? '' : 'rounded-l rounded-r'} p-1.5 text-th-text-secondary hover:text-th-text-primary hover:bg-th-bg-primary transition-colors`}
+        title="Reply"
       >
         <svg className="h-4 w-4" viewBox="0 0 24 24" fill="currentColor">
-          <path d="M16.293 2.293a1 1 0 0 1 1.414 0l4 4a1 1 0 0 1 0 1.414l-13 13A1 1 0 0 1 8 21H4a1 1 0 0 1-1-1v-4a1 1 0 0 1 .293-.707l13-13zM5 16.414V19h2.586l12-12L17 4.414l-12 12z" />
+          <path d="M10 9V5l-7 7 7 7v-4.1c5 0 8.5 1.6 11 5.1-1-5-4-10-11-11z" />
         </svg>
       </button>
-      <button
-        onClick={onDelete}
-        className="rounded-r p-1.5 text-th-text-secondary hover:text-th-red hover:bg-th-bg-primary transition-colors"
-        title="Delete"
-      >
-        <svg className="h-4 w-4" viewBox="0 0 24 24" fill="currentColor">
-          <path d="M15 3.999V2H9V3.999H3V5.999H21V3.999H15ZM5 6.99902V18.999C5 20.101 5.897 20.999 7 20.999H17C18.103 20.999 19 20.101 19 18.999V6.99902H5Z" />
-        </svg>
-      </button>
+      {isOwnMessage && (
+        <>
+          <button
+            onClick={onEdit}
+            className="p-1.5 text-th-text-secondary hover:text-th-text-primary hover:bg-th-bg-primary transition-colors"
+            title="Edit"
+          >
+            <svg className="h-4 w-4" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M16.293 2.293a1 1 0 0 1 1.414 0l4 4a1 1 0 0 1 0 1.414l-13 13A1 1 0 0 1 8 21H4a1 1 0 0 1-1-1v-4a1 1 0 0 1 .293-.707l13-13zM5 16.414V19h2.586l12-12L17 4.414l-12 12z" />
+            </svg>
+          </button>
+          <button
+            onClick={onDelete}
+            className="rounded-r p-1.5 text-th-text-secondary hover:text-th-red hover:bg-th-bg-primary transition-colors"
+            title="Delete"
+          >
+            <svg className="h-4 w-4" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M15 3.999V2H9V3.999H3V5.999H21V3.999H15ZM5 6.99902V18.999C5 20.101 5.897 20.999 7 20.999H17C18.103 20.999 19 20.101 19 18.999V6.99902H5Z" />
+            </svg>
+          </button>
+        </>
+      )}
     </div>
   );
 }

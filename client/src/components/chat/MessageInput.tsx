@@ -1,5 +1,6 @@
 import { useState, useRef } from 'react';
 import { sendMessage } from '../../api/messages.js';
+import { useMessageStore } from '../../stores/message.store.js';
 
 interface MessageInputProps {
   channelId: string;
@@ -23,6 +24,8 @@ export function MessageInput({
   const [isSending, setIsSending] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const replyingTo = useMessageStore((s) => s.replyingTo);
+  const setReplyingTo = useMessageStore((s) => s.setReplyingTo);
 
   const handleSubmit = async () => {
     const trimmed = content.trim();
@@ -30,9 +33,15 @@ export function MessageInput({
 
     setIsSending(true);
     try {
-      await sendMessage(channelId, trimmed, files.length > 0 ? files : undefined);
+      await sendMessage(
+        channelId,
+        trimmed,
+        files.length > 0 ? files : undefined,
+        replyingTo?.id,
+      );
       setContent('');
       setFiles([]);
+      setReplyingTo(null);
       // Reset textarea height
       if (textareaRef.current) {
         textareaRef.current.style.height = 'auto';
@@ -48,6 +57,9 @@ export function MessageInput({
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       handleSubmit();
+    }
+    if (e.key === 'Escape' && replyingTo) {
+      setReplyingTo(null);
     }
   };
 
@@ -73,11 +85,31 @@ export function MessageInput({
     setFiles((prev) => prev.filter((_, i) => i !== index));
   };
 
+  const hasTopSection = replyingTo || files.length > 0;
+
   return (
     <div className="px-4 pb-6 pt-2">
+      {/* Reply bar */}
+      {replyingTo && (
+        <div className={`flex items-center justify-between bg-th-bg-accent px-3 py-2 ${files.length > 0 ? '' : 'rounded-t-lg'}`}>
+          <span className="text-sm text-th-text-secondary">
+            Replying to <span className="font-medium text-th-text-primary">{replyingTo.author?.username ?? 'Unknown'}</span>
+          </span>
+          <button
+            onClick={() => setReplyingTo(null)}
+            className="text-th-text-secondary hover:text-th-text-primary transition-colors"
+            title="Cancel reply"
+          >
+            <svg className="h-4 w-4" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M18.4 4L12 10.4L5.6 4L4 5.6L10.4 12L4 18.4L5.6 20L12 13.6L18.4 20L20 18.4L13.6 12L20 5.6L18.4 4Z" />
+            </svg>
+          </button>
+        </div>
+      )}
+
       {/* File previews */}
       {files.length > 0 && (
-        <div className="mb-2 flex flex-wrap gap-2 rounded-t-lg bg-th-bg-accent px-3 pt-3 pb-1">
+        <div className={`flex flex-wrap gap-2 bg-th-bg-accent px-3 pt-3 pb-1 ${replyingTo ? '' : 'rounded-t-lg'}`}>
           {files.map((file, index) => (
             <div
               key={`${file.name}-${index}`}
@@ -108,7 +140,7 @@ export function MessageInput({
         </div>
       )}
 
-      <div className={`flex items-end bg-th-bg-accent ${files.length > 0 ? 'rounded-b-lg' : 'rounded-lg'}`}>
+      <div className={`flex items-end bg-th-bg-accent ${hasTopSection ? 'rounded-b-lg' : 'rounded-lg'}`}>
         {/* Attachment button */}
         <button
           onClick={() => fileInputRef.current?.click()}

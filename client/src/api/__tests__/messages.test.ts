@@ -52,6 +52,20 @@ describe('messages API', () => {
 
     expect(apiClient.post).toHaveBeenCalledWith('/channels/c1/messages', {
       content: 'Hello',
+      replyToId: undefined,
+    });
+    expect(result).toEqual(mockMessage);
+  });
+
+  it('sendMessage includes replyToId in JSON body when provided', async () => {
+    const mockMessage = { id: 'm1', channelId: 'c1', content: 'Reply', replyToId: 'm0' };
+    vi.mocked(apiClient.post).mockResolvedValue({ data: mockMessage });
+
+    const result = await sendMessage('c1', 'Reply', undefined, 'm0');
+
+    expect(apiClient.post).toHaveBeenCalledWith('/channels/c1/messages', {
+      content: 'Reply',
+      replyToId: 'm0',
     });
     expect(result).toEqual(mockMessage);
   });
@@ -68,6 +82,21 @@ describe('messages API', () => {
       expect.any(FormData),
       { headers: { 'Content-Type': 'multipart/form-data' } },
     );
+    expect(result).toEqual(mockMessage);
+  });
+
+  it('sendMessage includes replyToId in FormData when files and replyToId are provided', async () => {
+    const mockMessage = { id: 'm1', channelId: 'c1', content: 'Reply with file', replyToId: 'm0' };
+    vi.mocked(apiClient.post).mockResolvedValue({ data: mockMessage });
+
+    const file = new File(['data'], 'test.txt', { type: 'text/plain' });
+    const result = await sendMessage('c1', 'Reply with file', [file], 'm0');
+
+    const callArgs = vi.mocked(apiClient.post).mock.calls[0];
+    expect(callArgs[0]).toBe('/channels/c1/messages');
+    const formData = callArgs[1] as FormData;
+    expect(formData.get('replyToId')).toBe('m0');
+    expect(formData.get('content')).toBe('Reply with file');
     expect(result).toEqual(mockMessage);
   });
 

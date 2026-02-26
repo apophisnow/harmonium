@@ -1,7 +1,7 @@
 import { eq, and, lt, gt, desc, asc, inArray } from 'drizzle-orm';
 import { getDb, schema } from '../../db/index.js';
 import { generateId } from '../../utils/snowflake.js';
-import { NotFoundError, ForbiddenError } from '../../utils/errors.js';
+import { NotFoundError, ForbiddenError, ValidationError } from '../../utils/errors.js';
 import { getPubSubManager } from '../../ws/pubsub.js';
 import { computeChannelPermissions } from '../../utils/permissions.js';
 import { Permission, hasPermission } from '@harmonium/shared';
@@ -42,8 +42,18 @@ function attachmentToResponse(row: typeof schema.attachments.$inferSelect): Atta
   };
 }
 
-function messageToResponse(row: MessageRow, attachmentRows?: (typeof schema.attachments.$inferSelect)[]): Message {
+function messageToResponse(
+  row: MessageRow,
+  attachmentRows?: (typeof schema.attachments.$inferSelect)[],
+  replyToRow?: MessageRow | null,
+  replyToAttachments?: (typeof schema.attachments.$inferSelect)[],
+): Message {
   const { message, user } = row;
+  let replyTo: Message | null = null;
+  if (replyToRow) {
+    replyTo = messageToResponse(replyToRow, replyToAttachments);
+  }
+
   return {
     id: message.id.toString(),
     channelId: message.channelId.toString(),
@@ -51,6 +61,8 @@ function messageToResponse(row: MessageRow, attachmentRows?: (typeof schema.atta
     content: message.isDeleted ? null : message.content,
     editedAt: message.editedAt?.toISOString() ?? null,
     isDeleted: message.isDeleted,
+    replyToId: message.replyToId?.toString() ?? null,
+    replyTo,
     createdAt: message.createdAt.toISOString(),
     author: user
       ? {
@@ -91,6 +103,29 @@ async function fetchAttachmentsForMessages(messageIds: bigint[]): Promise<Map<st
   return map;
 }
 
+async function fetchReplyMessages(replyToIds: bigint[]): Promise<Map<string, { row: MessageRow; attachments: (typeof schema.attachments.$inferSelect)[] }>> {
+  if (replyToIds.length === 0) return new Map();
+
+  const db = getDb();
+  const rows = await db
+    .select({
+      message: schema.messages,
+      user: schema.users,
+    })
+    .from(schema.messages)
+    .innerJoin(schema.users, eq(schema.messages.authorId, schema.users.id))
+    .where(inArray(schema.messages.id, replyToIds));
+
+  const attachmentsMap = await fetchAttachmentsForMessages(replyToIds);
+
+  const map = new Map<string, { row: MessageRow; attachments: (typeof schema.attachments.$inferSelect)[] }>();
+  for (const row of rows) {
+    const key = row.message.id.toString();
+    map.set(key, { row, attachments: attachmentsMap.get(key) ?? [] });
+  }
+  return map;
+}
+
 async function getChannelWithServer(channelId: string) {
   const db = getDb();
   const channel = await db.query.channels.findFirst({
@@ -119,6 +154,21 @@ export async function createMessage(
   const channel = await getChannelWithServer(channelId);
   const serverId = channel.serverId.toString();
 
+  // Validate replyToId if provided
+  let replyToIdBigInt: bigint | undefined;
+  if (input.replyToId) {
+    replyToIdBigInt = BigInt(input.replyToId);
+    const replyTarget = await db.query.messages.findFirst({
+      where: eq(schema.messages.id, replyToIdBigInt),
+    });
+    if (!replyTarget) {
+      throw new ValidationError('Referenced message not found');
+    }
+    if (replyTarget.channelId.toString() !== channelId) {
+      throw new ValidationError('Cannot reply to a message in a different channel');
+    }
+  }
+
   // Generate snowflake ID
   const messageId = generateId();
 
@@ -128,6 +178,7 @@ export async function createMessage(
     channelId: BigInt(channelId),
     authorId: BigInt(authorId),
     content: input.content ?? null,
+    replyToId: replyToIdBigInt ?? null,
   });
 
   // Save attachments
@@ -177,7 +228,19 @@ export async function createMessage(
     throw new NotFoundError('Message not found after creation');
   }
 
-  const message = messageToResponse(rows[0], attachmentRows);
+  // Fetch replyTo data if applicable
+  let replyToRow: MessageRow | null = null;
+  let replyToAttachments: (typeof schema.attachments.$inferSelect)[] = [];
+  if (replyToIdBigInt) {
+    const replyData = await fetchReplyMessages([replyToIdBigInt]);
+    const data = replyData.get(replyToIdBigInt.toString());
+    if (data) {
+      replyToRow = data.row;
+      replyToAttachments = data.attachments;
+    }
+  }
+
+  const message = messageToResponse(rows[0], attachmentRows, replyToRow, replyToAttachments);
 
   // Publish MESSAGE_CREATE event via pub/sub
   const pubsub = getPubSubManager();
@@ -254,9 +317,22 @@ export async function getMessages(
   const messageIds = rows.map((r) => r.message.id);
   const attachmentsMap = await fetchAttachmentsForMessages(messageIds);
 
+  // Batch-fetch replyTo messages
+  const replyToIds = rows
+    .map((r) => r.message.replyToId)
+    .filter((id): id is bigint => id !== null);
+  const replyToMap = await fetchReplyMessages(replyToIds);
+
   return rows.map((row) => {
     const msgAttachments = attachmentsMap.get(row.message.id.toString()) ?? [];
-    return messageToResponse(row, msgAttachments);
+    const replyToId = row.message.replyToId?.toString();
+    const replyData = replyToId ? replyToMap.get(replyToId) : undefined;
+    return messageToResponse(
+      row,
+      msgAttachments,
+      replyData?.row ?? null,
+      replyData?.attachments,
+    );
   });
 }
 
@@ -312,7 +388,20 @@ export async function updateMessage(
 
   // Fetch attachments for the updated message
   const msgAttachments = await fetchAttachmentsForMessages([messageIdBigInt]);
-  const message = messageToResponse(rows[0], msgAttachments.get(messageId) ?? []);
+
+  // Fetch replyTo data if applicable
+  let replyToRow: MessageRow | null = null;
+  let replyToAttachments: (typeof schema.attachments.$inferSelect)[] = [];
+  if (rows[0].message.replyToId) {
+    const replyData = await fetchReplyMessages([rows[0].message.replyToId]);
+    const data = replyData.get(rows[0].message.replyToId.toString());
+    if (data) {
+      replyToRow = data.row;
+      replyToAttachments = data.attachments;
+    }
+  }
+
+  const message = messageToResponse(rows[0], msgAttachments.get(messageId) ?? [], replyToRow, replyToAttachments);
 
   // Get serverId for broadcasting
   const channel = await getChannelWithServer(existing.channelId.toString());

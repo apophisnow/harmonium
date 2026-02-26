@@ -7,16 +7,19 @@ const DEFAULT_LIMIT = 50;
 interface MessageState {
   messages: Map<string, Message[]>;
   hasMore: Map<string, boolean>;
+  replyingTo: Message | null;
 
   fetchMessages: (channelId: string, before?: string) => Promise<void>;
   addMessage: (message: Message) => void;
   updateMessage: (message: Partial<Message> & { id: string; channelId: string }) => void;
   deleteMessage: (channelId: string, messageId: string) => void;
+  setReplyingTo: (message: Message | null) => void;
 }
 
 export const useMessageStore = create<MessageState>((set, get) => ({
   messages: new Map(),
   hasMore: new Map(),
+  replyingTo: null,
 
   fetchMessages: async (channelId, before) => {
     const fetched = await getMessages(channelId, {
@@ -59,5 +62,9 @@ export const useMessageStore = create<MessageState>((set, get) => ({
       list.filter((m) => m.id !== messageId),
     );
     set({ messages });
+  },
+
+  setReplyingTo: (message) => {
+    set({ replyingTo: message });
   },
 }));

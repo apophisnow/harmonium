@@ -8,6 +8,7 @@ export const createMessageSchema = z.object({
       .min(1, 'Message content must be at least 1 character')
       .max(4000, 'Message content must be at most 4000 characters'),
   ).optional(),
+  replyToId: snowflakeId.optional(),
 });
 
 export const updateMessageSchema = z.object({

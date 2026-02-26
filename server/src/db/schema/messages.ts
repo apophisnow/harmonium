@@ -1,4 +1,4 @@
-import { pgTable, bigint, varchar, boolean, integer, timestamp, index } from 'drizzle-orm/pg-core';
+import { pgTable, bigint, varchar, boolean, integer, timestamp, index, type AnyPgColumn } from 'drizzle-orm/pg-core';
 import { channels } from './channels.js';
 import { users } from './users.js';
 
@@ -9,6 +9,7 @@ export const messages = pgTable('messages', {
   content: varchar('content', { length: 4000 }),
   editedAt: timestamp('edited_at', { withTimezone: true }),
   isDeleted: boolean('is_deleted').notNull().default(false),
+  replyToId: bigint('reply_to_id', { mode: 'bigint' }).references((): AnyPgColumn => messages.id, { onDelete: 'set null' }),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
 }, (table) => [
   index('messages_channel_id_id_idx').on(table.channelId, table.id),

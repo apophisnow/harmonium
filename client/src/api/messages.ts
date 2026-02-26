@@ -16,11 +16,15 @@ export async function sendMessage(
   channelId: string,
   content: string,
   files?: File[],
+  replyToId?: string,
 ): Promise<Message> {
   if (files && files.length > 0) {
     const formData = new FormData();
     if (content) {
       formData.append('content', content);
+    }
+    if (replyToId) {
+      formData.append('replyToId', replyToId);
     }
     for (const file of files) {
       formData.append('files', file, file.name);
@@ -39,7 +43,7 @@ export async function sendMessage(
 
   const response = await apiClient.post<Message>(
     `/channels/${channelId}/messages`,
-    { content },
+    { content, replyToId },
   );
   return response.data;
 }
