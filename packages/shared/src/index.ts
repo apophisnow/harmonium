@@ -6,5 +6,6 @@ export * from './types/reaction.js';
 export * from './types/role.js';
 export * from './types/invite.js';
 export * from './types/voice.js';
+export * from './types/read-state.js';
 export * from './permissions.js';
 export * from './ws-events.js';

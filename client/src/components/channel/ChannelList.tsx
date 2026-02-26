@@ -2,6 +2,8 @@ import { useState, useCallback } from 'react';
 import type { Channel } from '@harmonium/shared';
 import { useChannelStore } from '../../stores/channel.store.js';
 import { useUIStore } from '../../stores/ui.store.js';
+import { useUnreadStore } from '../../stores/unread.store.js';
+import { useMessageStore } from '../../stores/message.store.js';
 import { useNavigate } from 'react-router-dom';
 import { VoiceChannel } from '../voice/VoiceChannel.js';
 
@@ -139,27 +141,54 @@ function ChannelItem({
   isActive: boolean;
   onClick: () => void;
 }) {
+  const messages = useMessageStore((s) => s.messages.get(channel.id));
+  const latestMessageId = messages && messages.length > 0 ? messages[messages.length - 1].id : undefined;
+  const readState = useUnreadStore((s) => s.readStates.get(channel.id));
+  const mentionCount = readState?.mentionCount ?? 0;
+
+  // Compute hasUnread from raw read state
+  let hasUnread = false;
+  if (!isActive && readState) {
+    if (!readState.lastReadMessageId) {
+      hasUnread = !!latestMessageId;
+    } else if (latestMessageId) {
+      hasUnread = BigInt(latestMessageId) > BigInt(readState.lastReadMessageId);
+    }
+  }
+
   return (
     <button
       onClick={onClick}
-      className={`group flex w-full items-center gap-1.5 rounded px-2 py-2 md:py-1.5 text-sm transition-colors ${
+      className={`group relative flex w-full items-center gap-1.5 rounded px-2 py-2 md:py-1.5 text-sm transition-colors ${
         isActive
           ? 'bg-th-bg-accent text-white'
-          : 'text-th-text-secondary hover:bg-th-bg-primary hover:text-th-text-primary'
+          : hasUnread
+            ? 'text-th-text-primary hover:bg-th-bg-primary'
+            : 'text-th-text-secondary hover:bg-th-bg-primary hover:text-th-text-primary'
       }`}
     >
+      {/* Unread indicator dot */}
+      {hasUnread && (
+        <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-2 rounded-r-full bg-white" />
+      )}
       {channel.type === 'text' ? (
-        <span className="text-lg leading-none font-light text-th-text-secondary">#</span>
+        <span className={`text-lg leading-none font-light ${hasUnread ? 'text-th-text-primary' : 'text-th-text-secondary'}`}>#</span>
       ) : (
         <svg
-          className="h-5 w-5 flex-shrink-0 text-th-text-secondary"
+          className={`h-5 w-5 flex-shrink-0 ${hasUnread ? 'text-th-text-primary' : 'text-th-text-secondary'}`}
           viewBox="0 0 24 24"
           fill="currentColor"
         >
           <path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3zm7 9a1 1 0 1 0-2 0 5 5 0 0 1-10 0 1 1 0 1 0-2 0 7 7 0 0 0 6 6.93V21a1 1 0 1 0 2 0v-2.07A7 7 0 0 0 19 11z" />
         </svg>
       )}
-      <span className="truncate">{channel.name}</span>
+      <span className={`truncate ${hasUnread ? 'font-semibold' : ''}`}>{channel.name}</span>
+      {/* Mention badge */}
+      {mentionCount > 0 && (
+        <span className="ml-auto flex-shrink-0 min-w-[18px] h-[18px] flex items-center justify-center rounded-full bg-th-red text-white text-xs font-bold px-1">
+          {mentionCount}
+        </span>
+      )}
     </button>
   );
 }

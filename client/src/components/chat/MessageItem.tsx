@@ -1,7 +1,11 @@
-import { useState } from 'react';
-import type { Message, Attachment, Reaction } from '@harmonium/shared';
+import { useState, type ReactNode } from 'react';
+import type { Message, Attachment, Reaction, ServerMember } from '@harmonium/shared';
 import { useAuthStore } from '../../stores/auth.store.js';
 import { useMessageStore } from '../../stores/message.store.js';
+import { useMemberStore } from '../../stores/member.store.js';
+import { useServerStore } from '../../stores/server.store.js';
+
+const EMPTY_MEMBERS: ServerMember[] = [];
 import { editMessage, deleteMessage } from '../../api/messages.js';
 import { addReaction, removeReaction } from '../../api/reactions.js';
 import { UserAvatar } from '../user/UserAvatar.js';
@@ -161,6 +165,46 @@ function MessageReactions({
   );
 }
 
+function MessageContent({ content }: { content: string }) {
+  const currentServerId = useServerStore((s) => s.currentServerId);
+  const members = useMemberStore((s) => currentServerId ? (s.members.get(currentServerId) ?? EMPTY_MEMBERS) : EMPTY_MEMBERS);
+
+  const parts: ReactNode[] = [];
+  const mentionPattern = /<@(\d+)>/g;
+  let lastIndex = 0;
+  let match;
+  let key = 0;
+
+  while ((match = mentionPattern.exec(content)) !== null) {
+    // Add text before the mention
+    if (match.index > lastIndex) {
+      parts.push(content.slice(lastIndex, match.index));
+    }
+
+    const userId = match[1];
+    const member = members.find((m) => m.userId === userId);
+    const username = member?.user?.username ?? 'Unknown User';
+
+    parts.push(
+      <span
+        key={key++}
+        className="bg-th-brand/20 text-th-brand rounded px-1 cursor-pointer hover:underline"
+      >
+        @{username}
+      </span>,
+    );
+
+    lastIndex = match.index + match[0].length;
+  }
+
+  // Add remaining text
+  if (lastIndex < content.length) {
+    parts.push(content.slice(lastIndex));
+  }
+
+  return <>{parts}</>;
+}
+
 export function MessageItem({ message, isGrouped }: MessageItemProps) {
   const [isHovering, setIsHovering] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
@@ -309,7 +353,7 @@ export function MessageItem({ message, isGrouped }: MessageItemProps) {
             <>
               {message.content && (
                 <p className="text-sm text-th-text-primary break-words">
-                  {message.content}
+                  <MessageContent content={message.content} />
                   {message.editedAt && (
                     <span className="ml-1 text-[10px] text-th-text-muted">
                       (edited)

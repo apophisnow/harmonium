@@ -15,6 +15,7 @@ import { handleTypingStart } from './handlers/typing.handler.js';
 import { handlePresenceUpdate, handleConnect, handleDisconnect } from './handlers/presence.handler.js';
 import { handleVoiceStateUpdate } from './handlers/voice-signal.handler.js';
 import { leaveVoice } from '../modules/voice/voice.service.js';
+import { markRead, getReadStates } from '../modules/read-states/read-states.service.js';
 import { isValidSnowflake } from '../utils/validation.js';
 import { getDb, schema } from '../db/index.js';
 import { eq, inArray } from 'drizzle-orm';
@@ -117,6 +118,17 @@ export async function registerGateway(app: FastifyInstance): Promise<void> {
           case 'VOICE_STATE_UPDATE':
             await handleVoiceStateUpdate(app, ws, message.d);
             break;
+          case 'MARK_READ': {
+            if (!isValidSnowflake(message.d?.channelId) || !isValidSnowflake(message.d?.messageId)) {
+              sendError(ws, 4002, 'Invalid channelId or messageId');
+              break;
+            }
+            const markReadMeta = connectionManager.getMeta(ws);
+            if (markReadMeta) {
+              await markRead(markReadMeta.userId, message.d.channelId, message.d.messageId);
+            }
+            break;
+          }
           default:
             sendError(ws, 4004, `Unknown op: ${(message as ClientEvent).op}`);
         }
@@ -281,6 +293,11 @@ export async function registerGateway(app: FastifyInstance): Promise<void> {
         }
       }
 
+      // Load read states for all user's servers
+      const readStates = serverIds.length > 0
+        ? await getReadStates(userId, serverIds)
+        : [];
+
       // Send READY event
       const readyEvent: ReadyEvent = {
         op: 'READY',
@@ -299,6 +316,7 @@ export async function registerGateway(app: FastifyInstance): Promise<void> {
           servers: serverList,
           sessionId: sessId,
           presences,
+          readStates,
         },
       };
 

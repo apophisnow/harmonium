@@ -4,6 +4,7 @@ import type { Channel } from './types/channel.js';
 import type { Server, ServerMember } from './types/server.js';
 import type { Role } from './types/role.js';
 import type { VoiceState, ProducerType } from './types/voice.js';
+import type { ReadState } from './types/read-state.js';
 
 // ===== Client-to-Server Events =====
 
@@ -42,6 +43,11 @@ export interface VoiceStateUpdateClientEvent {
   d: { channelId: string | null; selfMute: boolean; selfDeaf: boolean };
 }
 
+export interface MarkReadEvent {
+  op: 'MARK_READ';
+  d: { channelId: string; messageId: string };
+}
+
 export type ClientEvent =
   | IdentifyEvent
   | HeartbeatEvent
@@ -49,7 +55,8 @@ export type ClientEvent =
   | UnsubscribeServerEvent
   | TypingStartClientEvent
   | PresenceUpdateClientEvent
-  | VoiceStateUpdateClientEvent;
+  | VoiceStateUpdateClientEvent
+  | MarkReadEvent;
 
 // ===== Server-to-Client Events =====
 
@@ -70,6 +77,7 @@ export interface ReadyEvent {
     servers: Array<{ id: string; name: string; iconUrl: string | null }>;
     sessionId: string;
     presences: Array<{ userId: string; status: UserStatus }>;
+    readStates: ReadState[];
   };
 }
 

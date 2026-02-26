@@ -15,6 +15,7 @@ import { serverInviteRoutes, inviteRoutes } from './modules/invites/invites.rout
 import { channelRoutes } from './modules/channels/channels.routes.js';
 import { messageRoutes } from './modules/messages/messages.routes.js';
 import { reactionRoutes } from './modules/messages/reactions.routes.js';
+import { readStateRoutes } from './modules/read-states/read-states.routes.js';
 import { registerGateway } from './ws/gateway.js';
 import { voiceRoutes } from './modules/voice/voice.routes.js';
 import { getVoiceServer } from './voice/voice-server.js';
@@ -97,6 +98,7 @@ export async function buildApp(): Promise<FastifyInstance> {
   await app.register(channelRoutes);
   await app.register(messageRoutes);
   await app.register(reactionRoutes);
+  await app.register(readStateRoutes);
 
   // Register WebSocket gateway
   await registerGateway(app);

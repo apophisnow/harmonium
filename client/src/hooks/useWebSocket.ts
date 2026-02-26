@@ -8,6 +8,7 @@ import { useMemberStore } from '../stores/member.store.js';
 import { useChannelStore } from '../stores/channel.store.js';
 import { useServerStore } from '../stores/server.store.js';
 import { useVoiceStore } from '../stores/voice.store.js';
+import { useUnreadStore } from '../stores/unread.store.js';
 
 const WS_URL =
   import.meta.env.VITE_WS_URL ??
@@ -49,6 +50,9 @@ export function useWebSocket() {
 
   const removeServer = useServerStore((s) => s.removeServer);
   const updateServer = useServerStore((s) => s.updateServer);
+
+  const setReadStates = useUnreadStore((s) => s.setReadStates);
+  const handleNewMessage = useUnreadStore((s) => s.handleNewMessage);
 
   const clearHeartbeat = useCallback(() => {
     if (heartbeatRef.current) {
@@ -100,13 +104,34 @@ export function useWebSocket() {
         if (entries.length > 0) {
           bulkSetPresence(entries);
         }
+        // Set initial read states
+        if (data.d.readStates) {
+          setReadStates(data.d.readStates);
+        }
         setIsConnected(true);
         reconnectAttemptRef.current = 0;
         break;
       }
-      case 'MESSAGE_CREATE':
+      case 'MESSAGE_CREATE': {
         addMessage(data.d.message);
+        // Track unread for non-active channels
+        const msgCurrentUserId = useAuthStore.getState().user?.id;
+        const activeChannelId = useChannelStore.getState().currentChannelId;
+        const msg = data.d.message;
+        if (msg.channelId !== activeChannelId && msgCurrentUserId && msg.authorId !== msgCurrentUserId) {
+          // Parse mentions from message content
+          const mentionPattern = /<@(\d+)>/g;
+          const mentions: string[] = [];
+          let mentionMatch;
+          if (msg.content) {
+            while ((mentionMatch = mentionPattern.exec(msg.content)) !== null) {
+              mentions.push(mentionMatch[1]);
+            }
+          }
+          handleNewMessage(msg.channelId, msg.id, mentions, msgCurrentUserId);
+        }
         break;
+      }
       case 'MESSAGE_UPDATE':
         updateMessage(data.d.message);
         break;

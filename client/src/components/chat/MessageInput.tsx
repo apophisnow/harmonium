@@ -1,10 +1,15 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useCallback, useEffect } from 'react';
+import type { ServerMember } from '@harmonium/shared';
 import { sendMessage } from '../../api/messages.js';
 import { useMessageStore } from '../../stores/message.store.js';
+import { useMemberStore } from '../../stores/member.store.js';
+
+const EMPTY_MEMBERS: ServerMember[] = [];
 
 interface MessageInputProps {
   channelId: string;
   channelName: string;
+  serverId: string;
   onTyping?: () => void;
 }
 
@@ -17,15 +22,28 @@ function formatFileSize(bytes: number): string {
 export function MessageInput({
   channelId,
   channelName,
+  serverId,
   onTyping,
 }: MessageInputProps) {
   const [content, setContent] = useState('');
   const [files, setFiles] = useState<File[]>([]);
   const [isSending, setIsSending] = useState(false);
+  const [mentionQuery, setMentionQuery] = useState<string | null>(null);
+  const [mentionIndex, setMentionIndex] = useState(0);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const replyingTo = useMessageStore((s) => s.replyingTo);
   const setReplyingTo = useMessageStore((s) => s.setReplyingTo);
+  const members = useMemberStore((s) => s.members.get(serverId) ?? EMPTY_MEMBERS);
+
+  // Filter members by mention query
+  const filteredMembers = mentionQuery !== null
+    ? members
+        .filter((m) =>
+          m.user?.username.toLowerCase().includes(mentionQuery.toLowerCase()),
+        )
+        .slice(0, 8)
+    : [];
 
   const handleSubmit = async () => {
     const trimmed = content.trim();
@@ -42,6 +60,7 @@ export function MessageInput({
       setContent('');
       setFiles([]);
       setReplyingTo(null);
+      setMentionQuery(null);
       // Reset textarea height
       if (textareaRef.current) {
         textareaRef.current.style.height = 'auto';
@@ -53,7 +72,66 @@ export function MessageInput({
     }
   };
 
+  const insertMention = useCallback(
+    (userId: string, username: string) => {
+      const textarea = textareaRef.current;
+      if (!textarea) return;
+
+      const cursorPos = textarea.selectionStart;
+      const textBefore = content.slice(0, cursorPos);
+      const textAfter = content.slice(cursorPos);
+
+      // Find the @ that started the mention
+      const atIndex = textBefore.lastIndexOf('@');
+      if (atIndex === -1) return;
+
+      const newText =
+        textBefore.slice(0, atIndex) + `<@${userId}> ` + textAfter;
+      setContent(newText);
+      setMentionQuery(null);
+
+      // Restore focus and cursor position
+      requestAnimationFrame(() => {
+        if (textareaRef.current) {
+          const newPos = atIndex + `<@${userId}> `.length;
+          textareaRef.current.focus();
+          textareaRef.current.setSelectionRange(newPos, newPos);
+        }
+      });
+    },
+    [content],
+  );
+
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    // Handle mention autocomplete navigation
+    if (mentionQuery !== null && filteredMembers.length > 0) {
+      if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        setMentionIndex((prev) => (prev + 1) % filteredMembers.length);
+        return;
+      }
+      if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        setMentionIndex((prev) =>
+          prev === 0 ? filteredMembers.length - 1 : prev - 1,
+        );
+        return;
+      }
+      if (e.key === 'Tab' || e.key === 'Enter') {
+        e.preventDefault();
+        const member = filteredMembers[mentionIndex];
+        if (member?.user) {
+          insertMention(member.userId, member.user.username);
+        }
+        return;
+      }
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        setMentionQuery(null);
+        return;
+      }
+    }
+
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       handleSubmit();
@@ -64,8 +142,20 @@ export function MessageInput({
   };
 
   const handleChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-    setContent(e.target.value);
+    const value = e.target.value;
+    setContent(value);
     onTyping?.();
+
+    // Check for mention trigger
+    const cursorPos = e.target.selectionStart;
+    const textBefore = value.slice(0, cursorPos);
+    const atMatch = textBefore.match(/@(\w*)$/);
+    if (atMatch) {
+      setMentionQuery(atMatch[1]);
+      setMentionIndex(0);
+    } else {
+      setMentionQuery(null);
+    }
 
     // Auto-resize textarea
     const textarea = e.target;
@@ -140,7 +230,29 @@ export function MessageInput({
         </div>
       )}
 
-      <div className={`flex items-end bg-th-bg-accent ${hasTopSection ? 'rounded-b-lg' : 'rounded-lg'}`}>
+      <div className={`relative flex items-end bg-th-bg-accent ${hasTopSection ? 'rounded-b-lg' : 'rounded-lg'}`}>
+        {/* Mention autocomplete dropdown */}
+        {mentionQuery !== null && filteredMembers.length > 0 && (
+          <div className="absolute bottom-full left-0 right-0 mb-1 max-h-[200px] overflow-y-auto rounded-lg bg-th-bg-secondary border border-th-border shadow-lg z-10">
+            {filteredMembers.map((member, i) => (
+              <button
+                key={member.userId}
+                onMouseDown={(e) => {
+                  e.preventDefault();
+                  if (member.user) {
+                    insertMention(member.userId, member.user.username);
+                  }
+                }}
+                className={`flex w-full items-center gap-2 px-3 py-2 text-sm text-th-text-primary hover:bg-th-bg-accent ${
+                  i === mentionIndex ? 'bg-th-bg-accent' : ''
+                }`}
+              >
+                <span className="font-medium">@{member.user?.username ?? 'Unknown'}</span>
+              </button>
+            ))}
+          </div>
+        )}
+
         {/* Attachment button */}
         <button
           onClick={() => fileInputRef.current?.click()}

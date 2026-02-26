@@ -11,6 +11,7 @@ import {
   broadcastMessageDelete,
 } from '../../ws/handlers/message.handler.js';
 import { getReactionsForMessages } from './reactions.service.js';
+import { incrementMentionCount } from '../read-states/read-states.service.js';
 import type { CreateMessageInput, UpdateMessageInput, MessagesQuery } from './messages.schemas.js';
 import type { Message, Attachment, Reaction } from '@harmonium/shared';
 import type { StorageProvider } from '../../storage/local.js';
@@ -248,6 +249,23 @@ export async function createMessage(
   // Publish MESSAGE_CREATE event via pub/sub
   const pubsub = getPubSubManager();
   broadcastMessageCreate(pubsub, serverId, message);
+
+  // Parse mentions and increment mention counts
+  if (input.content) {
+    const mentionPattern = /<@(\d+)>/g;
+    const mentionedUserIds: string[] = [];
+    let match;
+    while ((match = mentionPattern.exec(input.content)) !== null) {
+      const mentionedId = match[1];
+      // Don't count self-mentions
+      if (mentionedId !== authorId && !mentionedUserIds.includes(mentionedId)) {
+        mentionedUserIds.push(mentionedId);
+      }
+    }
+    if (mentionedUserIds.length > 0) {
+      await incrementMentionCount(channelId, mentionedUserIds);
+    }
+  }
 
   return message;
 }

@@ -256,6 +256,8 @@ export function AppLayout({ sendEvent, isConnected }: AppLayoutProps) {
                 isLoading={isLoading}
                 hasMore={hasMore}
                 loadMore={loadMore}
+                channelId={currentChannel.id}
+                sendEvent={sendEvent}
               />
               <TypingIndicator typingUsers={typingUsers} />
               {showVoicePiP && <VoicePiP />}
@@ -264,6 +266,7 @@ export function AppLayout({ sendEvent, isConnected }: AppLayoutProps) {
             <MessageInput
               channelId={currentChannel.id}
               channelName={currentChannel.name}
+              serverId={currentServerId ?? ''}
               onTyping={sendTyping}
             />
           </>

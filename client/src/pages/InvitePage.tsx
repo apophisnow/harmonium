@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import type { Invite } from '@harmonium/shared';
 import { getInviteInfo, acceptInvite } from '../api/invites.js';
 import { useAuthStore } from '../stores/auth.store.js';
+import { useServerStore } from '../stores/server.store.js';
 import { LoadingSpinner } from '../components/shared/LoadingSpinner.js';
 import { getInitials } from '../lib/formatters.js';
 
@@ -36,6 +37,8 @@ export function InvitePage() {
 
     try {
       const result = await acceptInvite(code);
+      // Refresh server list so the new server is available before navigating
+      await useServerStore.getState().fetchServers();
       navigate(`/channels/${result.serverId}`);
     } catch {
       setError('Failed to join the server. Please try again.');

@@ -1,6 +1,8 @@
 import { useNavigate } from 'react-router-dom';
 import { useServerStore } from '../../stores/server.store.js';
+import { useChannelStore } from '../../stores/channel.store.js';
 import { useUIStore } from '../../stores/ui.store.js';
+import { useUnreadStore } from '../../stores/unread.store.js';
 import { ServerIcon } from '../server/ServerIcon.js';
 import { Tooltip } from '../shared/Tooltip.js';
 
@@ -52,8 +54,9 @@ export function ServerSidebar() {
 
       {/* Server list */}
       {serverList.map((server) => (
-        <ServerIcon
+        <ServerIconWithUnread
           key={server.id}
+          serverId={server.id}
           name={server.name}
           iconUrl={server.iconUrl}
           isActive={server.id === currentServerId}
@@ -81,6 +84,57 @@ export function ServerSidebar() {
           </svg>
         </button>
       </Tooltip>
+    </div>
+  );
+}
+
+function ServerIconWithUnread({
+  serverId,
+  name,
+  iconUrl,
+  isActive,
+  onClick,
+}: {
+  serverId: string;
+  name: string;
+  iconUrl?: string | null;
+  isActive: boolean;
+  onClick: () => void;
+}) {
+  const channels = useChannelStore((s) => s.channels.get(serverId));
+  const readStates = useUnreadStore((s) => s.readStates);
+
+  // Compute server-level unread info
+  let hasUnread = false;
+  let mentionCount = 0;
+
+  if (channels) {
+    for (const channel of channels) {
+      if (channel.type !== 'text') continue;
+      const state = readStates.get(channel.id);
+      if (state) {
+        if (state.mentionCount > 0) {
+          mentionCount += state.mentionCount;
+          hasUnread = true;
+        }
+      }
+    }
+  }
+
+  return (
+    <div className="relative">
+      <ServerIcon
+        name={name}
+        iconUrl={iconUrl}
+        isActive={isActive}
+        hasNotification={hasUnread}
+        onClick={onClick}
+      />
+      {mentionCount > 0 && (
+        <div className="absolute -bottom-0.5 -right-0.5 min-w-[18px] h-[18px] flex items-center justify-center rounded-full bg-th-red text-white text-xs font-bold px-1 border-2 border-th-bg-tertiary">
+          {mentionCount}
+        </div>
+      )}
     </div>
   );
 }
