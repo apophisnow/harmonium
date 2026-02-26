@@ -32,6 +32,8 @@ export function useWebSocket() {
   const addMessage = useMessageStore((s) => s.addMessage);
   const updateMessage = useMessageStore((s) => s.updateMessage);
   const deleteMessage = useMessageStore((s) => s.deleteMessage);
+  const addReactionToStore = useMessageStore((s) => s.addReaction);
+  const removeReactionFromStore = useMessageStore((s) => s.removeReaction);
 
   const setPresence = usePresenceStore((s) => s.setPresence);
   const bulkSetPresence = usePresenceStore((s) => s.bulkSetPresence);
@@ -110,6 +112,12 @@ export function useWebSocket() {
         break;
       case 'MESSAGE_DELETE':
         deleteMessage(data.d.channelId, data.d.id);
+        break;
+      case 'REACTION_ADD':
+        addReactionToStore(data.d.channelId, data.d.messageId, data.d.userId, data.d.emoji);
+        break;
+      case 'REACTION_REMOVE':
+        removeReactionFromStore(data.d.channelId, data.d.messageId, data.d.userId, data.d.emoji);
         break;
       case 'PRESENCE_UPDATE':
         setPresence(data.d.userId, data.d.status);

@@ -1,11 +1,13 @@
 import { useState } from 'react';
-import type { Message, Attachment } from '@harmonium/shared';
+import type { Message, Attachment, Reaction } from '@harmonium/shared';
 import { useAuthStore } from '../../stores/auth.store.js';
 import { useMessageStore } from '../../stores/message.store.js';
 import { editMessage, deleteMessage } from '../../api/messages.js';
+import { addReaction, removeReaction } from '../../api/reactions.js';
 import { UserAvatar } from '../user/UserAvatar.js';
 import { formatDate } from '../../lib/formatters.js';
 import { ContextMenu, type ContextMenuState } from '../shared/ContextMenu.js';
+import { EmojiPicker } from './EmojiPicker.js';
 
 interface MessageItemProps {
   message: Message;
@@ -126,11 +128,45 @@ function ReplyPreview({ replyTo }: { replyTo: Message }) {
   );
 }
 
+function MessageReactions({
+  reactions,
+  currentUserId,
+  onToggle,
+}: {
+  reactions: Reaction[];
+  currentUserId: string | undefined;
+  onToggle: (emoji: string) => void;
+}) {
+  if (reactions.length === 0) return null;
+  return (
+    <div className="mt-1 flex flex-wrap gap-1">
+      {reactions.map((r) => {
+        const hasReacted = currentUserId ? r.userIds.includes(currentUserId) : false;
+        return (
+          <button
+            key={r.emoji}
+            onClick={() => onToggle(r.emoji)}
+            className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-sm border cursor-pointer transition-colors ${
+              hasReacted
+                ? 'bg-th-brand/20 border-th-brand'
+                : 'border-th-border hover:bg-th-bg-accent'
+            }`}
+          >
+            <span>{r.emoji}</span>
+            <span className="text-xs text-th-text-secondary">{r.count}</span>
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
 export function MessageItem({ message, isGrouped }: MessageItemProps) {
   const [isHovering, setIsHovering] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [editContent, setEditContent] = useState(message.content ?? '');
   const [contextMenu, setContextMenu] = useState<ContextMenuState | null>(null);
+  const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const currentUserId = useAuthStore((s) => s.user?.id);
   const setReplyingTo = useMessageStore((s) => s.setReplyingTo);
 
@@ -166,6 +202,29 @@ export function MessageItem({ message, isGrouped }: MessageItemProps) {
       await deleteMessage(message.channelId, message.id);
     } catch {
       console.error('Failed to delete message');
+    }
+  };
+
+  const handleReactionToggle = async (emoji: string) => {
+    if (!currentUserId) return;
+    const existing = message.reactions?.find((r) => r.emoji === emoji);
+    try {
+      if (existing?.userIds.includes(currentUserId)) {
+        await removeReaction(message.channelId, message.id, emoji);
+      } else {
+        await addReaction(message.channelId, message.id, emoji);
+      }
+    } catch {
+      console.error('Failed to toggle reaction');
+    }
+  };
+
+  const handleAddReactionFromPicker = async (emoji: string) => {
+    if (!currentUserId) return;
+    try {
+      await addReaction(message.channelId, message.id, emoji);
+    } catch {
+      console.error('Failed to add reaction');
     }
   };
 
@@ -261,6 +320,11 @@ export function MessageItem({ message, isGrouped }: MessageItemProps) {
               <MessageAttachments attachments={message.attachments} />
             </>
           )}
+          <MessageReactions
+            reactions={message.reactions ?? []}
+            currentUserId={currentUserId}
+            onToggle={handleReactionToggle}
+          />
         </div>
 
         {/* Action buttons */}
@@ -273,7 +337,18 @@ export function MessageItem({ message, isGrouped }: MessageItemProps) {
               setIsEditing(true);
             }}
             onDelete={handleDelete}
+            onAddReaction={() => setShowEmojiPicker(true)}
           />
+        )}
+
+        {/* Emoji picker */}
+        {showEmojiPicker && (
+          <div className="absolute -top-3 right-4 z-50">
+            <EmojiPicker
+              onSelect={handleAddReactionFromPicker}
+              onClose={() => setShowEmojiPicker(false)}
+            />
+          </div>
         )}
 
         {/* Context menu */}
@@ -344,6 +419,11 @@ export function MessageItem({ message, isGrouped }: MessageItemProps) {
             <MessageAttachments attachments={message.attachments} />
           </>
         )}
+        <MessageReactions
+          reactions={message.reactions ?? []}
+          currentUserId={currentUserId}
+          onToggle={handleReactionToggle}
+        />
       </div>
 
       {/* Action buttons */}
@@ -356,7 +436,18 @@ export function MessageItem({ message, isGrouped }: MessageItemProps) {
             setIsEditing(true);
           }}
           onDelete={handleDelete}
+          onAddReaction={() => setShowEmojiPicker(true)}
         />
+      )}
+
+      {/* Emoji picker */}
+      {showEmojiPicker && (
+        <div className="absolute -top-3 right-4 z-50">
+          <EmojiPicker
+            onSelect={handleAddReactionFromPicker}
+            onClose={() => setShowEmojiPicker(false)}
+          />
+        </div>
       )}
 
       {/* Context menu */}
@@ -375,17 +466,28 @@ function MessageActions({
   onReply,
   onEdit,
   onDelete,
+  onAddReaction,
 }: {
   isOwnMessage: boolean;
   onReply: () => void;
   onEdit: () => void;
   onDelete: () => void;
+  onAddReaction: () => void;
 }) {
   return (
     <div className="absolute -top-3 right-4 flex rounded bg-th-bg-secondary shadow-md border border-th-border">
       <button
+        onClick={onAddReaction}
+        className="rounded-l p-1.5 text-th-text-secondary hover:text-th-text-primary hover:bg-th-bg-primary transition-colors"
+        title="Add Reaction"
+      >
+        <svg className="h-4 w-4" viewBox="0 0 24 24" fill="currentColor">
+          <path d="M12 2C6.477 2 2 6.477 2 12s4.477 10 10 10 10-4.477 10-10S17.523 2 12 2zm0 18c-4.411 0-8-3.589-8-8s3.589-8 8-8 8 3.589 8 8-3.589 8-8 8zm3.5-9c.828 0 1.5-.672 1.5-1.5S16.328 8 15.5 8 14 8.672 14 9.5s.672 1.5 1.5 1.5zm-7 0c.828 0 1.5-.672 1.5-1.5S9.328 8 8.5 8 7 8.672 7 9.5 7.672 11 8.5 11zm3.5 6.5c2.33 0 4.32-1.45 5.12-3.5H6.88c.8 2.05 2.79 3.5 5.12 3.5z" />
+        </svg>
+      </button>
+      <button
         onClick={onReply}
-        className={`${isOwnMessage ? '' : 'rounded-l rounded-r'} p-1.5 text-th-text-secondary hover:text-th-text-primary hover:bg-th-bg-primary transition-colors`}
+        className={`${isOwnMessage ? '' : 'rounded-r'} p-1.5 text-th-text-secondary hover:text-th-text-primary hover:bg-th-bg-primary transition-colors`}
         title="Reply"
       >
         <svg className="h-4 w-4" viewBox="0 0 24 24" fill="currentColor">

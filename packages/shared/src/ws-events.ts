@@ -177,6 +177,26 @@ export interface UserUpdateEvent {
   d: { user: PublicUser };
 }
 
+export interface ReactionAddEvent {
+  op: 'REACTION_ADD';
+  d: {
+    channelId: string;
+    messageId: string;
+    userId: string;
+    emoji: string;
+  };
+}
+
+export interface ReactionRemoveEvent {
+  op: 'REACTION_REMOVE';
+  d: {
+    channelId: string;
+    messageId: string;
+    userId: string;
+    emoji: string;
+  };
+}
+
 export interface ErrorEvent {
   op: 'ERROR';
   d: { code: number; message: string };
@@ -204,6 +224,8 @@ export type ServerEvent =
   | VoiceStateUpdateServerEvent
   | NewProducerServerEvent
   | ProducerClosedServerEvent
+  | ReactionAddEvent
+  | ReactionRemoveEvent
   | ErrorEvent;
 
 // Union of all events

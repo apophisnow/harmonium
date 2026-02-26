@@ -2,6 +2,7 @@ export * from './types/user.js';
 export * from './types/server.js';
 export * from './types/channel.js';
 export * from './types/message.js';
+export * from './types/reaction.js';
 export * from './types/role.js';
 export * from './types/invite.js';
 export * from './types/voice.js';

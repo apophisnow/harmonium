@@ -10,8 +10,9 @@ import {
   broadcastMessageUpdate,
   broadcastMessageDelete,
 } from '../../ws/handlers/message.handler.js';
+import { getReactionsForMessages } from './reactions.service.js';
 import type { CreateMessageInput, UpdateMessageInput, MessagesQuery } from './messages.schemas.js';
-import type { Message, Attachment } from '@harmonium/shared';
+import type { Message, Attachment, Reaction } from '@harmonium/shared';
 import type { StorageProvider } from '../../storage/local.js';
 
 // ===== Types =====
@@ -47,6 +48,7 @@ function messageToResponse(
   attachmentRows?: (typeof schema.attachments.$inferSelect)[],
   replyToRow?: MessageRow | null,
   replyToAttachments?: (typeof schema.attachments.$inferSelect)[],
+  reactions?: Reaction[],
 ): Message {
   const { message, user } = row;
   let replyTo: Message | null = null;
@@ -78,6 +80,7 @@ function messageToResponse(
         }
       : undefined,
     attachments: attachmentRows ? attachmentRows.map(attachmentToResponse) : [],
+    reactions: reactions ?? [],
   };
 }
 
@@ -317,6 +320,9 @@ export async function getMessages(
   const messageIds = rows.map((r) => r.message.id);
   const attachmentsMap = await fetchAttachmentsForMessages(messageIds);
 
+  // Batch-fetch reactions
+  const reactionsMap = await getReactionsForMessages(messageIds);
+
   // Batch-fetch replyTo messages
   const replyToIds = rows
     .map((r) => r.message.replyToId)
@@ -324,7 +330,8 @@ export async function getMessages(
   const replyToMap = await fetchReplyMessages(replyToIds);
 
   return rows.map((row) => {
-    const msgAttachments = attachmentsMap.get(row.message.id.toString()) ?? [];
+    const msgKey = row.message.id.toString();
+    const msgAttachments = attachmentsMap.get(msgKey) ?? [];
     const replyToId = row.message.replyToId?.toString();
     const replyData = replyToId ? replyToMap.get(replyToId) : undefined;
     return messageToResponse(
@@ -332,6 +339,7 @@ export async function getMessages(
       msgAttachments,
       replyData?.row ?? null,
       replyData?.attachments,
+      reactionsMap.get(msgKey),
     );
   });
 }

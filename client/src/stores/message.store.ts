@@ -14,6 +14,8 @@ interface MessageState {
   updateMessage: (message: Partial<Message> & { id: string; channelId: string }) => void;
   deleteMessage: (channelId: string, messageId: string) => void;
   setReplyingTo: (message: Message | null) => void;
+  addReaction: (channelId: string, messageId: string, userId: string, emoji: string) => void;
+  removeReaction: (channelId: string, messageId: string, userId: string, emoji: string) => void;
 }
 
 export const useMessageStore = create<MessageState>((set, get) => ({
@@ -66,5 +68,48 @@ export const useMessageStore = create<MessageState>((set, get) => ({
 
   setReplyingTo: (message) => {
     set({ replyingTo: message });
+  },
+
+  addReaction: (channelId, messageId, userId, emoji) => {
+    const messages = new Map(get().messages);
+    const list = messages.get(channelId) ?? [];
+    messages.set(
+      channelId,
+      list.map((m) => {
+        if (m.id !== messageId) return m;
+        const reactions = [...(m.reactions ?? [])];
+        const existing = reactions.find((r) => r.emoji === emoji);
+        if (existing) {
+          if (!existing.userIds.includes(userId)) {
+            existing.userIds = [...existing.userIds, userId];
+            existing.count = existing.userIds.length;
+          }
+        } else {
+          reactions.push({ emoji, count: 1, userIds: [userId] });
+        }
+        return { ...m, reactions };
+      }),
+    );
+    set({ messages });
+  },
+
+  removeReaction: (channelId, messageId, userId, emoji) => {
+    const messages = new Map(get().messages);
+    const list = messages.get(channelId) ?? [];
+    messages.set(
+      channelId,
+      list.map((m) => {
+        if (m.id !== messageId) return m;
+        const reactions = (m.reactions ?? [])
+          .map((r) => {
+            if (r.emoji !== emoji) return r;
+            const userIds = r.userIds.filter((id) => id !== userId);
+            return { ...r, userIds, count: userIds.length };
+          })
+          .filter((r) => r.count > 0);
+        return { ...m, reactions };
+      }),
+    );
+    set({ messages });
   },
 }));
