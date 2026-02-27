@@ -9,7 +9,7 @@ export const updateUserSchema = z.object({
       .max(32, 'Username must be at most 32 characters'),
   )
     .pipe(
-      z.string().regex(/^[a-zA-Z0-9_]+$/, 'Username must be alphanumeric with underscores only'),
+      z.string().regex(/^[a-zA-Z0-9_ ]+$/, 'Username must be alphanumeric with underscores and spaces only'),
     )
     .optional(),
   aboutMe: safeText(z.string().max(2000, 'About me must be at most 2000 characters')).nullable().optional(),

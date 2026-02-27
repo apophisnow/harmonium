@@ -8,7 +8,7 @@ export const registerSchema = z.object({
       .min(2, 'Username must be at least 2 characters')
       .max(32, 'Username must be at most 32 characters'),
   ).pipe(
-    z.string().regex(/^[a-zA-Z0-9_]+$/, 'Username must be alphanumeric with underscores only'),
+    z.string().regex(/^[a-zA-Z0-9_ ]+$/, 'Username must be alphanumeric with underscores and spaces only'),
   ),
   email: safeLine(z.string().email('Invalid email address')),
   password: z

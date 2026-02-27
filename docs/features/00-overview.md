@@ -22,6 +22,7 @@ Features are ordered so that each builds on the last. Simpler, self-contained fe
 | 14 | Image Previews       | —              | Low        | ~4            |
 | 15 | Webhooks             | —              | Medium     | ~12           |
 | 16 | Server Discovery     | —              | Medium     | ~12           |
+| 17 | Audio Device Settings| —              | Medium     | ~10           |
 
 ## Architecture Conventions
 
