@@ -5,10 +5,12 @@ import { UserSettingsSidebar } from './UserSettingsSidebar.js';
 import type { UserSettingsTab } from './UserSettingsSidebar.js';
 import { MyAccountTab } from './MyAccountTab.js';
 import { AppearanceTab } from './AppearanceTab.js';
+import { VoiceAudioTab } from './VoiceAudioTab.js';
 
 export function UserSettingsLayout() {
   const activeModal = useUIStore((s) => s.activeModal);
   const closeModal = useUIStore((s) => s.closeModal);
+  const initialSettingsTab = useUIStore((s) => s.initialSettingsTab);
   const isOpen = activeModal === 'userSettings';
   const [activeTab, setActiveTab] = useState<UserSettingsTab>('account');
 
@@ -38,9 +40,9 @@ export function UserSettingsLayout() {
 
   useEffect(() => {
     if (isOpen) {
-      setActiveTab('account');
+      setActiveTab((initialSettingsTab as UserSettingsTab) || 'account');
     }
-  }, [isOpen]);
+  }, [isOpen, initialSettingsTab]);
 
   if (!isOpen) return null;
 
@@ -58,6 +60,7 @@ export function UserSettingsLayout() {
         <div className="w-[740px] max-w-full overflow-y-auto px-10 py-[60px]">
           {activeTab === 'account' && <MyAccountTab />}
           {activeTab === 'appearance' && <AppearanceTab />}
+          {activeTab === 'voice' && <VoiceAudioTab />}
         </div>
 
         {/* ESC close button */}

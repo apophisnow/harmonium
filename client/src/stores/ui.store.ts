@@ -13,11 +13,12 @@ interface UIState {
   showMemberSidebar: boolean;
   showMobileSidebar: boolean;
   activeModal: ModalType;
+  initialSettingsTab: string | null;
 
   toggleMemberSidebar: () => void;
   toggleMobileSidebar: () => void;
   closeMobileSidebar: () => void;
-  openModal: (modal: NonNullable<ModalType>) => void;
+  openModal: (modal: NonNullable<ModalType>, options?: { settingsTab?: string }) => void;
   closeModal: () => void;
 }
 
@@ -25,6 +26,7 @@ export const useUIStore = create<UIState>((set, get) => ({
   showMemberSidebar: true,
   showMobileSidebar: false,
   activeModal: null,
+  initialSettingsTab: null,
 
   toggleMemberSidebar: () => {
     set({ showMemberSidebar: !get().showMemberSidebar });
@@ -38,11 +40,11 @@ export const useUIStore = create<UIState>((set, get) => ({
     set({ showMobileSidebar: false });
   },
 
-  openModal: (modal) => {
-    set({ activeModal: modal });
+  openModal: (modal, options) => {
+    set({ activeModal: modal, initialSettingsTab: options?.settingsTab ?? null });
   },
 
   closeModal: () => {
-    set({ activeModal: null });
+    set({ activeModal: null, initialSettingsTab: null });
   },
 }));

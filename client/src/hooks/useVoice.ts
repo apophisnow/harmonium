@@ -4,10 +4,10 @@ import type { types as mediasoupTypes } from 'mediasoup-client';
 import { useVoiceStore } from '../stores/voice.store.js';
 import { useToastStore } from '../stores/toast.store.js';
 import { useAuthStore } from '../stores/auth.store.js';
+import { useAudioSettingsStore } from '../stores/audioSettings.store.js';
 import * as voiceApi from '../api/voice.js';
 import type { VoiceState, ProducerType } from '@harmonium/shared';
 
-const SPEAKING_THRESHOLD = -50; // dB
 const SPEAKING_CHECK_INTERVAL = 100; // ms
 
 export function useVoice() {
@@ -27,6 +27,7 @@ export function useVoice() {
   const webcamProducerRef = useRef<mediasoupTypes.Producer | null>(null);
   const webcamStreamRef = useRef<MediaStream | null>(null);
   const videoElementsRef = useRef<Map<string, HTMLVideoElement>>(new Map());
+  const gainNodeRef = useRef<GainNode | null>(null);
 
   const currentChannelId = useVoiceStore((s) => s.currentChannelId);
   const isMuted = useVoiceStore((s) => s.isMuted);
@@ -103,7 +104,7 @@ export function useVoice() {
       // Convert to dB-like scale (0-255 -> roughly -100 to 0)
       const db = average > 0 ? 20 * Math.log10(average / 255) : -100;
 
-      const isSpeaking = db > SPEAKING_THRESHOLD;
+      const isSpeaking = db > useAudioSettingsStore.getState().voiceActivityThreshold;
 
       if (currentUser) {
         storeActions.current.updateParticipant(currentUser.id, { isSpeaking });
@@ -119,6 +120,7 @@ export function useVoice() {
       audioContextRef.current.close().catch(() => {});
       audioContextRef.current = null;
       analyserRef.current = null;
+      gainNodeRef.current = null;
     }
 
     // Stop local stream tracks
@@ -243,6 +245,15 @@ export function useVoice() {
           const audio = new Audio();
           audio.srcObject = stream;
           audio.autoplay = true;
+
+          // Apply audio settings
+          const audioSettings = useAudioSettingsStore.getState();
+          audio.volume = audioSettings.outputVolume / 100;
+          if (audioSettings.outputDeviceId && 'setSinkId' in audio) {
+            (audio as HTMLAudioElement & { setSinkId: (id: string) => Promise<void> })
+              .setSinkId(audioSettings.outputDeviceId)
+              .catch(() => {});
+          }
 
           // If deafened, mute audio
           audio.muted = useVoiceStore.getState().isDeafened;
@@ -370,23 +381,29 @@ export function useVoice() {
 
         recvTransportRef.current = recvTransport;
 
-        // 5. Get microphone audio
+        // 5. Get microphone audio (using audio device settings)
+        const audioSettings = useAudioSettingsStore.getState();
         const stream = await navigator.mediaDevices.getUserMedia({
           audio: {
-            echoCancellation: true,
-            noiseSuppression: true,
-            autoGainControl: true,
+            deviceId: audioSettings.inputDeviceId ? { exact: audioSettings.inputDeviceId } : undefined,
+            echoCancellation: audioSettings.echoCancellation,
+            noiseSuppression: audioSettings.noiseSuppression,
+            autoGainControl: audioSettings.autoGainControl,
           },
         });
         localStreamRef.current = stream;
 
-        // 6. Set up speaking detection
+        // 6. Set up speaking detection with input volume gain node
         const audioContext = new AudioContext();
         audioContextRef.current = audioContext;
         const source = audioContext.createMediaStreamSource(stream);
+        const gainNode = audioContext.createGain();
+        gainNode.gain.value = audioSettings.inputVolume / 100;
+        gainNodeRef.current = gainNode;
         const analyser = audioContext.createAnalyser();
         analyser.fftSize = 256;
-        source.connect(analyser);
+        source.connect(gainNode);
+        gainNode.connect(analyser);
         analyserRef.current = analyser;
 
         // 7. Produce audio
@@ -563,8 +580,10 @@ export function useVoice() {
     if (useVoiceStore.getState().isWebcamOn) return;
 
     try {
+      const videoSettings = useAudioSettingsStore.getState();
       const stream = await navigator.mediaDevices.getUserMedia({
         video: {
+          deviceId: videoSettings.videoDeviceId ? { exact: videoSettings.videoDeviceId } : undefined,
           width: 1280,
           height: 720,
           facingMode: 'user',
@@ -766,6 +785,35 @@ export function useVoice() {
       }
     }
   }, [isMuted, isDeafened, currentChannelId]);
+
+  // Apply audio settings changes mid-call
+  useEffect(() => {
+    const unsub = useAudioSettingsStore.subscribe((state, prev) => {
+      // Input volume → update gain node
+      if (state.inputVolume !== prev.inputVolume && gainNodeRef.current) {
+        gainNodeRef.current.gain.value = state.inputVolume / 100;
+      }
+
+      // Output volume → update all consumer audio elements
+      if (state.outputVolume !== prev.outputVolume) {
+        for (const audio of audioElementsRef.current.values()) {
+          audio.volume = state.outputVolume / 100;
+        }
+      }
+
+      // Output device → call setSinkId on all audio elements
+      if (state.outputDeviceId !== prev.outputDeviceId) {
+        for (const audio of audioElementsRef.current.values()) {
+          if ('setSinkId' in audio && state.outputDeviceId) {
+            (audio as HTMLAudioElement & { setSinkId: (id: string) => Promise<void> })
+              .setSinkId(state.outputDeviceId)
+              .catch(() => {});
+          }
+        }
+      }
+    });
+    return unsub;
+  }, []);
 
   // Cleanup on unmount
   useEffect(() => {

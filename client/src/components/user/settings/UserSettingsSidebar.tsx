@@ -1,8 +1,9 @@
-export type UserSettingsTab = 'account' | 'appearance';
+export type UserSettingsTab = 'account' | 'appearance' | 'voice';
 
 const NAV_ITEMS: Array<{ id: UserSettingsTab; label: string }> = [
   { id: 'account', label: 'My Account' },
   { id: 'appearance', label: 'Appearance' },
+  { id: 'voice', label: 'Voice & Audio' },
 ];
 
 interface UserSettingsSidebarProps {
