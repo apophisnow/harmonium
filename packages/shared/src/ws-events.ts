@@ -205,6 +205,11 @@ export interface ReactionRemoveEvent {
   };
 }
 
+export interface MemberBanEvent {
+  op: 'MEMBER_BAN';
+  d: { serverId: string; userId: string };
+}
+
 export interface ErrorEvent {
   op: 'ERROR';
   d: { code: number; message: string };
@@ -234,6 +239,7 @@ export type ServerEvent =
   | ProducerClosedServerEvent
   | ReactionAddEvent
   | ReactionRemoveEvent
+  | MemberBanEvent
   | ErrorEvent;
 
 // Union of all events

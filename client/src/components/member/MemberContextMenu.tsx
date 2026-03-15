@@ -7,6 +7,7 @@ import { useAuthStore } from '../../stores/auth.store.js';
 import { UserAvatar } from '../user/UserAvatar.js';
 import { assignRole, removeRole } from '../../api/roles.js';
 import { kickMember } from '../../api/servers.js';
+import { banMember } from '../../api/bans.js';
 import { LoadingSpinner } from '../shared/LoadingSpinner.js';
 
 interface MemberContextMenuProps {
@@ -27,6 +28,10 @@ export function MemberContextMenu({ member, roles, position, onClose }: MemberCo
 
   const [isKicking, setIsKicking] = useState(false);
   const [showKickConfirm, setShowKickConfirm] = useState(false);
+  const [isBanning, setIsBanning] = useState(false);
+  const [showBanConfirm, setShowBanConfirm] = useState(false);
+  const [banReason, setBanReason] = useState('');
+  const [banPurge, setBanPurge] = useState(false);
   const [togglingRoleId, setTogglingRoleId] = useState<string | null>(null);
   const [error, setError] = useState('');
 
@@ -36,6 +41,7 @@ export function MemberContextMenu({ member, roles, position, onClose }: MemberCo
 
   const canManageRoles = isOwner || hasPermission(Permission.MANAGE_ROLES);
   const canKick = (isOwner || hasPermission(Permission.KICK_MEMBERS)) && !isTargetOwner && !isSelf;
+  const canBan = (isOwner || hasPermission(Permission.BAN_MEMBERS)) && !isTargetOwner && !isSelf;
 
   // Close on click outside
   useEffect(() => {
@@ -103,6 +109,19 @@ export function MemberContextMenu({ member, roles, position, onClose }: MemberCo
     }
   };
 
+  const handleBan = async () => {
+    if (!currentServerId) return;
+    setIsBanning(true);
+    setError('');
+    try {
+      await banMember(currentServerId, member.userId, banReason || undefined, banPurge);
+      onClose();
+    } catch {
+      setError('Failed to ban member.');
+      setIsBanning(false);
+    }
+  };
+
   const username = member.user?.username ?? 'Unknown';
 
   return (
@@ -167,39 +186,95 @@ export function MemberContextMenu({ member, roles, position, onClose }: MemberCo
         </div>
       )}
 
-      {/* Kick button */}
-      {canKick && (
-        <div className="px-3 py-2">
-          {!showKickConfirm ? (
-            <button
-              onClick={() => setShowKickConfirm(true)}
-              className="w-full rounded px-2 py-1.5 text-left text-sm text-th-red hover:bg-th-red/10 transition-colors"
-            >
-              Kick {username}
-            </button>
-          ) : (
-            <div className="space-y-2">
-              <p className="text-xs text-th-red">
-                Kick <span className="font-semibold">{username}</span> from the server?
-              </p>
-              <div className="flex gap-2">
+      {/* Kick / Ban buttons */}
+      {(canKick || canBan) && (
+        <div className="px-3 py-2 space-y-1">
+          {canKick && (
+            <>
+              {!showKickConfirm ? (
                 <button
-                  onClick={() => setShowKickConfirm(false)}
-                  disabled={isKicking}
-                  className="flex-1 rounded px-2 py-1 text-xs text-th-text-primary hover:underline"
+                  onClick={() => setShowKickConfirm(true)}
+                  className="w-full rounded px-2 py-1.5 text-left text-sm text-th-red hover:bg-th-red/10 transition-colors"
                 >
-                  Cancel
+                  Kick {username}
                 </button>
+              ) : (
+                <div className="space-y-2">
+                  <p className="text-xs text-th-red">
+                    Kick <span className="font-semibold">{username}</span> from the server?
+                  </p>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => setShowKickConfirm(false)}
+                      disabled={isKicking}
+                      className="flex-1 rounded px-2 py-1 text-xs text-th-text-primary hover:underline"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      onClick={handleKick}
+                      disabled={isKicking}
+                      className="flex flex-1 items-center justify-center gap-1 rounded bg-th-red px-2 py-1 text-xs font-medium text-white transition-colors hover:bg-th-red-hover disabled:opacity-50"
+                    >
+                      {isKicking && <LoadingSpinner size={12} />}
+                      Kick
+                    </button>
+                  </div>
+                </div>
+              )}
+            </>
+          )}
+          {canBan && (
+            <>
+              {!showBanConfirm ? (
                 <button
-                  onClick={handleKick}
-                  disabled={isKicking}
-                  className="flex flex-1 items-center justify-center gap-1 rounded bg-th-red px-2 py-1 text-xs font-medium text-white transition-colors hover:bg-th-red-hover disabled:opacity-50"
+                  onClick={() => setShowBanConfirm(true)}
+                  className="w-full rounded px-2 py-1.5 text-left text-sm text-th-red hover:bg-th-red/10 transition-colors"
                 >
-                  {isKicking && <LoadingSpinner size={12} />}
-                  Kick
+                  Ban {username}
                 </button>
-              </div>
-            </div>
+              ) : (
+                <div className="space-y-2">
+                  <p className="text-xs text-th-red">
+                    Ban <span className="font-semibold">{username}</span> from the server?
+                  </p>
+                  <input
+                    type="text"
+                    value={banReason}
+                    onChange={(e) => setBanReason(e.target.value)}
+                    placeholder="Reason (optional)"
+                    maxLength={512}
+                    className="w-full rounded bg-th-bg-tertiary px-2 py-1 text-xs text-th-text-primary placeholder-th-text-muted outline-none focus:ring-1 focus:ring-th-brand"
+                  />
+                  <label className="flex items-center gap-1.5 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={banPurge}
+                      onChange={(e) => setBanPurge(e.target.checked)}
+                      className="h-3 w-3 accent-th-brand"
+                    />
+                    <span className="text-xs text-th-text-secondary">Purge recent messages</span>
+                  </label>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => { setShowBanConfirm(false); setBanReason(''); setBanPurge(false); }}
+                      disabled={isBanning}
+                      className="flex-1 rounded px-2 py-1 text-xs text-th-text-primary hover:underline"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      onClick={handleBan}
+                      disabled={isBanning}
+                      className="flex flex-1 items-center justify-center gap-1 rounded bg-th-red px-2 py-1 text-xs font-medium text-white transition-colors hover:bg-th-red-hover disabled:opacity-50"
+                    >
+                      {isBanning && <LoadingSpinner size={12} />}
+                      Ban
+                    </button>
+                  </div>
+                </div>
+              )}
+            </>
           )}
         </div>
       )}

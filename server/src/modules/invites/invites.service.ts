@@ -4,6 +4,7 @@ import { getDb, schema } from '../../db/index.js';
 import { NotFoundError, ForbiddenError, ConflictError, ValidationError } from '../../utils/errors.js';
 import { hasPermission, Permission } from '@harmonium/shared';
 import { addMemberToServer } from '../servers/servers.service.js';
+import { isBanned } from '../bans/bans.service.js';
 import type { CreateInviteInput } from './invites.schemas.js';
 
 const CHARS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
@@ -198,6 +199,11 @@ export async function acceptInvite(code: string, userId: string) {
 
   if (existingMember) {
     throw new ConflictError('You are already a member of this server');
+  }
+
+  // Check if user is banned
+  if (await isBanned(serverId.toString(), userId)) {
+    throw new ForbiddenError('You are banned from this server');
   }
 
   // Increment use count

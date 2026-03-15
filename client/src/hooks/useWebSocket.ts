@@ -153,6 +153,18 @@ export function useWebSocket() {
       case 'MEMBER_JOIN':
         addMember(data.d.serverId, data.d.member);
         break;
+      case 'MEMBER_BAN': {
+        const banCurrentUserId = useAuthStore.getState().user?.id;
+        if (data.d.userId === banCurrentUserId) {
+          const bannedServer = useServerStore.getState().servers.get(data.d.serverId);
+          removeServer(data.d.serverId);
+          useToastStore.getState().addToast(
+            'error',
+            `You have been banned from ${bannedServer?.name ?? 'a server'}`,
+          );
+        }
+        break;
+      }
       case 'MEMBER_LEAVE':
         removeMember(data.d.serverId, data.d.userId);
         break;

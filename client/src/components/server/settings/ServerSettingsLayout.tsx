@@ -7,6 +7,7 @@ import { OverviewTab } from './OverviewTab.js';
 import { RolesTab } from './RolesTab.js';
 import { MembersTab } from './MembersTab.js';
 import { InvitesTab } from './InvitesTab.js';
+import { BansTab } from './BansTab.js';
 import { DeleteServerTab } from './DeleteServerTab.js';
 
 export function ServerSettingsLayout() {
@@ -120,6 +121,11 @@ export function ServerSettingsLayout() {
               handleCreateInvite={state.handleCreateInvite}
               handleDeleteInvite={state.handleDeleteInvite}
               handleCopyInvite={state.handleCopyInvite}
+            />
+          )}
+          {activeTab === 'bans' && (
+            <BansTab
+              currentServerId={state.currentServerId}
             />
           )}
           {activeTab === 'delete' && (

@@ -9,6 +9,7 @@ import { usePermissions } from '../../../hooks/usePermissions.js';
 import { UserAvatar } from '../../user/UserAvatar.js';
 import { assignRole, removeRole } from '../../../api/roles.js';
 import { kickMember } from '../../../api/servers.js';
+import { banMember } from '../../../api/bans.js';
 import { LoadingSpinner } from '../../shared/LoadingSpinner.js';
 
 const EMPTY_MEMBERS: ServerMember[] = [];
@@ -25,6 +26,10 @@ export function MembersTab({ roles, currentServerId, isOwner }: MembersTabProps)
   const [togglingRoleId, setTogglingRoleId] = useState<string | null>(null);
   const [kickingUserId, setKickingUserId] = useState<string | null>(null);
   const [confirmKickUserId, setConfirmKickUserId] = useState<string | null>(null);
+  const [banningUserId, setBanningUserId] = useState<string | null>(null);
+  const [confirmBanUserId, setConfirmBanUserId] = useState<string | null>(null);
+  const [banReason, setBanReason] = useState('');
+  const [banPurge, setBanPurge] = useState(false);
   const [error, setError] = useState('');
 
   const members = useMemberStore((s) =>
@@ -40,6 +45,7 @@ export function MembersTab({ roles, currentServerId, isOwner }: MembersTabProps)
   const { hasPermission } = usePermissions(currentServerId, roles);
   const canManageRoles = isOwner || hasPermission(Permission.MANAGE_ROLES);
   const canKick = isOwner || hasPermission(Permission.KICK_MEMBERS);
+  const canBan = isOwner || hasPermission(Permission.BAN_MEMBERS);
 
   useEffect(() => {
     if (currentServerId) {
@@ -95,6 +101,22 @@ export function MembersTab({ roles, currentServerId, isOwner }: MembersTabProps)
       setError('Failed to kick member.');
     } finally {
       setKickingUserId(null);
+    }
+  };
+
+  const handleBan = async (userId: string) => {
+    if (!currentServerId) return;
+    setBanningUserId(userId);
+    setError('');
+    try {
+      await banMember(currentServerId, userId, banReason || undefined, banPurge);
+      setConfirmBanUserId(null);
+      setBanReason('');
+      setBanPurge(false);
+    } catch {
+      setError('Failed to ban member.');
+    } finally {
+      setBanningUserId(null);
     }
   };
 
@@ -248,6 +270,56 @@ export function MembersTab({ roles, currentServerId, isOwner }: MembersTabProps)
                           className="text-xs text-th-red hover:underline"
                         >
                           Kick Member
+                        </button>
+                      )}
+                    </div>
+                  )}
+
+                  {canBan && !isMemberOwner && !isSelf && (
+                    <div>
+                      {confirmBanUserId === member.userId ? (
+                        <div className="space-y-1.5">
+                          <span className="text-xs text-th-red">Ban {username}?</span>
+                          <input
+                            type="text"
+                            value={banReason}
+                            onChange={(e) => setBanReason(e.target.value)}
+                            placeholder="Reason (optional)"
+                            maxLength={512}
+                            className="w-full rounded bg-th-bg-tertiary px-2 py-1 text-xs text-th-text-primary placeholder-th-text-muted outline-none focus:ring-1 focus:ring-th-brand"
+                          />
+                          <label className="flex items-center gap-1.5 cursor-pointer">
+                            <input
+                              type="checkbox"
+                              checked={banPurge}
+                              onChange={(e) => setBanPurge(e.target.checked)}
+                              className="h-3 w-3 accent-th-brand"
+                            />
+                            <span className="text-xs text-th-text-secondary">Purge recent messages</span>
+                          </label>
+                          <div className="flex items-center gap-2">
+                            <button
+                              onClick={() => { setConfirmBanUserId(null); setBanReason(''); setBanPurge(false); }}
+                              className="text-xs text-th-text-secondary hover:underline"
+                            >
+                              Cancel
+                            </button>
+                            <button
+                              onClick={() => handleBan(member.userId)}
+                              disabled={banningUserId === member.userId}
+                              className="flex items-center gap-1 rounded bg-th-red px-2 py-0.5 text-xs font-medium text-white hover:bg-th-red-hover disabled:opacity-50"
+                            >
+                              {banningUserId === member.userId && <LoadingSpinner size={10} />}
+                              Ban
+                            </button>
+                          </div>
+                        </div>
+                      ) : (
+                        <button
+                          onClick={() => setConfirmBanUserId(member.userId)}
+                          className="text-xs text-th-red hover:underline"
+                        >
+                          Ban Member
                         </button>
                       )}
                     </div>
