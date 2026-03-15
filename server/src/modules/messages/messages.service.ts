@@ -9,6 +9,8 @@ import {
   broadcastMessageCreate,
   broadcastMessageUpdate,
   broadcastMessageDelete,
+  broadcastMessagePin,
+  broadcastMessageUnpin,
 } from '../../ws/handlers/message.handler.js';
 import { getReactionsForMessages } from './reactions.service.js';
 import { incrementMentionCount } from '../read-states/read-states.service.js';
@@ -64,6 +66,9 @@ function messageToResponse(
     content: message.isDeleted ? null : message.content,
     editedAt: message.editedAt?.toISOString() ?? null,
     isDeleted: message.isDeleted,
+    isPinned: message.isPinned,
+    pinnedAt: message.pinnedAt?.toISOString() ?? null,
+    pinnedBy: message.pinnedBy?.toString() ?? null,
     replyToId: message.replyToId?.toString() ?? null,
     replyTo,
     createdAt: message.createdAt.toISOString(),
@@ -544,4 +549,167 @@ export async function deleteMessage(
       });
     }
   }
+}
+
+const MAX_PINS_PER_CHANNEL = 50;
+
+export async function pinMessage(
+  channelId: string,
+  messageId: string,
+  userId: string,
+): Promise<Message> {
+  const db = getDb();
+  const messageIdBigInt = BigInt(messageId);
+
+  // Fetch existing message
+  const existing = await db.query.messages.findFirst({
+    where: eq(schema.messages.id, messageIdBigInt),
+  });
+
+  if (!existing) {
+    throw new NotFoundError('Message not found');
+  }
+
+  if (existing.isDeleted) {
+    throw new ValidationError('Cannot pin a deleted message');
+  }
+
+  if (existing.channelId.toString() !== channelId) {
+    throw new NotFoundError('Message not found in this channel');
+  }
+
+  // If already pinned, return the message as-is
+  if (existing.isPinned) {
+    const rows = await db
+      .select({ message: schema.messages, user: schema.users })
+      .from(schema.messages)
+      .innerJoin(schema.users, eq(schema.messages.authorId, schema.users.id))
+      .where(eq(schema.messages.id, messageIdBigInt))
+      .limit(1);
+
+    if (!rows[0]) throw new NotFoundError('Message not found');
+
+    const msgAttachments = await fetchAttachmentsForMessages([messageIdBigInt]);
+    return messageToResponse(rows[0], msgAttachments.get(messageId) ?? []);
+  }
+
+  // Check pin count for this channel
+  const channelIdBigInt = BigInt(channelId);
+  const pinnedCount = await db
+    .select({ id: schema.messages.id })
+    .from(schema.messages)
+    .where(
+      and(
+        eq(schema.messages.channelId, channelIdBigInt),
+        eq(schema.messages.isPinned, true),
+      ),
+    );
+
+  if (pinnedCount.length >= MAX_PINS_PER_CHANNEL) {
+    throw new ValidationError(`Cannot pin more than ${MAX_PINS_PER_CHANNEL} messages per channel`);
+  }
+
+  // Pin the message
+  await db
+    .update(schema.messages)
+    .set({
+      isPinned: true,
+      pinnedAt: new Date(),
+      pinnedBy: BigInt(userId),
+    })
+    .where(eq(schema.messages.id, messageIdBigInt));
+
+  // Query back with author data
+  const rows = await db
+    .select({ message: schema.messages, user: schema.users })
+    .from(schema.messages)
+    .innerJoin(schema.users, eq(schema.messages.authorId, schema.users.id))
+    .where(eq(schema.messages.id, messageIdBigInt))
+    .limit(1);
+
+  if (!rows[0]) throw new NotFoundError('Message not found after pin');
+
+  const msgAttachments = await fetchAttachmentsForMessages([messageIdBigInt]);
+  const message = messageToResponse(rows[0], msgAttachments.get(messageId) ?? []);
+
+  // Broadcast
+  const channel = await getChannelWithServer(channelId);
+  const serverId = channel.serverId.toString();
+  const pubsub = getPubSubManager();
+  broadcastMessagePin(pubsub, serverId, channelId, message);
+
+  return message;
+}
+
+export async function unpinMessage(
+  channelId: string,
+  messageId: string,
+): Promise<void> {
+  const db = getDb();
+  const messageIdBigInt = BigInt(messageId);
+
+  // Fetch existing message
+  const existing = await db.query.messages.findFirst({
+    where: eq(schema.messages.id, messageIdBigInt),
+  });
+
+  if (!existing) {
+    throw new NotFoundError('Message not found');
+  }
+
+  if (existing.channelId.toString() !== channelId) {
+    throw new NotFoundError('Message not found in this channel');
+  }
+
+  if (!existing.isPinned) {
+    throw new ValidationError('Message is not pinned');
+  }
+
+  // Unpin the message
+  await db
+    .update(schema.messages)
+    .set({
+      isPinned: false,
+      pinnedAt: null,
+      pinnedBy: null,
+    })
+    .where(eq(schema.messages.id, messageIdBigInt));
+
+  // Broadcast
+  const channel = await getChannelWithServer(channelId);
+  const serverId = channel.serverId.toString();
+  const pubsub = getPubSubManager();
+  broadcastMessageUnpin(pubsub, serverId, channelId, messageId);
+}
+
+export async function getPinnedMessages(channelId: string): Promise<Message[]> {
+  const db = getDb();
+  const channelIdBigInt = BigInt(channelId);
+
+  const rows = await db
+    .select({ message: schema.messages, user: schema.users })
+    .from(schema.messages)
+    .innerJoin(schema.users, eq(schema.messages.authorId, schema.users.id))
+    .where(
+      and(
+        eq(schema.messages.channelId, channelIdBigInt),
+        eq(schema.messages.isPinned, true),
+      ),
+    )
+    .orderBy(desc(schema.messages.pinnedAt));
+
+  const messageIds = rows.map((r) => r.message.id);
+  const attachmentsMap = await fetchAttachmentsForMessages(messageIds);
+  const reactionsMap = await getReactionsForMessages(messageIds);
+
+  return rows.map((row) => {
+    const msgKey = row.message.id.toString();
+    return messageToResponse(
+      row,
+      attachmentsMap.get(msgKey) ?? [],
+      null,
+      undefined,
+      reactionsMap.get(msgKey),
+    );
+  });
 }

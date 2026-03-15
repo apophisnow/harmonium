@@ -2,6 +2,7 @@ import type { Channel } from '@harmonium/shared';
 import { useUIStore } from '../../stores/ui.store.js';
 import { useVoiceStore } from '../../stores/voice.store.js';
 import { useIsMobile } from '../../hooks/useMediaQuery.js';
+import { useMessageStore } from '../../stores/message.store.js';
 
 interface ChannelHeaderProps {
   channel: Channel | null;
@@ -10,8 +11,11 @@ interface ChannelHeaderProps {
 export function ChannelHeader({ channel }: ChannelHeaderProps) {
   const toggleMemberSidebar = useUIStore((s) => s.toggleMemberSidebar);
   const toggleMobileSidebar = useUIStore((s) => s.toggleMobileSidebar);
+  const togglePinnedMessages = useUIStore((s) => s.togglePinnedMessages);
   const showMemberSidebar = useUIStore((s) => s.showMemberSidebar);
+  const showPinnedMessages = useUIStore((s) => s.showPinnedMessages);
   const voiceParticipantCount = useVoiceStore((s) => s.participants.size);
+  const pinnedCount = useMessageStore((s) => (channel ? (s.pinnedMessages.get(channel.id)?.length ?? 0) : 0));
   const isMobile = useIsMobile();
 
   if (!channel) {
@@ -80,6 +84,28 @@ export function ChannelHeader({ channel }: ChannelHeaderProps) {
 
       {/* Spacer */}
       <div className="flex-1" />
+
+      {/* Pinned messages toggle */}
+      {channel.type === 'text' && (
+        <button
+          onClick={togglePinnedMessages}
+          className={`relative hidden rounded p-1.5 transition-colors md:block ${
+            showPinnedMessages
+              ? 'text-white bg-th-bg-accent'
+              : 'text-th-text-secondary hover:text-th-text-primary'
+          }`}
+          title="Pinned Messages"
+        >
+          <svg className="h-5 w-5" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M16 12V4h1V2H7v2h1v8l-2 2v2h5.2v6h1.6v-6H18v-2l-2-2z" />
+          </svg>
+          {pinnedCount > 0 && (
+            <span className="absolute -right-1 -top-1 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-th-brand px-1 text-[10px] font-bold text-white">
+              {pinnedCount}
+            </span>
+          )}
+        </button>
+      )}
 
       {/* Member list toggle (hidden on mobile) */}
       <button

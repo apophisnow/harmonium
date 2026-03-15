@@ -66,3 +66,29 @@ export async function deleteMessage(
 ): Promise<void> {
   await apiClient.delete(`/channels/${channelId}/messages/${messageId}`);
 }
+
+export async function getPinnedMessages(
+  channelId: string,
+): Promise<Message[]> {
+  const response = await apiClient.get<Message[]>(
+    `/channels/${channelId}/pins`,
+  );
+  return response.data;
+}
+
+export async function pinMessage(
+  channelId: string,
+  messageId: string,
+): Promise<Message> {
+  const response = await apiClient.put<Message>(
+    `/channels/${channelId}/pins/${messageId}`,
+  );
+  return response.data;
+}
+
+export async function unpinMessage(
+  channelId: string,
+  messageId: string,
+): Promise<void> {
+  await apiClient.delete(`/channels/${channelId}/pins/${messageId}`);
+}

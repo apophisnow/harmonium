@@ -12,12 +12,15 @@ type ModalType =
 interface UIState {
   showMemberSidebar: boolean;
   showMobileSidebar: boolean;
+  showPinnedMessages: boolean;
   activeModal: ModalType;
   initialSettingsTab: string | null;
 
   toggleMemberSidebar: () => void;
   toggleMobileSidebar: () => void;
   closeMobileSidebar: () => void;
+  togglePinnedMessages: () => void;
+  closePinnedMessages: () => void;
   openModal: (modal: NonNullable<ModalType>, options?: { settingsTab?: string }) => void;
   closeModal: () => void;
 }
@@ -25,6 +28,7 @@ interface UIState {
 export const useUIStore = create<UIState>((set, get) => ({
   showMemberSidebar: true,
   showMobileSidebar: false,
+  showPinnedMessages: false,
   activeModal: null,
   initialSettingsTab: null,
 
@@ -38,6 +42,14 @@ export const useUIStore = create<UIState>((set, get) => ({
 
   closeMobileSidebar: () => {
     set({ showMobileSidebar: false });
+  },
+
+  togglePinnedMessages: () => {
+    set({ showPinnedMessages: !get().showPinnedMessages });
+  },
+
+  closePinnedMessages: () => {
+    set({ showPinnedMessages: false });
   },
 
   openModal: (modal, options) => {

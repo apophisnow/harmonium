@@ -239,6 +239,16 @@ export interface RelationshipRemoveEvent {
   d: { userId: string };
 }
 
+export interface MessagePinEvent {
+  op: 'MESSAGE_PIN';
+  d: { channelId: string; message: Message };
+}
+
+export interface MessageUnpinEvent {
+  op: 'MESSAGE_UNPIN';
+  d: { channelId: string; messageId: string };
+}
+
 export interface ErrorEvent {
   op: 'ERROR';
   d: { code: number; message: string };
@@ -273,6 +283,8 @@ export type ServerEvent =
   | DmChannelUpdateEvent
   | RelationshipUpdateEvent
   | RelationshipRemoveEvent
+  | MessagePinEvent
+  | MessageUnpinEvent
   | ErrorEvent;
 
 // Union of all events

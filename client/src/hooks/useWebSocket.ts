@@ -37,6 +37,8 @@ export function useWebSocket() {
   const deleteMessage = useMessageStore((s) => s.deleteMessage);
   const addReactionToStore = useMessageStore((s) => s.addReaction);
   const removeReactionFromStore = useMessageStore((s) => s.removeReaction);
+  const handlePinMessage = useMessageStore((s) => s.handlePinMessage);
+  const handleUnpinMessage = useMessageStore((s) => s.handleUnpinMessage);
 
   const setPresence = usePresenceStore((s) => s.setPresence);
   const bulkSetPresence = usePresenceStore((s) => s.bulkSetPresence);
@@ -155,6 +157,12 @@ export function useWebSocket() {
         break;
       case 'REACTION_REMOVE':
         removeReactionFromStore(data.d.channelId, data.d.messageId, data.d.userId, data.d.emoji);
+        break;
+      case 'MESSAGE_PIN':
+        handlePinMessage(data.d.channelId, data.d.message);
+        break;
+      case 'MESSAGE_UNPIN':
+        handleUnpinMessage(data.d.channelId, data.d.messageId);
         break;
       case 'PRESENCE_UPDATE':
         setPresence(data.d.userId, data.d.status);

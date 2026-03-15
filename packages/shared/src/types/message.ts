@@ -10,6 +10,9 @@ export interface Message {
   isDeleted: boolean;
   replyToId: string | null;
   replyTo?: Message | null;
+  isPinned: boolean;
+  pinnedAt: string | null;
+  pinnedBy: string | null;
   createdAt: string;
   author?: PublicUser;
   attachments?: Attachment[];

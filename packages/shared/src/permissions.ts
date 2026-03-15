@@ -14,6 +14,7 @@ export const Permission = {
   ATTACH_FILES:     1n << 12n,
   MENTION_EVERYONE: 1n << 13n,
   STREAM:           1n << 14n,  // share screen in voice
+  PIN_MESSAGES:     1n << 15n,
 } as const;
 
 export type PermissionFlag = typeof Permission[keyof typeof Permission];
@@ -29,7 +30,8 @@ export const DEFAULT_PERMISSIONS =
   Permission.SPEAK |
   Permission.STREAM |
   Permission.CREATE_INVITE |
-  Permission.ATTACH_FILES;
+  Permission.ATTACH_FILES |
+  Permission.PIN_MESSAGES;
 
 export function hasPermission(permissions: bigint, flag: bigint): boolean {
   if ((permissions & Permission.ADMINISTRATOR) === Permission.ADMINISTRATOR) return true;

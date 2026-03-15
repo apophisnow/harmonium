@@ -10,6 +10,9 @@ export const messages = pgTable('messages', {
   editedAt: timestamp('edited_at', { withTimezone: true }),
   isDeleted: boolean('is_deleted').notNull().default(false),
   replyToId: bigint('reply_to_id', { mode: 'bigint' }).references((): AnyPgColumn => messages.id, { onDelete: 'set null' }),
+  isPinned: boolean('is_pinned').notNull().default(false),
+  pinnedAt: timestamp('pinned_at', { withTimezone: true }),
+  pinnedBy: bigint('pinned_by', { mode: 'bigint' }).references(() => users.id),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
 }, (table) => [
   index('messages_channel_id_id_idx').on(table.channelId, table.id),
