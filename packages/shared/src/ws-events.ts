@@ -5,6 +5,7 @@ import type { Server, ServerMember } from './types/server.js';
 import type { Role } from './types/role.js';
 import type { VoiceState, ProducerType } from './types/voice.js';
 import type { ReadState } from './types/read-state.js';
+import type { Relationship } from './types/relationship.js';
 
 // ===== Client-to-Server Events =====
 
@@ -205,6 +206,16 @@ export interface ReactionRemoveEvent {
   };
 }
 
+export interface RelationshipUpdateEvent {
+  op: 'RELATIONSHIP_UPDATE';
+  d: { relationship: Relationship };
+}
+
+export interface RelationshipRemoveEvent {
+  op: 'RELATIONSHIP_REMOVE';
+  d: { userId: string };
+}
+
 export interface ErrorEvent {
   op: 'ERROR';
   d: { code: number; message: string };
@@ -234,6 +245,8 @@ export type ServerEvent =
   | ProducerClosedServerEvent
   | ReactionAddEvent
   | ReactionRemoveEvent
+  | RelationshipUpdateEvent
+  | RelationshipRemoveEvent
   | ErrorEvent;
 
 // Union of all events

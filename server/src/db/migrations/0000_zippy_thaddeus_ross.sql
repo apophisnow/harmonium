@@ -195,4 +195,15 @@ CREATE INDEX "refresh_tokens_user_id_idx" ON "refresh_tokens" USING btree ("user
 CREATE INDEX "roles_server_id_idx" ON "roles" USING btree ("server_id");--> statement-breakpoint
 CREATE INDEX "server_members_user_id_idx" ON "server_members" USING btree ("user_id");--> statement-breakpoint
 CREATE UNIQUE INDEX "users_username_discriminator_idx" ON "users" USING btree ("username","discriminator");--> statement-breakpoint
-CREATE INDEX "voice_states_channel_id_idx" ON "voice_states" USING btree ("channel_id");
+CREATE INDEX "voice_states_channel_id_idx" ON "voice_states" USING btree ("channel_id");--> statement-breakpoint
+CREATE TABLE "relationships" (
+	"user_id" bigint NOT NULL,
+	"target_id" bigint NOT NULL,
+	"type" varchar(20) NOT NULL,
+	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
+	CONSTRAINT "relationships_user_id_target_id_pk" PRIMARY KEY("user_id","target_id")
+);
+--> statement-breakpoint
+ALTER TABLE "relationships" ADD CONSTRAINT "relationships_user_id_users_id_fk" FOREIGN KEY ("user_id") REFERENCES "public"."users"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "relationships" ADD CONSTRAINT "relationships_target_id_users_id_fk" FOREIGN KEY ("target_id") REFERENCES "public"."users"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
+CREATE INDEX "relationships_user_id_type_idx" ON "relationships" USING btree ("user_id","type");
