@@ -14,6 +14,7 @@ export const messages = pgTable('messages', {
   pinnedAt: timestamp('pinned_at', { withTimezone: true }),
   pinnedBy: bigint('pinned_by', { mode: 'bigint' }).references(() => users.id),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  searchVector: varchar('search_vector'),  // managed by Postgres, not by app code
 }, (table) => [
   index('messages_channel_id_id_idx').on(table.channelId, table.id),
 ]);

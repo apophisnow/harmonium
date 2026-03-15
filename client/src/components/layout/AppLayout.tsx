@@ -30,6 +30,7 @@ import { VoiceGrid } from '../voice/VoiceGrid.js';
 import { VoicePiP } from '../voice/VoicePiP.js';
 import { FriendsPage } from '../friends/FriendsPage.js';
 import { PinnedMessages } from '../chat/PinnedMessages.js';
+import { SearchModal } from '../search/SearchModal.js';
 
 const EMPTY_CHANNELS: Channel[] = [];
 
@@ -377,6 +378,7 @@ export function AppLayout({ sendEvent, isConnected }: AppLayoutProps) {
       <ServerSettings />
       <EditProfileModal />
       <UserSettingsLayout />
+      <SearchModal />
       </div>
     </div>
   );

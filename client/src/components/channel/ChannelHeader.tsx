@@ -1,6 +1,7 @@
 import type { Channel } from '@harmonium/shared';
 import { useUIStore } from '../../stores/ui.store.js';
 import { useVoiceStore } from '../../stores/voice.store.js';
+import { useSearchStore } from '../../stores/search.store.js';
 import { useIsMobile } from '../../hooks/useMediaQuery.js';
 import { useMessageStore } from '../../stores/message.store.js';
 
@@ -16,6 +17,7 @@ export function ChannelHeader({ channel }: ChannelHeaderProps) {
   const showPinnedMessages = useUIStore((s) => s.showPinnedMessages);
   const voiceParticipantCount = useVoiceStore((s) => s.participants.size);
   const pinnedCount = useMessageStore((s) => (channel ? (s.pinnedMessages.get(channel.id)?.length ?? 0) : 0));
+  const setSearchOpen = useSearchStore((s) => s.setOpen);
   const isMobile = useIsMobile();
 
   if (!channel) {
@@ -106,6 +108,24 @@ export function ChannelHeader({ channel }: ChannelHeaderProps) {
           )}
         </button>
       )}
+
+      {/* Search button */}
+      <button
+        onClick={() => setSearchOpen(true)}
+        className="hidden rounded p-1.5 text-th-text-secondary hover:text-th-text-primary transition-colors md:block"
+        title="Search (Ctrl+F)"
+      >
+        <svg
+          className="h-5 w-5"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+        >
+          <circle cx="11" cy="11" r="8" />
+          <path d="M21 21l-4.35-4.35" />
+        </svg>
+      </button>
 
       {/* Member list toggle (hidden on mobile) */}
       <button

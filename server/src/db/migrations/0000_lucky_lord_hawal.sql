@@ -236,4 +236,6 @@ CREATE TABLE "relationships" (
 --> statement-breakpoint
 ALTER TABLE "relationships" ADD CONSTRAINT "relationships_user_id_users_id_fk" FOREIGN KEY ("user_id") REFERENCES "public"."users"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "relationships" ADD CONSTRAINT "relationships_target_id_users_id_fk" FOREIGN KEY ("target_id") REFERENCES "public"."users"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
-CREATE INDEX "relationships_user_id_type_idx" ON "relationships" USING btree ("user_id","type");
+CREATE INDEX "relationships_user_id_type_idx" ON "relationships" USING btree ("user_id","type");--> statement-breakpoint
+ALTER TABLE "messages" ADD COLUMN "search_vector" tsvector GENERATED ALWAYS AS (to_tsvector('english', coalesce(content, ''))) STORED;--> statement-breakpoint
+CREATE INDEX "messages_search_idx" ON "messages" USING GIN ("search_vector");
