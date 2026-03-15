@@ -5,6 +5,7 @@ import {
   serverParamsSchema,
   memberParamsSchema,
 } from './servers.schemas.js';
+import { updateDiscoverySchema } from '../discovery/discovery.schemas.js';
 import * as serversService from './servers.service.js';
 import { ValidationError } from '../../utils/errors.js';
 
@@ -97,6 +98,54 @@ export async function serverRoutes(app: FastifyInstance) {
 
     await serversService.leaveServer(paramsParsed.data.serverId, request.user.userId);
     return reply.status(204).send();
+  });
+
+  // POST /api/servers/:serverId/join - Join a discoverable server directly
+  app.post('/api/servers/:serverId/join', async (request, reply) => {
+    const paramsParsed = serverParamsSchema.safeParse(request.params);
+    if (!paramsParsed.success) {
+      throw new ValidationError(paramsParsed.error.errors[0].message);
+    }
+
+    const member = await serversService.joinDiscoverableServer(
+      paramsParsed.data.serverId,
+      request.user.userId,
+    );
+    return reply.status(201).send(member);
+  });
+
+  // GET /api/servers/:serverId/discovery - Get discovery settings (owner only)
+  app.get('/api/servers/:serverId/discovery', async (request, reply) => {
+    const paramsParsed = serverParamsSchema.safeParse(request.params);
+    if (!paramsParsed.success) {
+      throw new ValidationError(paramsParsed.error.errors[0].message);
+    }
+
+    const settings = await serversService.getDiscoverySettings(
+      paramsParsed.data.serverId,
+      request.user.userId,
+    );
+    return reply.send(settings);
+  });
+
+  // PATCH /api/servers/:serverId/discovery - Update discovery settings (owner only)
+  app.patch('/api/servers/:serverId/discovery', async (request, reply) => {
+    const paramsParsed = serverParamsSchema.safeParse(request.params);
+    if (!paramsParsed.success) {
+      throw new ValidationError(paramsParsed.error.errors[0].message);
+    }
+
+    const bodyParsed = updateDiscoverySchema.safeParse(request.body);
+    if (!bodyParsed.success) {
+      throw new ValidationError(bodyParsed.error.errors[0].message);
+    }
+
+    const settings = await serversService.updateDiscoverySettings(
+      paramsParsed.data.serverId,
+      request.user.userId,
+      bodyParsed.data,
+    );
+    return reply.send(settings);
   });
 
   // DELETE /api/servers/:serverId/members/:userId - Kick member

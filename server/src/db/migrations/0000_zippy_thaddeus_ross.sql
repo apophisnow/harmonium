@@ -128,6 +128,13 @@ CREATE TABLE "servers" (
 	"owner_id" bigint NOT NULL,
 	"default_theme" varchar(50),
 	"default_mode" varchar(10),
+	"is_discoverable" boolean DEFAULT false NOT NULL,
+	"description" varchar(1000),
+	"category" varchar(50),
+	"vanity_url" varchar(32),
+	"member_count" integer DEFAULT 0 NOT NULL,
+	"banner_url" varchar(512),
+	"primary_language" varchar(10) DEFAULT 'en' NOT NULL,
 	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
 	"updated_at" timestamp with time zone DEFAULT now() NOT NULL
 );
@@ -195,4 +202,6 @@ CREATE INDEX "refresh_tokens_user_id_idx" ON "refresh_tokens" USING btree ("user
 CREATE INDEX "roles_server_id_idx" ON "roles" USING btree ("server_id");--> statement-breakpoint
 CREATE INDEX "server_members_user_id_idx" ON "server_members" USING btree ("user_id");--> statement-breakpoint
 CREATE UNIQUE INDEX "users_username_discriminator_idx" ON "users" USING btree ("username","discriminator");--> statement-breakpoint
-CREATE INDEX "voice_states_channel_id_idx" ON "voice_states" USING btree ("channel_id");
+CREATE INDEX "voice_states_channel_id_idx" ON "voice_states" USING btree ("channel_id");--> statement-breakpoint
+CREATE INDEX "servers_discoverable_member_count_idx" ON "servers" USING btree ("is_discoverable","member_count");--> statement-breakpoint
+CREATE UNIQUE INDEX "servers_vanity_url_idx" ON "servers" USING btree ("vanity_url");
