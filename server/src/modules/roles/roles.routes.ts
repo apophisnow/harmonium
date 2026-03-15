@@ -11,6 +11,8 @@ import {
 import * as rolesService from './roles.service.js';
 import { requirePermission } from '../../utils/permissions.js';
 import { ValidationError } from '../../utils/errors.js';
+import { createAuditLogEntry } from '../audit-log/audit-log.service.js';
+import { AuditLogAction } from '@harmonium/shared';
 
 export async function roleRoutes(app: FastifyInstance) {
   // All routes require authentication
@@ -31,6 +33,17 @@ export async function roleRoutes(app: FastifyInstance) {
     }
 
     const role = await rolesService.createRole(paramsParsed.data.serverId, bodyParsed.data);
+
+    // Fire-and-forget audit log
+    createAuditLogEntry({
+      serverId: paramsParsed.data.serverId,
+      actorId: request.user.userId,
+      action: AuditLogAction.ROLE_CREATE,
+      targetType: 'role',
+      targetId: role.id,
+      changes: { name: { new: role.name } },
+    }).catch(() => {});
+
     return reply.status(201).send(role);
   });
 
@@ -99,6 +112,16 @@ export async function roleRoutes(app: FastifyInstance) {
     }
 
     await rolesService.deleteRole(paramsParsed.data.serverId, paramsParsed.data.roleId);
+
+    // Fire-and-forget audit log
+    createAuditLogEntry({
+      serverId: paramsParsed.data.serverId,
+      actorId: request.user.userId,
+      action: AuditLogAction.ROLE_DELETE,
+      targetType: 'role',
+      targetId: paramsParsed.data.roleId,
+    }).catch(() => {});
+
     return reply.status(204).send();
   });
 

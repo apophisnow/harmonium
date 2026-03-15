@@ -13,5 +13,6 @@ export * from './types/dm.js';
 export * from './types/relationship.js';
 export * from './types/search.js';
 export * from './types/emoji.js';
+export * from './types/audit-log.js';
 export * from './permissions.js';
 export * from './ws-events.js';

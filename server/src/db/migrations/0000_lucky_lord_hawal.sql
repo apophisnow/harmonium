@@ -270,4 +270,20 @@ CREATE TABLE "emojis" (
 --> statement-breakpoint
 ALTER TABLE "emojis" ADD CONSTRAINT "emojis_server_id_servers_id_fk" FOREIGN KEY ("server_id") REFERENCES "public"."servers"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "emojis" ADD CONSTRAINT "emojis_uploaded_by_users_id_fk" FOREIGN KEY ("uploaded_by") REFERENCES "public"."users"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
-CREATE INDEX "emojis_server_id_idx" ON "emojis" USING btree ("server_id");
+CREATE INDEX "emojis_server_id_idx" ON "emojis" USING btree ("server_id");--> statement-breakpoint
+CREATE TABLE "audit_log" (
+	"id" bigint PRIMARY KEY NOT NULL,
+	"server_id" bigint NOT NULL,
+	"actor_id" bigint NOT NULL,
+	"action" varchar(50) NOT NULL,
+	"target_type" varchar(50),
+	"target_id" bigint,
+	"changes" jsonb,
+	"reason" varchar(512),
+	"created_at" timestamp with time zone DEFAULT now() NOT NULL
+);
+--> statement-breakpoint
+ALTER TABLE "audit_log" ADD CONSTRAINT "audit_log_server_id_servers_id_fk" FOREIGN KEY ("server_id") REFERENCES "public"."servers"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "audit_log" ADD CONSTRAINT "audit_log_actor_id_users_id_fk" FOREIGN KEY ("actor_id") REFERENCES "public"."users"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
+CREATE INDEX "audit_log_server_id_idx" ON "audit_log" USING btree ("server_id");--> statement-breakpoint
+CREATE INDEX "audit_log_server_id_created_at_idx" ON "audit_log" USING btree ("server_id","created_at");

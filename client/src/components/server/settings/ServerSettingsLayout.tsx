@@ -10,6 +10,7 @@ import { InvitesTab } from './InvitesTab.js';
 import { BansTab } from './BansTab.js';
 import { DeleteServerTab } from './DeleteServerTab.js';
 import { EmojiTab } from './EmojiTab.js';
+import { AuditLogTab } from './AuditLogTab.js';
 
 export function ServerSettingsLayout() {
   const state = useServerSettingsState();
@@ -134,6 +135,9 @@ export function ServerSettingsLayout() {
               serverId={state.currentServerId}
               canManageServer={state.canManageServer}
             />
+          )}
+          {activeTab === 'audit-log' && (
+            <AuditLogTab serverId={state.currentServerId} />
           )}
           {activeTab === 'delete' && (
             <DeleteServerTab

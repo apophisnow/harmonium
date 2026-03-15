@@ -6,6 +6,8 @@ import { hasPermission, Permission } from '@harmonium/shared';
 import { addMemberToServer } from '../servers/servers.service.js';
 import { isBanned } from '../bans/bans.service.js';
 import type { CreateInviteInput } from './invites.schemas.js';
+import { createAuditLogEntry } from '../audit-log/audit-log.service.js';
+import { AuditLogAction } from '@harmonium/shared';
 
 const CHARS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
 
@@ -118,6 +120,16 @@ export async function createInvite(serverId: string, inviterId: string, input: C
       expiresAt,
     })
     .returning();
+
+  // Fire-and-forget audit log
+  createAuditLogEntry({
+    serverId,
+    actorId: inviterId,
+    action: AuditLogAction.INVITE_CREATE,
+    targetType: 'invite',
+    targetId: null,
+    changes: { code: { new: code } },
+  }).catch(() => {});
 
   return inviteToResponse(invite);
 }
@@ -264,6 +276,16 @@ export async function deleteInvite(code: string, userId: string, serverId: strin
   }
 
   await db.delete(schema.invites).where(eq(schema.invites.code, code));
+
+  // Fire-and-forget audit log
+  createAuditLogEntry({
+    serverId,
+    actorId: userId,
+    action: AuditLogAction.INVITE_DELETE,
+    targetType: 'invite',
+    targetId: null,
+    changes: { code: { old: code } },
+  }).catch(() => {});
 }
 
 export { getUserServerPermissions };
