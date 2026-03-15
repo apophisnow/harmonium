@@ -60,7 +60,7 @@ export async function joinVoice(userId: string, channelId: string) {
 
   // Validate channel exists and is a voice channel
   const channel = await getChannelWithValidation(channelId);
-  const serverId = channel.serverId.toString();
+  const serverId = channel.serverId!.toString();
 
   // Check CONNECT permission
   const permissions = await computeChannelPermissions(db, serverId, channelId, userId);
@@ -175,7 +175,7 @@ export async function produce(
 
   // Check SPEAK permission
   const channel = await getChannelWithValidation(channelId);
-  const serverId = channel.serverId.toString();
+  const serverId = channel.serverId!.toString();
 
   const permissions = await computeChannelPermissions(db, serverId, channelId, userId);
 
@@ -348,7 +348,7 @@ export async function stopScreenShare(userId: string) {
     where: eq(schema.channels.id, BigInt(channelId)),
   });
   if (!channel) return;
-  const serverId = channel.serverId.toString();
+  const serverId = channel.serverId!.toString();
 
   const pubsub = getPubSubManager();
   for (const { producerId, kind } of producers) {

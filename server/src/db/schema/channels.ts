@@ -1,5 +1,6 @@
 import { pgTable, bigint, varchar, boolean, integer, timestamp, index, primaryKey } from 'drizzle-orm/pg-core';
 import { servers } from './servers.js';
+import { users } from './users.js';
 
 export const channelCategories = pgTable('channel_categories', {
   id: bigint('id', { mode: 'bigint' }).primaryKey(),
@@ -13,13 +14,15 @@ export const channelCategories = pgTable('channel_categories', {
 
 export const channels = pgTable('channels', {
   id: bigint('id', { mode: 'bigint' }).primaryKey(),
-  serverId: bigint('server_id', { mode: 'bigint' }).notNull().references(() => servers.id, { onDelete: 'cascade' }),
+  serverId: bigint('server_id', { mode: 'bigint' }).references(() => servers.id, { onDelete: 'cascade' }),
   categoryId: bigint('category_id', { mode: 'bigint' }).references(() => channelCategories.id, { onDelete: 'set null' }),
   name: varchar('name', { length: 100 }).notNull(),
   type: varchar('type', { length: 10 }).notNull().default('text'),
   topic: varchar('topic', { length: 1024 }),
   position: integer('position').notNull().default(0),
   isPrivate: boolean('is_private').notNull().default(false),
+  isDm: boolean('is_dm').notNull().default(false),
+  ownerId: bigint('owner_id', { mode: 'bigint' }).references(() => users.id),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
 }, (table) => [

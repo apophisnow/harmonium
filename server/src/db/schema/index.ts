@@ -7,3 +7,4 @@ export { invites } from './invites.js';
 export { voiceStates } from './voice-states.js';
 export { reactions } from './reactions.js';
 export { readStates } from './read-states.js';
+export { dmChannelMembers } from './dm-channels.js';

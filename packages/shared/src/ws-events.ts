@@ -5,6 +5,7 @@ import type { Server, ServerMember } from './types/server.js';
 import type { Role } from './types/role.js';
 import type { VoiceState, ProducerType } from './types/voice.js';
 import type { ReadState } from './types/read-state.js';
+import type { DmChannel } from './types/dm.js';
 
 // ===== Client-to-Server Events =====
 
@@ -48,6 +49,11 @@ export interface MarkReadEvent {
   d: { channelId: string; messageId: string };
 }
 
+export interface SubscribeDmEvent {
+  op: 'SUBSCRIBE_DM';
+  d: { channelId: string };
+}
+
 export type ClientEvent =
   | IdentifyEvent
   | HeartbeatEvent
@@ -56,7 +62,8 @@ export type ClientEvent =
   | TypingStartClientEvent
   | PresenceUpdateClientEvent
   | VoiceStateUpdateClientEvent
-  | MarkReadEvent;
+  | MarkReadEvent
+  | SubscribeDmEvent;
 
 // ===== Server-to-Client Events =====
 
@@ -78,6 +85,7 @@ export interface ReadyEvent {
     sessionId: string;
     presences: Array<{ userId: string; status: UserStatus }>;
     readStates: ReadState[];
+    dmChannels: DmChannel[];
   };
 }
 
@@ -205,6 +213,16 @@ export interface ReactionRemoveEvent {
   };
 }
 
+export interface DmChannelCreateEvent {
+  op: 'DM_CHANNEL_CREATE';
+  d: { channel: DmChannel };
+}
+
+export interface DmChannelUpdateEvent {
+  op: 'DM_CHANNEL_UPDATE';
+  d: { channel: DmChannel };
+}
+
 export interface ErrorEvent {
   op: 'ERROR';
   d: { code: number; message: string };
@@ -234,6 +252,8 @@ export type ServerEvent =
   | ProducerClosedServerEvent
   | ReactionAddEvent
   | ReactionRemoveEvent
+  | DmChannelCreateEvent
+  | DmChannelUpdateEvent
   | ErrorEvent;
 
 // Union of all events
