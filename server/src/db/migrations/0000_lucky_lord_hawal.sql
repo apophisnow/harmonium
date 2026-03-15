@@ -255,4 +255,17 @@ ALTER TABLE "relationships" ADD CONSTRAINT "relationships_user_id_users_id_fk" F
 ALTER TABLE "relationships" ADD CONSTRAINT "relationships_target_id_users_id_fk" FOREIGN KEY ("target_id") REFERENCES "public"."users"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 CREATE INDEX "relationships_user_id_type_idx" ON "relationships" USING btree ("user_id","type");--> statement-breakpoint
 ALTER TABLE "messages" ADD COLUMN "search_vector" tsvector GENERATED ALWAYS AS (to_tsvector('english', coalesce(content, ''))) STORED;--> statement-breakpoint
-CREATE INDEX "messages_search_idx" ON "messages" USING GIN ("search_vector");
+CREATE INDEX "messages_search_idx" ON "messages" USING GIN ("search_vector");--> statement-breakpoint
+CREATE TABLE "emojis" (
+	"id" bigint PRIMARY KEY NOT NULL,
+	"server_id" bigint NOT NULL,
+	"name" varchar(32) NOT NULL,
+	"image_url" varchar(512) NOT NULL,
+	"animated" boolean DEFAULT false NOT NULL,
+	"uploaded_by" bigint NOT NULL,
+	"created_at" timestamp with time zone DEFAULT now() NOT NULL
+);
+--> statement-breakpoint
+ALTER TABLE "emojis" ADD CONSTRAINT "emojis_server_id_servers_id_fk" FOREIGN KEY ("server_id") REFERENCES "public"."servers"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "emojis" ADD CONSTRAINT "emojis_uploaded_by_users_id_fk" FOREIGN KEY ("uploaded_by") REFERENCES "public"."users"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
+CREATE INDEX "emojis_server_id_idx" ON "emojis" USING btree ("server_id");

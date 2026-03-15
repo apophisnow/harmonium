@@ -11,3 +11,4 @@ export { readStates } from './read-states.js';
 export { bans } from './bans.js';
 export { dmChannelMembers } from './dm-channels.js';
 export { relationships } from './relationships.js';
+export { emojis } from './emojis.js';

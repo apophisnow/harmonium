@@ -19,6 +19,7 @@ import { readStateRoutes } from './modules/read-states/read-states.routes.js';
 import { dmRoutes } from './modules/dm/dm.routes.js';
 import { relationshipRoutes } from './modules/relationships/relationships.routes.js';
 import { searchRoutes } from './modules/search/search.routes.js';
+import { emojiRoutes } from './modules/emojis/emojis.routes.js';
 import { registerGateway } from './ws/gateway.js';
 import { voiceRoutes } from './modules/voice/voice.routes.js';
 import { getVoiceServer } from './voice/voice-server.js';
@@ -107,6 +108,7 @@ export async function buildApp(): Promise<FastifyInstance> {
   await app.register(dmRoutes);
   await app.register(relationshipRoutes);
   await app.register(searchRoutes);
+  await app.register(emojiRoutes);
 
   // Register WebSocket gateway
   await registerGateway(app);

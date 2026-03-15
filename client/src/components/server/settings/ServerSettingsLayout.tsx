@@ -9,6 +9,7 @@ import { MembersTab } from './MembersTab.js';
 import { InvitesTab } from './InvitesTab.js';
 import { BansTab } from './BansTab.js';
 import { DeleteServerTab } from './DeleteServerTab.js';
+import { EmojiTab } from './EmojiTab.js';
 
 export function ServerSettingsLayout() {
   const state = useServerSettingsState();
@@ -126,6 +127,12 @@ export function ServerSettingsLayout() {
           {activeTab === 'bans' && (
             <BansTab
               currentServerId={state.currentServerId}
+            />
+          )}
+          {activeTab === 'emoji' && (
+            <EmojiTab
+              serverId={state.currentServerId}
+              canManageServer={state.canManageServer}
             />
           )}
           {activeTab === 'delete' && (

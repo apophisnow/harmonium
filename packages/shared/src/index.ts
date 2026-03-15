@@ -12,5 +12,6 @@ export * from './types/ban.js';
 export * from './types/dm.js';
 export * from './types/relationship.js';
 export * from './types/search.js';
+export * from './types/emoji.js';
 export * from './permissions.js';
 export * from './ws-events.js';
