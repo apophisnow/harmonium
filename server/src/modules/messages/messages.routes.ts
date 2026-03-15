@@ -170,4 +170,67 @@ export async function messageRoutes(app: FastifyInstance) {
       return reply.status(204).send();
     },
   );
+
+  // GET /api/channels/:channelId/pins - Get pinned messages
+  app.get(
+    '/api/channels/:channelId/pins',
+    {
+      preHandler: [requireChannelPermission(Permission.READ_MESSAGES)],
+    },
+    async (request, reply) => {
+      const paramsParsed = channelParamsSchema.safeParse(request.params);
+      if (!paramsParsed.success) {
+        throw new ValidationError(paramsParsed.error.errors[0].message);
+      }
+
+      const messages = await messagesService.getPinnedMessages(
+        paramsParsed.data.channelId,
+      );
+
+      return reply.send(messages);
+    },
+  );
+
+  // PUT /api/channels/:channelId/pins/:messageId - Pin a message
+  app.put(
+    '/api/channels/:channelId/pins/:messageId',
+    {
+      preHandler: [requireChannelPermission(Permission.PIN_MESSAGES)],
+    },
+    async (request, reply) => {
+      const paramsParsed = messageParamsSchema.safeParse(request.params);
+      if (!paramsParsed.success) {
+        throw new ValidationError(paramsParsed.error.errors[0].message);
+      }
+
+      const message = await messagesService.pinMessage(
+        paramsParsed.data.channelId,
+        paramsParsed.data.messageId,
+        request.user.userId,
+      );
+
+      return reply.send(message);
+    },
+  );
+
+  // DELETE /api/channels/:channelId/pins/:messageId - Unpin a message
+  app.delete(
+    '/api/channels/:channelId/pins/:messageId',
+    {
+      preHandler: [requireChannelPermission(Permission.PIN_MESSAGES)],
+    },
+    async (request, reply) => {
+      const paramsParsed = messageParamsSchema.safeParse(request.params);
+      if (!paramsParsed.success) {
+        throw new ValidationError(paramsParsed.error.errors[0].message);
+      }
+
+      await messagesService.unpinMessage(
+        paramsParsed.data.channelId,
+        paramsParsed.data.messageId,
+      );
+
+      return reply.status(204).send();
+    },
+  );
 }

@@ -26,6 +26,7 @@ import { UserSettingsLayout } from '../user/settings/UserSettingsLayout.js';
 import { ScreenShareViewer } from '../voice/ScreenShareViewer.js';
 import { VoiceGrid } from '../voice/VoiceGrid.js';
 import { VoicePiP } from '../voice/VoicePiP.js';
+import { PinnedMessages } from '../chat/PinnedMessages.js';
 
 const EMPTY_CHANNELS: Channel[] = [];
 
@@ -53,7 +54,9 @@ export function AppLayout({ sendEvent, isConnected }: AppLayoutProps) {
 
   const showMemberSidebar = useUIStore((s) => s.showMemberSidebar);
   const showMobileSidebar = useUIStore((s) => s.showMobileSidebar);
+  const showPinnedMessages = useUIStore((s) => s.showPinnedMessages);
   const closeMobileSidebar = useUIStore((s) => s.closeMobileSidebar);
+  const closePinnedMessages = useUIStore((s) => s.closePinnedMessages);
   const openModal = useUIStore((s) => s.openModal);
 
   const voiceChannelId = useVoiceStore((s) => s.currentChannelId);
@@ -288,6 +291,15 @@ export function AppLayout({ sendEvent, isConnected }: AppLayoutProps) {
           </div>
         )}
       </div>
+
+      {/* Pinned messages panel (toggleable, hidden on mobile) */}
+      {showPinnedMessages && currentChannelId && !isMobile && (
+        <PinnedMessages
+          channelId={currentChannelId}
+          onClose={closePinnedMessages}
+          canUnpin={true}
+        />
+      )}
 
       {/* Member sidebar - 240px (toggleable, hidden on mobile) */}
       {showMemberSidebar && currentServerId && !isMobile && <MemberSidebar />}

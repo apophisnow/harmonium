@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import type { Message } from '@harmonium/shared';
-import { getMessages } from '../api/messages.js';
+import { getMessages, getPinnedMessages as fetchPinnedMessagesApi } from '../api/messages.js';
 
 const DEFAULT_LIMIT = 50;
 
@@ -8,6 +8,7 @@ interface MessageState {
   messages: Map<string, Message[]>;
   hasMore: Map<string, boolean>;
   replyingTo: Message | null;
+  pinnedMessages: Map<string, Message[]>;
 
   fetchMessages: (channelId: string, before?: string) => Promise<void>;
   addMessage: (message: Message) => void;
@@ -16,12 +17,16 @@ interface MessageState {
   setReplyingTo: (message: Message | null) => void;
   addReaction: (channelId: string, messageId: string, userId: string, emoji: string) => void;
   removeReaction: (channelId: string, messageId: string, userId: string, emoji: string) => void;
+  fetchPinnedMessages: (channelId: string) => Promise<void>;
+  handlePinMessage: (channelId: string, message: Message) => void;
+  handleUnpinMessage: (channelId: string, messageId: string) => void;
 }
 
 export const useMessageStore = create<MessageState>((set, get) => ({
   messages: new Map(),
   hasMore: new Map(),
   replyingTo: null,
+  pinnedMessages: new Map(),
 
   fetchMessages: async (channelId, before) => {
     const fetched = await getMessages(channelId, {
@@ -111,5 +116,51 @@ export const useMessageStore = create<MessageState>((set, get) => ({
       }),
     );
     set({ messages });
+  },
+
+  fetchPinnedMessages: async (channelId) => {
+    const fetched = await fetchPinnedMessagesApi(channelId);
+    const pinnedMessages = new Map(get().pinnedMessages);
+    pinnedMessages.set(channelId, fetched);
+    set({ pinnedMessages });
+  },
+
+  handlePinMessage: (channelId, message) => {
+    // Update the message in the main message list
+    const messages = new Map(get().messages);
+    const list = messages.get(channelId) ?? [];
+    messages.set(
+      channelId,
+      list.map((m) => (m.id === message.id ? { ...m, isPinned: true, pinnedAt: message.pinnedAt, pinnedBy: message.pinnedBy } : m)),
+    );
+
+    // Update pinned messages list
+    const pinnedMessages = new Map(get().pinnedMessages);
+    const pinned = pinnedMessages.get(channelId) ?? [];
+    if (!pinned.find((m) => m.id === message.id)) {
+      pinnedMessages.set(channelId, [message, ...pinned]);
+    }
+
+    set({ messages, pinnedMessages });
+  },
+
+  handleUnpinMessage: (channelId, messageId) => {
+    // Update the message in the main message list
+    const messages = new Map(get().messages);
+    const list = messages.get(channelId) ?? [];
+    messages.set(
+      channelId,
+      list.map((m) => (m.id === messageId ? { ...m, isPinned: false, pinnedAt: null, pinnedBy: null } : m)),
+    );
+
+    // Remove from pinned messages list
+    const pinnedMessages = new Map(get().pinnedMessages);
+    const pinned = pinnedMessages.get(channelId) ?? [];
+    pinnedMessages.set(
+      channelId,
+      pinned.filter((m) => m.id !== messageId),
+    );
+
+    set({ messages, pinnedMessages });
   },
 }));

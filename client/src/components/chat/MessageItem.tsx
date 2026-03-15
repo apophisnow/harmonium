@@ -6,7 +6,7 @@ import { useMemberStore } from '../../stores/member.store.js';
 import { useServerStore } from '../../stores/server.store.js';
 
 const EMPTY_MEMBERS: ServerMember[] = [];
-import { editMessage, deleteMessage } from '../../api/messages.js';
+import { editMessage, deleteMessage, pinMessage, unpinMessage } from '../../api/messages.js';
 import { addReaction, removeReaction } from '../../api/reactions.js';
 import { UserAvatar } from '../user/UserAvatar.js';
 import { formatDate } from '../../lib/formatters.js';
@@ -249,6 +249,18 @@ export function MessageItem({ message, isGrouped }: MessageItemProps) {
     }
   };
 
+  const handleTogglePin = async () => {
+    try {
+      if (message.isPinned) {
+        await unpinMessage(message.channelId, message.id);
+      } else {
+        await pinMessage(message.channelId, message.id);
+      }
+    } catch {
+      console.error('Failed to toggle pin');
+    }
+  };
+
   const handleReactionToggle = async (emoji: string) => {
     if (!currentUserId) return;
     const existing = message.reactions?.find((r) => r.emoji === emoji);
@@ -292,6 +304,13 @@ export function MessageItem({ message, isGrouped }: MessageItemProps) {
       });
     }
 
+    if (!message.isDeleted) {
+      items.push({
+        label: message.isPinned ? 'Unpin Message' : 'Pin Message',
+        onClick: handleTogglePin,
+      });
+    }
+
     items.push({
       label: 'Copy Text',
       onClick: () => {
@@ -332,6 +351,11 @@ export function MessageItem({ message, isGrouped }: MessageItemProps) {
             })}
           </span>
         </span>
+        {message.isPinned && (
+          <svg className="absolute left-1 top-1/2 -translate-y-1/2 h-3 w-3 text-th-text-muted" viewBox="0 0 24 24" fill="currentColor" title="Pinned">
+            <path d="M16 12V4h1V2H7v2h1v8l-2 2v2h5.2v6h1.6v-6H18v-2l-2-2z" />
+          </svg>
+        )}
 
         <div className="min-w-0 flex-1">
           {hasReply && <ReplyPreview replyTo={message.replyTo!} />}
@@ -432,6 +456,11 @@ export function MessageItem({ message, isGrouped }: MessageItemProps) {
           <span className="text-xs text-th-text-muted">
             {formatDate(message.createdAt)}
           </span>
+          {message.isPinned && (
+            <svg className="h-3 w-3 text-th-text-muted flex-shrink-0 translate-y-[1px]" viewBox="0 0 24 24" fill="currentColor" title="Pinned">
+              <path d="M16 12V4h1V2H7v2h1v8l-2 2v2h5.2v6h1.6v-6H18v-2l-2-2z" />
+            </svg>
+          )}
         </div>
 
         {isEditing ? (
