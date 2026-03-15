@@ -22,6 +22,8 @@ export const attachments = pgTable('attachments', {
   url: varchar('url', { length: 512 }).notNull(),
   contentType: varchar('content_type', { length: 128 }),
   sizeBytes: integer('size_bytes').notNull(),
+  width: integer('width'),
+  height: integer('height'),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
 }, (table) => [
   index('attachments_message_id_idx').on(table.messageId),

@@ -35,6 +35,8 @@ CREATE TABLE "attachments" (
 	"url" varchar(512) NOT NULL,
 	"content_type" varchar(128),
 	"size_bytes" integer NOT NULL,
+	"width" integer,
+	"height" integer,
 	"created_at" timestamp with time zone DEFAULT now() NOT NULL
 );
 --> statement-breakpoint

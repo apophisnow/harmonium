@@ -23,5 +23,7 @@ export interface Attachment {
   url: string;
   contentType: string | null;
   sizeBytes: number;
+  width: number | null;
+  height: number | null;
   createdAt: string;
 }
