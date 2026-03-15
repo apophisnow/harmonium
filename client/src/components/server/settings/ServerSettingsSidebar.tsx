@@ -1,4 +1,4 @@
-export type SettingsTab = 'overview' | 'roles' | 'members' | 'invites' | 'bans' | 'emoji' | 'audit-log' | 'webhooks' | 'delete';
+export type SettingsTab = 'overview' | 'roles' | 'members' | 'invites' | 'bans' | 'emoji' | 'audit-log' | 'webhooks' | 'discovery' | 'delete';
 
 interface ServerSettingsSidebarProps {
   activeTab: SettingsTab;
@@ -16,6 +16,7 @@ const NAV_ITEMS: Array<{ id: SettingsTab; label: string; danger?: boolean; owner
   { id: 'emoji', label: 'Emoji' },
   { id: 'audit-log', label: 'Audit Log' },
   { id: 'webhooks', label: 'Webhooks' },
+  { id: 'discovery', label: 'Discovery', ownerOnly: true },
   { id: 'delete', label: 'Delete Server', danger: true, ownerOnly: true },
 ];
 
@@ -25,7 +26,7 @@ export function ServerSettingsSidebar({
   serverName,
   isOwner,
 }: ServerSettingsSidebarProps) {
-  const mainItems = NAV_ITEMS.filter((item) => !item.danger);
+  const mainItems = NAV_ITEMS.filter((item) => !item.danger && (!item.ownerOnly || isOwner));
   const dangerItems = NAV_ITEMS.filter((item) => item.danger && (!item.ownerOnly || isOwner));
 
   return (

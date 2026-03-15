@@ -16,5 +16,6 @@ export * from './types/emoji.js';
 export * from './types/audit-log.js';
 export * from './types/webhook.js';
 export * from './types/thread.js';
+export * from './types/discovery.js';
 export * from './permissions.js';
 export * from './ws-events.js';

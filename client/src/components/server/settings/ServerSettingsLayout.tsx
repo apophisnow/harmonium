@@ -12,6 +12,7 @@ import { WebhooksTab } from './WebhooksTab.js';
 import { DeleteServerTab } from './DeleteServerTab.js';
 import { EmojiTab } from './EmojiTab.js';
 import { AuditLogTab } from './AuditLogTab.js';
+import { DiscoverySettingsTab } from './DiscoverySettingsTab.js';
 
 export function ServerSettingsLayout() {
   const state = useServerSettingsState();
@@ -145,6 +146,9 @@ export function ServerSettingsLayout() {
               currentServerId={state.currentServerId}
               canManageServer={state.canManageServer}
             />
+          )}
+          {activeTab === 'discovery' && state.currentServerId && (
+            <DiscoverySettingsTab serverId={state.currentServerId} />
           )}
           {activeTab === 'delete' && (
             <DeleteServerTab

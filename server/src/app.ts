@@ -28,6 +28,7 @@ import { banRoutes } from './modules/bans/bans.routes.js';
 import { configRoutes } from './modules/config/config.routes.js';
 import { webhookRoutes } from './modules/webhooks/webhooks.routes.js';
 import { threadRoutes } from './modules/threads/threads.routes.js';
+import { discoveryRoutes } from './modules/discovery/discovery.routes.js';
 import { AppError } from './utils/errors.js';
 
 export async function buildApp(): Promise<FastifyInstance> {
@@ -115,6 +116,7 @@ export async function buildApp(): Promise<FastifyInstance> {
   await app.register(auditLogRoutes);
   await app.register(webhookRoutes);
   await app.register(threadRoutes);
+  await app.register(discoveryRoutes);
 
   // Register WebSocket gateway
   await registerGateway(app);

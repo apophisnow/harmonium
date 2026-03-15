@@ -1,7 +1,7 @@
 import { eq, and, sql } from 'drizzle-orm';
 import { getDb, schema } from '../../db/index.js';
 import { generateId } from '../../utils/snowflake.js';
-import { NotFoundError, ForbiddenError } from '../../utils/errors.js';
+import { NotFoundError, ForbiddenError, ConflictError } from '../../utils/errors.js';
 import { DEFAULT_PERMISSIONS, Permission, hasPermission } from '@harmonium/shared';
 import type { UserStatus } from '@harmonium/shared';
 import { getPubSubManager } from '../../ws/pubsub.js';
@@ -9,6 +9,7 @@ import { computeServerPermissions, getHighestRolePosition } from '../../utils/pe
 import type { CreateServerInput, UpdateServerInput } from './servers.schemas.js';
 import { createAuditLogEntry } from '../audit-log/audit-log.service.js';
 import { AuditLogAction } from '@harmonium/shared';
+import type { UpdateDiscoveryInput } from '../discovery/discovery.schemas.js';
 
 function serverToResponse(server: typeof schema.servers.$inferSelect) {
   return {
@@ -18,6 +19,13 @@ function serverToResponse(server: typeof schema.servers.$inferSelect) {
     ownerId: server.ownerId.toString(),
     defaultTheme: server.defaultTheme ?? null,
     defaultMode: server.defaultMode ?? null,
+    isDiscoverable: server.isDiscoverable,
+    description: server.description ?? null,
+    category: server.category ?? null,
+    vanityUrl: server.vanityUrl ?? null,
+    memberCount: server.memberCount ?? 0,
+    bannerUrl: server.bannerUrl ?? null,
+    primaryLanguage: server.primaryLanguage ?? 'en',
     createdAt: server.createdAt.toISOString(),
     updatedAt: server.updatedAt.toISOString(),
   };
@@ -68,6 +76,9 @@ export async function createServer(userId: string, input: CreateServerInput) {
     serverId: serverId,
     userId: userIdBigInt,
   });
+
+  // Set initial member count
+  await db.update(schema.servers).set({ memberCount: 1 }).where(eq(schema.servers.id, serverId));
 
   // Create default @everyone role
   const roleId = generateId();
@@ -298,6 +309,9 @@ export async function leaveServer(serverId: string, userId: string) {
       ),
     );
 
+  // Decrement member count
+  await db.update(schema.servers).set({ memberCount: sql`GREATEST(${schema.servers.memberCount} - 1, 0)` }).where(eq(schema.servers.id, serverIdBigInt));
+
   // Publish MEMBER_LEAVE via pub/sub
   const pubsub = getPubSubManager();
   await pubsub.publishToServer(serverId, {
@@ -353,6 +367,9 @@ export async function kickMember(serverId: string, actorId: string, targetUserId
       ),
     );
 
+  // Decrement member count
+  await db.update(schema.servers).set({ memberCount: sql`GREATEST(${schema.servers.memberCount} - 1, 0)` }).where(eq(schema.servers.id, serverIdBigInt));
+
   // Broadcast MEMBER_LEAVE via pubsub
   const pubsub = getPubSubManager();
   await pubsub.publishToServer(serverId, {
@@ -381,6 +398,9 @@ export async function addMemberToServer(serverId: string, userId: string) {
     userId: userIdBigInt,
   });
 
+  // Increment member count
+  await db.update(schema.servers).set({ memberCount: sql`${schema.servers.memberCount} + 1` }).where(eq(schema.servers.id, serverIdBigInt));
+
   // Fetch the member with user data for the event payload
   const [row] = await db
     .select({
@@ -406,4 +426,100 @@ export async function addMemberToServer(serverId: string, userId: string) {
   });
 
   return memberData;
+}
+
+export async function joinDiscoverableServer(serverId: string, userId: string) {
+  const db = getDb();
+  const serverIdBigInt = BigInt(serverId);
+  const userIdBigInt = BigInt(userId);
+
+  // Check server exists and is discoverable
+  const server = await db.query.servers.findFirst({
+    where: eq(schema.servers.id, serverIdBigInt),
+  });
+
+  if (!server) {
+    throw new NotFoundError('Server not found');
+  }
+
+  if (!server.isDiscoverable) {
+    throw new ForbiddenError('This server is not discoverable');
+  }
+
+  // Check if already a member
+  const existing = await db.query.serverMembers.findFirst({
+    where: and(
+      eq(schema.serverMembers.serverId, serverIdBigInt),
+      eq(schema.serverMembers.userId, userIdBigInt),
+    ),
+  });
+
+  if (existing) {
+    throw new ConflictError('You are already a member of this server');
+  }
+
+  return addMemberToServer(serverId, userId);
+}
+
+export async function updateDiscoverySettings(serverId: string, userId: string, input: UpdateDiscoveryInput) {
+  const db = getDb();
+  const serverIdBigInt = BigInt(serverId);
+
+  // Verify owner
+  const server = await db.query.servers.findFirst({
+    where: eq(schema.servers.id, serverIdBigInt),
+  });
+
+  if (!server) {
+    throw new NotFoundError('Server not found');
+  }
+
+  if (server.ownerId.toString() !== userId) {
+    throw new ForbiddenError('Only the server owner can update discovery settings');
+  }
+
+  const [updated] = await db
+    .update(schema.servers)
+    .set({
+      ...input,
+      updatedAt: new Date(),
+    })
+    .where(eq(schema.servers.id, serverIdBigInt))
+    .returning();
+
+  return {
+    isDiscoverable: updated.isDiscoverable,
+    description: updated.description ?? null,
+    category: updated.category ?? null,
+    vanityUrl: updated.vanityUrl ?? null,
+    bannerUrl: updated.bannerUrl ?? null,
+    primaryLanguage: updated.primaryLanguage ?? 'en',
+  };
+}
+
+export async function getDiscoverySettings(serverId: string, userId: string) {
+  const db = getDb();
+  const serverIdBigInt = BigInt(serverId);
+
+  // Verify owner
+  const server = await db.query.servers.findFirst({
+    where: eq(schema.servers.id, serverIdBigInt),
+  });
+
+  if (!server) {
+    throw new NotFoundError('Server not found');
+  }
+
+  if (server.ownerId.toString() !== userId) {
+    throw new ForbiddenError('Only the server owner can view discovery settings');
+  }
+
+  return {
+    isDiscoverable: server.isDiscoverable,
+    description: server.description ?? null,
+    category: server.category ?? null,
+    vanityUrl: server.vanityUrl ?? null,
+    bannerUrl: server.bannerUrl ?? null,
+    primaryLanguage: server.primaryLanguage ?? 'en',
+  };
 }

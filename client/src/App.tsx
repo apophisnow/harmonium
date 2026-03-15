@@ -8,6 +8,7 @@ import { RegisterPage } from './pages/RegisterPage.js';
 import { NotFoundPage } from './pages/NotFoundPage.js';
 import { AppPage } from './pages/AppPage.js';
 import { InvitePage } from './pages/InvitePage.js';
+import { DiscoveryPage } from './pages/DiscoveryPage.js';
 import { VerifyEmailPage } from './pages/VerifyEmailPage.js';
 import { LoadingSpinner } from './components/shared/LoadingSpinner.js';
 import { ErrorBoundary } from './components/shared/ErrorBoundary.js';
@@ -69,6 +70,16 @@ export function App() {
           <Route path="/register" element={<RegisterPage />} />
           <Route path="/verify-email" element={<VerifyEmailPage />} />
           <Route path="/invite/:code" element={<InvitePage />} />
+          <Route
+            path="/discovery"
+            element={
+              <AuthGuard>
+                <ErrorBoundary>
+                  <DiscoveryPage />
+                </ErrorBoundary>
+              </AuthGuard>
+            }
+          />
           <Route
             path="/channels/:serverId/:channelId?"
             element={

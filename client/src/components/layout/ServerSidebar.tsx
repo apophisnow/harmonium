@@ -84,6 +84,25 @@ export function ServerSidebar() {
           </svg>
         </button>
       </Tooltip>
+
+      {/* Explore / Discovery button */}
+      <Tooltip content="Explore Servers" position="right">
+        <button
+          onClick={() => navigate('/discovery')}
+          className="mt-1 flex h-12 w-12 items-center justify-center rounded-3xl bg-th-bg-primary text-th-green transition-all duration-200 hover:rounded-2xl hover:bg-th-green hover:text-white"
+        >
+          <svg
+            className="h-6 w-6"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+          >
+            <circle cx="12" cy="12" r="10" />
+            <polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76" fill="currentColor" stroke="none" />
+          </svg>
+        </button>
+      </Tooltip>
     </div>
   );
 }

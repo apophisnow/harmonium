@@ -7,6 +7,13 @@ export interface Server {
   ownerId: string;
   defaultTheme: string | null;
   defaultMode: string | null;
+  isDiscoverable: boolean;
+  description: string | null;
+  category: string | null;
+  vanityUrl: string | null;
+  memberCount: number;
+  bannerUrl: string | null;
+  primaryLanguage: string;
   createdAt: string;
   updatedAt: string;
 }
