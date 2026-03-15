@@ -7,6 +7,8 @@ import type { UserStatus } from '@harmonium/shared';
 import { getPubSubManager } from '../../ws/pubsub.js';
 import { computeServerPermissions, getHighestRolePosition } from '../../utils/permissions.js';
 import type { CreateServerInput, UpdateServerInput } from './servers.schemas.js';
+import { createAuditLogEntry } from '../audit-log/audit-log.service.js';
+import { AuditLogAction } from '@harmonium/shared';
 
 function serverToResponse(server: typeof schema.servers.$inferSelect) {
   return {
@@ -178,6 +180,20 @@ export async function updateServer(serverId: string, userId: string, input: Upda
     d: { server: response },
   });
 
+  // Fire-and-forget audit log
+  const changes: Record<string, { old: unknown; new: unknown }> = {};
+  if (input.name !== undefined && input.name !== server.name) {
+    changes.name = { old: server.name, new: input.name };
+  }
+  createAuditLogEntry({
+    serverId,
+    actorId: userId,
+    action: AuditLogAction.SERVER_UPDATE,
+    targetType: 'server',
+    targetId: serverId,
+    changes: Object.keys(changes).length > 0 ? changes : null,
+  }).catch(() => {});
+
   return response;
 }
 
@@ -343,6 +359,15 @@ export async function kickMember(serverId: string, actorId: string, targetUserId
     op: 'MEMBER_LEAVE' as const,
     d: { serverId, userId: targetUserId },
   });
+
+  // Fire-and-forget audit log
+  createAuditLogEntry({
+    serverId,
+    actorId: actorId,
+    action: AuditLogAction.MEMBER_KICK,
+    targetType: 'user',
+    targetId: targetUserId,
+  }).catch(() => {});
 }
 
 export async function addMemberToServer(serverId: string, userId: string) {

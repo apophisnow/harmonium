@@ -11,6 +11,8 @@ import type {
   UpdateCategoryInput,
   PermissionOverrideInput,
 } from './channels.schemas.js';
+import { createAuditLogEntry } from '../audit-log/audit-log.service.js';
+import { AuditLogAction } from '@harmonium/shared';
 
 // ===== Helpers =====
 
@@ -276,6 +278,16 @@ export async function createChannel(serverId: string, userId: string, input: Cre
     d: { channel: response },
   });
 
+  // Fire-and-forget audit log
+  createAuditLogEntry({
+    serverId,
+    actorId: userId,
+    action: AuditLogAction.CHANNEL_CREATE,
+    targetType: 'channel',
+    targetId: channelId.toString(),
+    changes: { name: { new: normalizedName }, type: { new: input.type ?? 'text' } },
+  }).catch(() => {});
+
   return response;
 }
 
@@ -381,6 +393,20 @@ export async function updateChannel(channelId: string, userId: string, input: Up
     d: { channel: response },
   });
 
+  // Fire-and-forget audit log
+  const changes: Record<string, { old?: unknown; new: unknown }> = {};
+  if (input.name !== undefined) changes.name = { old: channel.name, new: updateData.name ?? input.name };
+  if (input.topic !== undefined) changes.topic = { old: channel.topic, new: input.topic };
+  if (input.position !== undefined) changes.position = { old: channel.position, new: input.position };
+  createAuditLogEntry({
+    serverId,
+    actorId: userId,
+    action: AuditLogAction.CHANNEL_UPDATE,
+    targetType: 'channel',
+    targetId: channelId,
+    changes: Object.keys(changes).length > 0 ? changes : null,
+  }).catch(() => {});
+
   return response;
 }
 
@@ -399,6 +425,8 @@ export async function deleteChannel(channelId: string, userId: string) {
   const serverId = channel.serverId.toString();
   await requirePermission(serverId, userId, Permission.MANAGE_CHANNELS);
 
+  const channelName = channel.name;
+
   await db.delete(schema.channels).where(eq(schema.channels.id, channelIdBigInt));
 
   // Broadcast CHANNEL_DELETE
@@ -407,6 +435,16 @@ export async function deleteChannel(channelId: string, userId: string) {
     op: 'CHANNEL_DELETE' as const,
     d: { channelId, serverId },
   });
+
+  // Fire-and-forget audit log
+  createAuditLogEntry({
+    serverId,
+    actorId: userId,
+    action: AuditLogAction.CHANNEL_DELETE,
+    targetType: 'channel',
+    targetId: channelId,
+    changes: { name: { old: channelName } },
+  }).catch(() => {});
 }
 
 // ===== Category CRUD =====

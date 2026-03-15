@@ -8,6 +8,7 @@ import { RolesTab } from './RolesTab.js';
 import { MembersTab } from './MembersTab.js';
 import { InvitesTab } from './InvitesTab.js';
 import { DeleteServerTab } from './DeleteServerTab.js';
+import { AuditLogTab } from './AuditLogTab.js';
 
 export function ServerSettingsLayout() {
   const state = useServerSettingsState();
@@ -121,6 +122,9 @@ export function ServerSettingsLayout() {
               handleDeleteInvite={state.handleDeleteInvite}
               handleCopyInvite={state.handleCopyInvite}
             />
+          )}
+          {activeTab === 'audit-log' && (
+            <AuditLogTab serverId={state.currentServerId} />
           )}
           {activeTab === 'delete' && (
             <DeleteServerTab

@@ -5,6 +5,8 @@ import { NotFoundError, ForbiddenError } from '../../utils/errors.js';
 import { getHighestRolePosition } from '../../utils/permissions.js';
 import { getPubSubManager } from '../../ws/pubsub.js';
 import type { CreateRoleInput, UpdateRoleInput } from './roles.schemas.js';
+import { createAuditLogEntry } from '../audit-log/audit-log.service.js';
+import { AuditLogAction } from '@harmonium/shared';
 
 function roleToResponse(role: typeof schema.roles.$inferSelect) {
   return {
@@ -134,6 +136,26 @@ export async function updateRole(serverId: string, roleId: string, input: Update
     op: 'ROLE_UPDATE' as const,
     d: { serverId, role: response },
   });
+
+  // Fire-and-forget audit log
+  const changes: Record<string, { old?: unknown; new: unknown }> = {};
+  if (input.name !== undefined && input.name !== existingRole.name) {
+    changes.name = { old: existingRole.name, new: input.name };
+  }
+  if (input.color !== undefined) {
+    changes.color = { old: existingRole.color, new: input.color };
+  }
+  if (input.permissions !== undefined) {
+    changes.permissions = { old: existingRole.permissions.toString(), new: input.permissions };
+  }
+  createAuditLogEntry({
+    serverId,
+    actorId,
+    action: AuditLogAction.ROLE_UPDATE,
+    targetType: 'role',
+    targetId: roleId,
+    changes: Object.keys(changes).length > 0 ? changes : null,
+  }).catch(() => {});
 
   return response;
 }

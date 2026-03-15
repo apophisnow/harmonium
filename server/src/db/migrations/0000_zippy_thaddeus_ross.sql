@@ -195,4 +195,20 @@ CREATE INDEX "refresh_tokens_user_id_idx" ON "refresh_tokens" USING btree ("user
 CREATE INDEX "roles_server_id_idx" ON "roles" USING btree ("server_id");--> statement-breakpoint
 CREATE INDEX "server_members_user_id_idx" ON "server_members" USING btree ("user_id");--> statement-breakpoint
 CREATE UNIQUE INDEX "users_username_discriminator_idx" ON "users" USING btree ("username","discriminator");--> statement-breakpoint
-CREATE INDEX "voice_states_channel_id_idx" ON "voice_states" USING btree ("channel_id");
+CREATE INDEX "voice_states_channel_id_idx" ON "voice_states" USING btree ("channel_id");--> statement-breakpoint
+CREATE TABLE "audit_log" (
+	"id" bigint PRIMARY KEY NOT NULL,
+	"server_id" bigint NOT NULL,
+	"actor_id" bigint NOT NULL,
+	"action" varchar(50) NOT NULL,
+	"target_type" varchar(50),
+	"target_id" bigint,
+	"changes" jsonb,
+	"reason" varchar(512),
+	"created_at" timestamp with time zone DEFAULT now() NOT NULL
+);
+--> statement-breakpoint
+ALTER TABLE "audit_log" ADD CONSTRAINT "audit_log_server_id_servers_id_fk" FOREIGN KEY ("server_id") REFERENCES "public"."servers"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "audit_log" ADD CONSTRAINT "audit_log_actor_id_users_id_fk" FOREIGN KEY ("actor_id") REFERENCES "public"."users"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
+CREATE INDEX "audit_log_server_id_idx" ON "audit_log" USING btree ("server_id");--> statement-breakpoint
+CREATE INDEX "audit_log_server_id_created_at_idx" ON "audit_log" USING btree ("server_id","created_at");
