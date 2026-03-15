@@ -14,5 +14,6 @@ export * from './types/relationship.js';
 export * from './types/search.js';
 export * from './types/emoji.js';
 export * from './types/audit-log.js';
+export * from './types/webhook.js';
 export * from './permissions.js';
 export * from './ws-events.js';

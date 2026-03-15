@@ -103,6 +103,9 @@ CREATE TABLE "messages" (
 	"is_pinned" boolean DEFAULT false NOT NULL,
 	"pinned_at" timestamp with time zone,
 	"pinned_by" bigint,
+	"webhook_id" bigint,
+	"webhook_name" varchar(80),
+	"webhook_avatar_url" varchar(512),
 	"created_at" timestamp with time zone DEFAULT now() NOT NULL
 );
 --> statement-breakpoint
@@ -201,6 +204,18 @@ CREATE TABLE "dm_channel_members" (
 	CONSTRAINT "dm_channel_members_channel_id_user_id_pk" PRIMARY KEY("channel_id","user_id")
 );
 --> statement-breakpoint
+CREATE TABLE "webhooks" (
+	"id" bigint PRIMARY KEY NOT NULL,
+	"server_id" bigint NOT NULL,
+	"channel_id" bigint NOT NULL,
+	"name" varchar(80) NOT NULL,
+	"avatar_url" varchar(512),
+	"token" varchar(128) NOT NULL,
+	"created_by" bigint NOT NULL,
+	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
+	CONSTRAINT "webhooks_token_unique" UNIQUE("token")
+);
+--> statement-breakpoint
 ALTER TABLE "channel_categories" ADD CONSTRAINT "channel_categories_server_id_servers_id_fk" FOREIGN KEY ("server_id") REFERENCES "public"."servers"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "channel_permission_overrides" ADD CONSTRAINT "channel_permission_overrides_channel_id_channels_id_fk" FOREIGN KEY ("channel_id") REFERENCES "public"."channels"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "channels" ADD CONSTRAINT "channels_server_id_servers_id_fk" FOREIGN KEY ("server_id") REFERENCES "public"."servers"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
@@ -286,4 +301,9 @@ CREATE TABLE "audit_log" (
 ALTER TABLE "audit_log" ADD CONSTRAINT "audit_log_server_id_servers_id_fk" FOREIGN KEY ("server_id") REFERENCES "public"."servers"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "audit_log" ADD CONSTRAINT "audit_log_actor_id_users_id_fk" FOREIGN KEY ("actor_id") REFERENCES "public"."users"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 CREATE INDEX "audit_log_server_id_idx" ON "audit_log" USING btree ("server_id");--> statement-breakpoint
-CREATE INDEX "audit_log_server_id_created_at_idx" ON "audit_log" USING btree ("server_id","created_at");
+CREATE INDEX "audit_log_server_id_created_at_idx" ON "audit_log" USING btree ("server_id","created_at");--> statement-breakpoint
+ALTER TABLE "webhooks" ADD CONSTRAINT "webhooks_server_id_servers_id_fk" FOREIGN KEY ("server_id") REFERENCES "public"."servers"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "webhooks" ADD CONSTRAINT "webhooks_channel_id_channels_id_fk" FOREIGN KEY ("channel_id") REFERENCES "public"."channels"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "webhooks" ADD CONSTRAINT "webhooks_created_by_users_id_fk" FOREIGN KEY ("created_by") REFERENCES "public"."users"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
+CREATE INDEX "webhooks_server_id_idx" ON "webhooks" USING btree ("server_id");--> statement-breakpoint
+CREATE INDEX "webhooks_channel_id_idx" ON "webhooks" USING btree ("channel_id");

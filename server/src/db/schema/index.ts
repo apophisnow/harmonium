@@ -13,3 +13,4 @@ export { dmChannelMembers } from './dm-channels.js';
 export { relationships } from './relationships.js';
 export { emojis } from './emojis.js';
 export { auditLog } from './audit-log.js';
+export { webhooks } from './webhooks.js';

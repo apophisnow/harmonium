@@ -1,4 +1,4 @@
-export type SettingsTab = 'overview' | 'roles' | 'members' | 'invites' | 'bans' | 'emoji' | 'audit-log' | 'delete';
+export type SettingsTab = 'overview' | 'roles' | 'members' | 'invites' | 'bans' | 'emoji' | 'audit-log' | 'webhooks' | 'delete';
 
 interface ServerSettingsSidebarProps {
   activeTab: SettingsTab;
@@ -15,6 +15,7 @@ const NAV_ITEMS: Array<{ id: SettingsTab; label: string; danger?: boolean; owner
   { id: 'bans', label: 'Bans' },
   { id: 'emoji', label: 'Emoji' },
   { id: 'audit-log', label: 'Audit Log' },
+  { id: 'webhooks', label: 'Webhooks' },
   { id: 'delete', label: 'Delete Server', danger: true, ownerOnly: true },
 ];
 

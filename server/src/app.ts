@@ -26,6 +26,7 @@ import { voiceRoutes } from './modules/voice/voice.routes.js';
 import { getVoiceServer } from './voice/voice-server.js';
 import { banRoutes } from './modules/bans/bans.routes.js';
 import { configRoutes } from './modules/config/config.routes.js';
+import { webhookRoutes } from './modules/webhooks/webhooks.routes.js';
 import { AppError } from './utils/errors.js';
 
 export async function buildApp(): Promise<FastifyInstance> {
@@ -111,6 +112,7 @@ export async function buildApp(): Promise<FastifyInstance> {
   await app.register(searchRoutes);
   await app.register(emojiRoutes);
   await app.register(auditLogRoutes);
+  await app.register(webhookRoutes);
 
   // Register WebSocket gateway
   await registerGateway(app);

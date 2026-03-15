@@ -13,6 +13,9 @@ export const messages = pgTable('messages', {
   isPinned: boolean('is_pinned').notNull().default(false),
   pinnedAt: timestamp('pinned_at', { withTimezone: true }),
   pinnedBy: bigint('pinned_by', { mode: 'bigint' }).references(() => users.id),
+  webhookId: bigint('webhook_id', { mode: 'bigint' }),
+  webhookName: varchar('webhook_name', { length: 80 }),
+  webhookAvatarUrl: varchar('webhook_avatar_url', { length: 512 }),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   searchVector: varchar('search_vector'),  // managed by Postgres, not by app code
 }, (table) => [

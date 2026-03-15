@@ -19,6 +19,9 @@ export interface Message {
   attachments?: Attachment[];
   reactions?: Reaction[];
   embeds?: Embed[];
+  webhookId?: string | null;
+  webhookName?: string | null;
+  webhookAvatarUrl?: string | null;
 }
 
 export interface Attachment {

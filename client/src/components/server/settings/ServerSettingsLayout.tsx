@@ -8,6 +8,7 @@ import { RolesTab } from './RolesTab.js';
 import { MembersTab } from './MembersTab.js';
 import { InvitesTab } from './InvitesTab.js';
 import { BansTab } from './BansTab.js';
+import { WebhooksTab } from './WebhooksTab.js';
 import { DeleteServerTab } from './DeleteServerTab.js';
 import { EmojiTab } from './EmojiTab.js';
 import { AuditLogTab } from './AuditLogTab.js';
@@ -138,6 +139,12 @@ export function ServerSettingsLayout() {
           )}
           {activeTab === 'audit-log' && (
             <AuditLogTab serverId={state.currentServerId} />
+          )}
+          {activeTab === 'webhooks' && (
+            <WebhooksTab
+              currentServerId={state.currentServerId}
+              canManageServer={state.canManageServer}
+            />
           )}
           {activeTab === 'delete' && (
             <DeleteServerTab
