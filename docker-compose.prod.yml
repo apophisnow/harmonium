@@ -1,3 +1,14 @@
+# Production deployment — pulls pre-built images from GHCR.
+#
+# Quick start:
+#   1. Copy .env.example to .env and set real secrets
+#   2. docker compose -f docker-compose.prod.yml up -d
+#
+# Required .env variables:
+#   JWT_SECRET            — random string, min 16 chars
+#   JWT_REFRESH_SECRET    — random string, min 16 chars
+#   MEDIASOUP_ANNOUNCED_IP — your server's public IP (for voice/video)
+
 name: harmonium
 
 services:
@@ -5,12 +16,10 @@ services:
     image: postgres:16-alpine
     environment:
       POSTGRES_USER: harmonium
-      POSTGRES_PASSWORD: harmonium
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-harmonium}
       POSTGRES_DB: harmonium
     volumes:
       - postgres_data:/var/lib/postgresql/data
-    ports:
-      - "5432:5432"
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U harmonium"]
       interval: 5s
@@ -20,8 +29,6 @@ services:
 
   redis:
     image: redis:7-alpine
-    ports:
-      - "6379:6379"
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 5s
@@ -30,30 +37,32 @@ services:
     restart: unless-stopped
 
   server:
-    build:
-      context: .
-      dockerfile: server/Dockerfile
+    image: ghcr.io/apophisnow/harmonium-server:latest
     depends_on:
       postgres:
         condition: service_healthy
       redis:
         condition: service_healthy
     environment:
-      NODE_ENV: ${NODE_ENV:-production}
-      DATABASE_URL: postgresql://harmonium:harmonium@postgres:5432/harmonium
+      NODE_ENV: production
+      DATABASE_URL: postgresql://harmonium:${POSTGRES_PASSWORD:-harmonium}@postgres:5432/harmonium
       REDIS_URL: redis://redis:6379
-      JWT_SECRET: ${JWT_SECRET:-change-me-in-production-min-16-chars}
-      JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET:-change-me-too-in-production-16}
+      JWT_SECRET: ${JWT_SECRET:?Set JWT_SECRET in .env}
+      JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET:?Set JWT_REFRESH_SECRET in .env}
       PORT: 3001
-      CLIENT_URL: http://localhost
+      CLIENT_URL: ${CLIENT_URL:-http://localhost}
       MEDIASOUP_ANNOUNCED_IP: ${MEDIASOUP_ANNOUNCED_IP:-127.0.0.1}
-      MEDIASOUP_PREFER_TCP: "true"
+      MEDIASOUP_PREFER_TCP: ${MEDIASOUP_PREFER_TCP:-true}
       UPLOAD_DIR: /app/uploads
-      MAX_UPLOAD_SIZE: 10485760
+      MAX_UPLOAD_SIZE: ${MAX_UPLOAD_SIZE:-10485760}
       DEFAULT_THEME: ${DEFAULT_THEME:-harmonium}
       DEFAULT_MODE: ${DEFAULT_MODE:-dark}
+      SMTP_HOST: ${SMTP_HOST:-}
+      SMTP_PORT: ${SMTP_PORT:-587}
+      SMTP_USER: ${SMTP_USER:-}
+      SMTP_PASS: ${SMTP_PASS:-}
+      SMTP_FROM: ${SMTP_FROM:-noreply@harmonium.app}
     ports:
-      - "3001:3001"
       - "40000-40100:40000-40100/udp"
       - "40000-40100:40000-40100/tcp"
     volumes:
@@ -67,9 +76,7 @@ services:
     restart: unless-stopped
 
   client:
-    build:
-      context: .
-      dockerfile: client/Dockerfile
+    image: ghcr.io/apophisnow/harmonium-client:latest
     depends_on:
       server:
         condition: service_healthy
@@ -88,7 +95,7 @@ services:
       client:
         condition: service_healthy
     ports:
-      - "80:80"
+      - "${PORT:-80}:80"
     volumes:
       - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
     healthcheck:
