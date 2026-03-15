@@ -10,6 +10,7 @@ import { useServerStore } from '../stores/server.store.js';
 import { useVoiceStore } from '../stores/voice.store.js';
 import { useUnreadStore } from '../stores/unread.store.js';
 import { useDmStore } from '../stores/dm.store.js';
+import { useRelationshipStore } from '../stores/relationship.store.js';
 
 const WS_URL =
   import.meta.env.VITE_WS_URL ??
@@ -117,6 +118,8 @@ export function useWebSocket() {
         if (data.d.dmChannels) {
           setDmChannels(data.d.dmChannels);
         }
+        // Fetch relationships on connect
+        useRelationshipStore.getState().fetchRelationships();
         setIsConnected(true);
         reconnectAttemptRef.current = 0;
         break;
@@ -259,6 +262,12 @@ export function useWebSocket() {
         break;
       case 'DM_CHANNEL_UPDATE':
         updateDmChannel(data.d.channel);
+        break;
+      case 'RELATIONSHIP_UPDATE':
+        useRelationshipStore.getState().updateRelationship(data.d.relationship);
+        break;
+      case 'RELATIONSHIP_REMOVE':
+        useRelationshipStore.getState().removeRelationship(data.d.userId);
         break;
       case 'ERROR':
         console.error('[WS] Server error:', data.d.message);

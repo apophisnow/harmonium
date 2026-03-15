@@ -28,6 +28,7 @@ import { UserSettingsLayout } from '../user/settings/UserSettingsLayout.js';
 import { ScreenShareViewer } from '../voice/ScreenShareViewer.js';
 import { VoiceGrid } from '../voice/VoiceGrid.js';
 import { VoicePiP } from '../voice/VoicePiP.js';
+import { FriendsPage } from '../friends/FriendsPage.js';
 
 const EMPTY_CHANNELS: Channel[] = [];
 
@@ -295,6 +296,9 @@ export function AppLayout({ sendEvent, isConnected }: AppLayoutProps) {
               onTyping={sendTyping}
             />
           </>
+        ) : serverId === '@me' ? (
+          // Friends page when on @me route with no DM selected
+          <FriendsPage />
         ) : (
           <>
             <ChannelHeader channel={currentChannel} />
