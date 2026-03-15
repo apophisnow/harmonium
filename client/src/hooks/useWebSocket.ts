@@ -11,6 +11,7 @@ import { useVoiceStore } from '../stores/voice.store.js';
 import { useUnreadStore } from '../stores/unread.store.js';
 import { useDmStore } from '../stores/dm.store.js';
 import { useRelationshipStore } from '../stores/relationship.store.js';
+import { useThreadStore } from '../stores/thread.store.js';
 
 const WS_URL =
   import.meta.env.VITE_WS_URL ??
@@ -62,6 +63,10 @@ export function useWebSocket() {
   const addDmChannel = useDmStore((s) => s.addDmChannel);
   const updateDmChannel = useDmStore((s) => s.updateDmChannel);
   const setDmChannels = useDmStore((s) => s.setDmChannels);
+
+  const addThread = useThreadStore((s) => s.addThread);
+  const updateThread = useThreadStore((s) => s.updateThread);
+  const removeThread = useThreadStore((s) => s.removeThread);
 
   const clearHeartbeat = useCallback(() => {
     if (heartbeatRef.current) {
@@ -280,6 +285,15 @@ export function useWebSocket() {
         break;
       case 'RELATIONSHIP_REMOVE':
         useRelationshipStore.getState().removeRelationship(data.d.userId);
+        break;
+      case 'THREAD_CREATE':
+        addThread(data.d.thread);
+        break;
+      case 'THREAD_UPDATE':
+        updateThread(data.d.thread);
+        break;
+      case 'THREAD_DELETE':
+        removeThread(data.d.threadId, data.d.parentChannelId);
         break;
       case 'ERROR':
         console.error('[WS] Server error:', data.d.message);

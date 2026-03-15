@@ -23,10 +23,19 @@ export const channels = pgTable('channels', {
   isPrivate: boolean('is_private').notNull().default(false),
   isDm: boolean('is_dm').notNull().default(false),
   ownerId: bigint('owner_id', { mode: 'bigint' }).references(() => users.id),
+  // Thread fields
+  isThread: boolean('is_thread').notNull().default(false),
+  parentChannelId: bigint('parent_channel_id', { mode: 'bigint' }),
+  originMessageId: bigint('origin_message_id', { mode: 'bigint' }),
+  threadArchived: boolean('thread_archived').notNull().default(false),
+  threadArchivedAt: timestamp('thread_archived_at', { withTimezone: true }),
+  lastMessageAt: timestamp('last_message_at', { withTimezone: true }),
+  messageCount: integer('message_count').notNull().default(0),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
 }, (table) => [
   index('channels_server_id_idx').on(table.serverId),
+  index('channels_parent_channel_id_idx').on(table.parentChannelId),
 ]);
 
 export const channelPermissionOverrides = pgTable('channel_permission_overrides', {

@@ -31,6 +31,8 @@ import { VoicePiP } from '../voice/VoicePiP.js';
 import { FriendsPage } from '../friends/FriendsPage.js';
 import { PinnedMessages } from '../chat/PinnedMessages.js';
 import { SearchModal } from '../search/SearchModal.js';
+import { ThreadPanel } from '../thread/ThreadPanel.js';
+import { useThreadStore } from '../../stores/thread.store.js';
 
 const EMPTY_CHANNELS: Channel[] = [];
 
@@ -63,6 +65,8 @@ export function AppLayout({ sendEvent, isConnected }: AppLayoutProps) {
   const showMemberSidebar = useUIStore((s) => s.showMemberSidebar);
   const showMobileSidebar = useUIStore((s) => s.showMobileSidebar);
   const showPinnedMessages = useUIStore((s) => s.showPinnedMessages);
+  const activeThread = useThreadStore((s) => s.activeThread);
+  const fetchThreads = useThreadStore((s) => s.fetchThreads);
   const closeMobileSidebar = useUIStore((s) => s.closeMobileSidebar);
   const closePinnedMessages = useUIStore((s) => s.closePinnedMessages);
   const openModal = useUIStore((s) => s.openModal);
@@ -193,6 +197,13 @@ export function AppLayout({ sendEvent, isConnected }: AppLayoutProps) {
       }
     }
   }, [currentChannel, voiceIsConnected, voiceIsConnecting, channels, currentServerId, setCurrentChannel, navigate]);
+
+  // Fetch threads for the current text channel
+  useEffect(() => {
+    if (textChannelId) {
+      fetchThreads(textChannelId);
+    }
+  }, [textChannelId, fetchThreads]);
 
   // Subscribe to server events via WebSocket
   useEffect(() => {
@@ -366,6 +377,11 @@ export function AppLayout({ sendEvent, isConnected }: AppLayoutProps) {
           onClose={closePinnedMessages}
           canUnpin={true}
         />
+      )}
+
+      {/* Thread panel */}
+      {activeThread && currentServerId && !isMobile && (
+        <ThreadPanel sendEvent={sendEvent} serverId={currentServerId} />
       )}
 
       {/* Member sidebar - 240px (toggleable, hidden on mobile, not shown in DM view) */}

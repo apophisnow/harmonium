@@ -1,4 +1,4 @@
-import { eq, and, lt, gt, desc, asc, inArray } from 'drizzle-orm';
+import { eq, and, lt, gt, desc, asc, inArray, sql } from 'drizzle-orm';
 import { getDb, schema } from '../../db/index.js';
 import { generateId } from '../../utils/snowflake.js';
 import { NotFoundError, ForbiddenError, ValidationError } from '../../utils/errors.js';
@@ -258,6 +258,26 @@ export async function createMessage(
   }
 
   const message = messageToResponse(rows[0], attachmentRows, replyToRow, replyToAttachments);
+
+  // If this channel is a thread, auto-add sender as thread member and update thread metadata
+  if (channel.isThread) {
+    await db
+      .insert(schema.threadMembers)
+      .values({
+        channelId: BigInt(channelId),
+        userId: BigInt(authorId),
+      })
+      .onConflictDoNothing();
+
+    await db
+      .update(schema.channels)
+      .set({
+        lastMessageAt: new Date(),
+        messageCount: sql`${schema.channels.messageCount} + 1`,
+        updatedAt: new Date(),
+      })
+      .where(eq(schema.channels.id, BigInt(channelId)));
+  }
 
   // Publish MESSAGE_CREATE event via pub/sub
   const pubsub = getPubSubManager();

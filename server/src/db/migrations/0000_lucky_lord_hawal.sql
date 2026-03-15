@@ -35,6 +35,13 @@ CREATE TABLE "channels" (
 	"is_private" boolean DEFAULT false NOT NULL,
 	"is_dm" boolean DEFAULT false NOT NULL,
 	"owner_id" bigint,
+	"is_thread" boolean DEFAULT false NOT NULL,
+	"parent_channel_id" bigint,
+	"origin_message_id" bigint,
+	"thread_archived" boolean DEFAULT false NOT NULL,
+	"thread_archived_at" timestamp with time zone,
+	"last_message_at" timestamp with time zone,
+	"message_count" integer DEFAULT 0 NOT NULL,
 	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
 	"updated_at" timestamp with time zone DEFAULT now() NOT NULL
 );
@@ -52,6 +59,13 @@ CREATE TABLE "embeds" (
 	"image_height" integer,
 	"color" varchar(7),
 	"created_at" timestamp with time zone DEFAULT now() NOT NULL
+);
+--> statement-breakpoint
+CREATE TABLE "thread_members" (
+	"channel_id" bigint NOT NULL,
+	"user_id" bigint NOT NULL,
+	"joined_at" timestamp with time zone DEFAULT now() NOT NULL,
+	CONSTRAINT "thread_members_channel_id_user_id_pk" PRIMARY KEY("channel_id","user_id")
 );
 --> statement-breakpoint
 CREATE TABLE "attachments" (
@@ -306,4 +320,9 @@ ALTER TABLE "webhooks" ADD CONSTRAINT "webhooks_server_id_servers_id_fk" FOREIGN
 ALTER TABLE "webhooks" ADD CONSTRAINT "webhooks_channel_id_channels_id_fk" FOREIGN KEY ("channel_id") REFERENCES "public"."channels"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "webhooks" ADD CONSTRAINT "webhooks_created_by_users_id_fk" FOREIGN KEY ("created_by") REFERENCES "public"."users"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 CREATE INDEX "webhooks_server_id_idx" ON "webhooks" USING btree ("server_id");--> statement-breakpoint
-CREATE INDEX "webhooks_channel_id_idx" ON "webhooks" USING btree ("channel_id");
+CREATE INDEX "webhooks_channel_id_idx" ON "webhooks" USING btree ("channel_id");--> statement-breakpoint
+ALTER TABLE "thread_members" ADD CONSTRAINT "thread_members_channel_id_channels_id_fk" FOREIGN KEY ("channel_id") REFERENCES "public"."channels"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "thread_members" ADD CONSTRAINT "thread_members_user_id_users_id_fk" FOREIGN KEY ("user_id") REFERENCES "public"."users"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
+CREATE INDEX "channels_parent_channel_id_idx" ON "channels" USING btree ("parent_channel_id");--> statement-breakpoint
+CREATE INDEX "thread_members_channel_id_idx" ON "thread_members" USING btree ("channel_id");--> statement-breakpoint
+CREATE INDEX "thread_members_user_id_idx" ON "thread_members" USING btree ("user_id");

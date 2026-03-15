@@ -25,7 +25,7 @@ function normalizeChannelName(name: string): string {
     .replace(/^-|-$/g, '');
 }
 
-function channelToResponse(channel: typeof schema.channels.$inferSelect) {
+export function channelToResponse(channel: typeof schema.channels.$inferSelect) {
   return {
     id: channel.id.toString(),
     serverId: channel.serverId?.toString() ?? '',
@@ -35,6 +35,13 @@ function channelToResponse(channel: typeof schema.channels.$inferSelect) {
     topic: channel.topic,
     position: channel.position,
     isPrivate: channel.isPrivate,
+    isThread: channel.isThread,
+    parentChannelId: channel.parentChannelId?.toString() ?? null,
+    originMessageId: channel.originMessageId?.toString() ?? null,
+    threadArchived: channel.threadArchived,
+    threadArchivedAt: channel.threadArchivedAt?.toISOString() ?? null,
+    lastMessageAt: channel.lastMessageAt?.toISOString() ?? null,
+    messageCount: channel.messageCount,
     createdAt: channel.createdAt.toISOString(),
     updatedAt: channel.updatedAt.toISOString(),
   };
@@ -311,9 +318,12 @@ export async function getServerChannels(serverId: string, userId: string) {
     .where(eq(schema.channels.serverId, serverIdBigInt))
     .orderBy(asc(schema.channels.position));
 
-  // Filter private channels: check if user has READ_MESSAGES permission for each private channel
+  // Filter out threads and private channels
   const visibleChannels: (typeof allChannels)[number][] = [];
   for (const channel of allChannels) {
+    // Skip threads - they're accessed separately
+    if (channel.isThread) continue;
+
     if (!channel.isPrivate) {
       visibleChannels.push(channel);
     } else {
