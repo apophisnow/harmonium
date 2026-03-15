@@ -39,6 +39,21 @@ CREATE TABLE "channels" (
 	"updated_at" timestamp with time zone DEFAULT now() NOT NULL
 );
 --> statement-breakpoint
+CREATE TABLE "embeds" (
+	"id" bigint PRIMARY KEY NOT NULL,
+	"message_id" bigint NOT NULL,
+	"url" varchar(2048) NOT NULL,
+	"type" varchar(20) DEFAULT 'link' NOT NULL,
+	"title" varchar(256),
+	"description" text,
+	"site_name" varchar(100),
+	"image_url" varchar(2048),
+	"image_width" integer,
+	"image_height" integer,
+	"color" varchar(7),
+	"created_at" timestamp with time zone DEFAULT now() NOT NULL
+);
+--> statement-breakpoint
 CREATE TABLE "attachments" (
 	"id" bigint PRIMARY KEY NOT NULL,
 	"message_id" bigint NOT NULL,
@@ -189,6 +204,7 @@ ALTER TABLE "channel_permission_overrides" ADD CONSTRAINT "channel_permission_ov
 ALTER TABLE "channels" ADD CONSTRAINT "channels_server_id_servers_id_fk" FOREIGN KEY ("server_id") REFERENCES "public"."servers"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "channels" ADD CONSTRAINT "channels_category_id_channel_categories_id_fk" FOREIGN KEY ("category_id") REFERENCES "public"."channel_categories"("id") ON DELETE set null ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "attachments" ADD CONSTRAINT "attachments_message_id_messages_id_fk" FOREIGN KEY ("message_id") REFERENCES "public"."messages"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "embeds" ADD CONSTRAINT "embeds_message_id_messages_id_fk" FOREIGN KEY ("message_id") REFERENCES "public"."messages"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "email_verification_tokens" ADD CONSTRAINT "email_verification_tokens_user_id_users_id_fk" FOREIGN KEY ("user_id") REFERENCES "public"."users"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "invites" ADD CONSTRAINT "invites_server_id_servers_id_fk" FOREIGN KEY ("server_id") REFERENCES "public"."servers"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "invites" ADD CONSTRAINT "invites_inviter_id_users_id_fk" FOREIGN KEY ("inviter_id") REFERENCES "public"."users"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
@@ -213,6 +229,7 @@ ALTER TABLE "voice_states" ADD CONSTRAINT "voice_states_server_id_servers_id_fk"
 CREATE INDEX "channel_categories_server_id_idx" ON "channel_categories" USING btree ("server_id");--> statement-breakpoint
 CREATE INDEX "channels_server_id_idx" ON "channels" USING btree ("server_id");--> statement-breakpoint
 CREATE INDEX "attachments_message_id_idx" ON "attachments" USING btree ("message_id");--> statement-breakpoint
+CREATE INDEX "embeds_message_id_idx" ON "embeds" USING btree ("message_id");--> statement-breakpoint
 CREATE INDEX "email_verification_tokens_user_id_idx" ON "email_verification_tokens" USING btree ("user_id");--> statement-breakpoint
 CREATE INDEX "invites_server_id_idx" ON "invites" USING btree ("server_id");--> statement-breakpoint
 CREATE INDEX "messages_channel_id_id_idx" ON "messages" USING btree ("channel_id","id");--> statement-breakpoint

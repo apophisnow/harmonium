@@ -39,6 +39,7 @@ export function useWebSocket() {
   const removeReactionFromStore = useMessageStore((s) => s.removeReaction);
   const handlePinMessage = useMessageStore((s) => s.handlePinMessage);
   const handleUnpinMessage = useMessageStore((s) => s.handleUnpinMessage);
+  const updateMessageEmbeds = useMessageStore((s) => s.updateMessageEmbeds);
 
   const setPresence = usePresenceStore((s) => s.setPresence);
   const bulkSetPresence = usePresenceStore((s) => s.bulkSetPresence);
@@ -163,6 +164,9 @@ export function useWebSocket() {
         break;
       case 'MESSAGE_UNPIN':
         handleUnpinMessage(data.d.channelId, data.d.messageId);
+        break;
+      case 'MESSAGE_EMBED_UPDATE':
+        updateMessageEmbeds(data.d.channelId, data.d.messageId, data.d.embeds);
         break;
       case 'PRESENCE_UPDATE':
         setPresence(data.d.userId, data.d.status);

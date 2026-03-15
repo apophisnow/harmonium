@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import type { Message } from '@harmonium/shared';
+import type { Message, Embed } from '@harmonium/shared';
 import { getMessages, getPinnedMessages as fetchPinnedMessagesApi } from '../api/messages.js';
 
 const DEFAULT_LIMIT = 50;
@@ -20,6 +20,7 @@ interface MessageState {
   fetchPinnedMessages: (channelId: string) => Promise<void>;
   handlePinMessage: (channelId: string, message: Message) => void;
   handleUnpinMessage: (channelId: string, messageId: string) => void;
+  updateMessageEmbeds: (channelId: string, messageId: string, embeds: Embed[]) => void;
 }
 
 export const useMessageStore = create<MessageState>((set, get) => ({
@@ -162,5 +163,15 @@ export const useMessageStore = create<MessageState>((set, get) => ({
     );
 
     set({ messages, pinnedMessages });
+  },
+
+  updateMessageEmbeds: (channelId, messageId, embeds) => {
+    const messages = new Map(get().messages);
+    const list = messages.get(channelId) ?? [];
+    messages.set(
+      channelId,
+      list.map((m) => (m.id === messageId ? { ...m, embeds } : m)),
+    );
+    set({ messages });
   },
 }));

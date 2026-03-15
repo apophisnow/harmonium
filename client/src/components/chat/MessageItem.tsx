@@ -12,6 +12,7 @@ import { UserAvatar } from '../user/UserAvatar.js';
 import { formatDate } from '../../lib/formatters.js';
 import { ContextMenu, type ContextMenuState } from '../shared/ContextMenu.js';
 import { EmojiPicker } from './EmojiPicker.js';
+import { MessageEmbed } from './MessageEmbed.js';
 
 interface MessageItemProps {
   message: Message;
@@ -386,6 +387,9 @@ export function MessageItem({ message, isGrouped }: MessageItemProps) {
                 </p>
               )}
               <MessageAttachments attachments={message.attachments} />
+              {message.embeds?.map((embed) => (
+                <MessageEmbed key={embed.id} embed={embed} />
+              ))}
             </>
           )}
           <MessageReactions

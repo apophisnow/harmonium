@@ -14,8 +14,9 @@ import {
 } from '../../ws/handlers/message.handler.js';
 import { getReactionsForMessages } from './reactions.service.js';
 import { incrementMentionCount } from '../read-states/read-states.service.js';
+import { fetchAndStoreEmbeds, getEmbedsForMessages } from '../embeds/embeds.service.js';
 import type { CreateMessageInput, UpdateMessageInput, MessagesQuery } from './messages.schemas.js';
-import type { Message, Attachment, Reaction } from '@harmonium/shared';
+import type { Message, Attachment, Reaction, Embed } from '@harmonium/shared';
 import type { StorageProvider } from '../../storage/local.js';
 
 // ===== Types =====
@@ -52,6 +53,7 @@ function messageToResponse(
   replyToRow?: MessageRow | null,
   replyToAttachments?: (typeof schema.attachments.$inferSelect)[],
   reactions?: Reaction[],
+  embeds?: Embed[],
 ): Message {
   const { message, user } = row;
   let replyTo: Message | null = null;
@@ -87,6 +89,7 @@ function messageToResponse(
       : undefined,
     attachments: attachmentRows ? attachmentRows.map(attachmentToResponse) : [],
     reactions: reactions ?? [],
+    embeds: embeds ?? [],
   };
 }
 
@@ -291,6 +294,13 @@ export async function createMessage(
     }
   }
 
+  // Fire-and-forget embed fetching
+  if (input.content) {
+    fetchAndStoreEmbeds(messageId, input.content, channelId, serverId).catch(() => {
+      // Silently ignore embed fetch failures
+    });
+  }
+
   return message;
 }
 
@@ -365,6 +375,9 @@ export async function getMessages(
   // Batch-fetch reactions
   const reactionsMap = await getReactionsForMessages(messageIds);
 
+  // Batch-fetch embeds
+  const embedsMap = await getEmbedsForMessages(messageIds);
+
   // Batch-fetch replyTo messages
   const replyToIds = rows
     .map((r) => r.message.replyToId)
@@ -382,6 +395,7 @@ export async function getMessages(
       replyData?.row ?? null,
       replyData?.attachments,
       reactionsMap.get(msgKey),
+      embedsMap.get(msgKey),
     );
   });
 }
