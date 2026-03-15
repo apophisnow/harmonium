@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import type { Message } from '@harmonium/shared';
+import type { Message, Embed } from '@harmonium/shared';
 import { getMessages } from '../api/messages.js';
 
 const DEFAULT_LIMIT = 50;
@@ -16,6 +16,7 @@ interface MessageState {
   setReplyingTo: (message: Message | null) => void;
   addReaction: (channelId: string, messageId: string, userId: string, emoji: string) => void;
   removeReaction: (channelId: string, messageId: string, userId: string, emoji: string) => void;
+  updateMessageEmbeds: (channelId: string, messageId: string, embeds: Embed[]) => void;
 }
 
 export const useMessageStore = create<MessageState>((set, get) => ({
@@ -109,6 +110,16 @@ export const useMessageStore = create<MessageState>((set, get) => ({
           .filter((r) => r.count > 0);
         return { ...m, reactions };
       }),
+    );
+    set({ messages });
+  },
+
+  updateMessageEmbeds: (channelId, messageId, embeds) => {
+    const messages = new Map(get().messages);
+    const list = messages.get(channelId) ?? [];
+    messages.set(
+      channelId,
+      list.map((m) => (m.id === messageId ? { ...m, embeds } : m)),
     );
     set({ messages });
   },

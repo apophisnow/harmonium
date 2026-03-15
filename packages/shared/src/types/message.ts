@@ -1,5 +1,6 @@
 import type { PublicUser } from './user.js';
 import type { Reaction } from './reaction.js';
+import type { Embed } from './embed.js';
 
 export interface Message {
   id: string;
@@ -14,6 +15,7 @@ export interface Message {
   author?: PublicUser;
   attachments?: Attachment[];
   reactions?: Reaction[];
+  embeds?: Embed[];
 }
 
 export interface Attachment {

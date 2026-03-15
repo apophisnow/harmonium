@@ -1,4 +1,5 @@
 import type { Message } from './types/message.js';
+import type { Embed } from './types/embed.js';
 import type { PublicUser, UserStatus } from './types/user.js';
 import type { Channel } from './types/channel.js';
 import type { Server, ServerMember } from './types/server.js';
@@ -205,6 +206,11 @@ export interface ReactionRemoveEvent {
   };
 }
 
+export interface MessageEmbedUpdateEvent {
+  op: 'MESSAGE_EMBED_UPDATE';
+  d: { channelId: string; messageId: string; embeds: Embed[] };
+}
+
 export interface ErrorEvent {
   op: 'ERROR';
   d: { code: number; message: string };
@@ -234,6 +240,7 @@ export type ServerEvent =
   | ProducerClosedServerEvent
   | ReactionAddEvent
   | ReactionRemoveEvent
+  | MessageEmbedUpdateEvent
   | ErrorEvent;
 
 // Union of all events
