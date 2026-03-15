@@ -43,6 +43,8 @@ function attachmentToResponse(row: typeof schema.attachments.$inferSelect): Atta
     url: row.url,
     contentType: row.contentType ?? null,
     sizeBytes: row.sizeBytes,
+    width: row.width ?? null,
+    height: row.height ?? null,
     createdAt: row.createdAt.toISOString(),
   };
 }

@@ -1,5 +1,5 @@
 import { useState, type ReactNode } from 'react';
-import type { Message, Attachment, Reaction, ServerMember } from '@harmonium/shared';
+import type { Message, Reaction, ServerMember } from '@harmonium/shared';
 import { useAuthStore } from '../../stores/auth.store.js';
 import { useMessageStore } from '../../stores/message.store.js';
 import { useMemberStore } from '../../stores/member.store.js';
@@ -14,75 +14,11 @@ import { ContextMenu, type ContextMenuState } from '../shared/ContextMenu.js';
 import { EmojiPicker } from './EmojiPicker.js';
 import { MessageEmbed } from './MessageEmbed.js';
 import { renderMarkdown } from '../../utils/markdown.js';
+import { AttachmentPreview } from './AttachmentPreview.js';
 
 interface MessageItemProps {
   message: Message;
   isGrouped: boolean;
-}
-
-function formatFileSize(bytes: number): string {
-  if (bytes < 1024) return `${bytes} B`;
-  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
-  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
-}
-
-function AttachmentDisplay({ attachment }: { attachment: Attachment }) {
-  const isImage = attachment.contentType?.startsWith('image/') ?? false;
-
-  if (isImage) {
-    return (
-      <div className="mt-1 max-w-[400px]">
-        <a href={attachment.url} target="_blank" rel="noopener noreferrer">
-          <img
-            src={attachment.url}
-            alt={attachment.filename}
-            className="max-h-[300px] max-w-full rounded object-contain cursor-pointer"
-            loading="lazy"
-          />
-        </a>
-      </div>
-    );
-  }
-
-  return (
-    <div className="mt-1 flex items-center gap-3 rounded bg-th-bg-secondary border border-th-border px-3 py-2 max-w-[400px]">
-      <svg className="h-8 w-8 flex-shrink-0 text-th-text-secondary" viewBox="0 0 24 24" fill="currentColor">
-        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6zM6 20V4h7v5h5v11H6z" />
-      </svg>
-      <div className="min-w-0 flex-1">
-        <a
-          href={attachment.url}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="block truncate text-sm text-th-text-link hover:underline"
-        >
-          {attachment.filename}
-        </a>
-        <span className="text-xs text-th-text-muted">{formatFileSize(attachment.sizeBytes)}</span>
-      </div>
-      <a
-        href={attachment.url}
-        download={attachment.filename}
-        className="flex-shrink-0 p-1 text-th-text-secondary hover:text-th-text-primary transition-colors"
-        title="Download"
-      >
-        <svg className="h-5 w-5" viewBox="0 0 24 24" fill="currentColor">
-          <path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z" />
-        </svg>
-      </a>
-    </div>
-  );
-}
-
-function MessageAttachments({ attachments }: { attachments?: Attachment[] }) {
-  if (!attachments || attachments.length === 0) return null;
-  return (
-    <div className="flex flex-col gap-1">
-      {attachments.map((att) => (
-        <AttachmentDisplay key={att.id} attachment={att} />
-      ))}
-    </div>
-  );
 }
 
 function getReplyPreviewText(replyTo: Message): string {
@@ -361,7 +297,7 @@ export function MessageItem({ message, isGrouped }: MessageItemProps) {
                   )}
                 </div>
               )}
-              <MessageAttachments attachments={message.attachments} />
+              <AttachmentPreview attachments={message.attachments ?? []} />
               {message.embeds?.map((embed) => (
                 <MessageEmbed key={embed.id} embed={embed} />
               ))}
@@ -468,7 +404,7 @@ export function MessageItem({ message, isGrouped }: MessageItemProps) {
                 )}
               </div>
             )}
-            <MessageAttachments attachments={message.attachments} />
+            <AttachmentPreview attachments={message.attachments ?? []} />
           </>
         )}
         <MessageReactions
