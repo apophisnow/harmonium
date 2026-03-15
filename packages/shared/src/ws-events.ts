@@ -205,6 +205,21 @@ export interface ReactionRemoveEvent {
   };
 }
 
+export interface ThreadCreateEvent {
+  op: 'THREAD_CREATE';
+  d: { thread: Channel };
+}
+
+export interface ThreadUpdateEvent {
+  op: 'THREAD_UPDATE';
+  d: { thread: Channel };
+}
+
+export interface ThreadDeleteEvent {
+  op: 'THREAD_DELETE';
+  d: { threadId: string; serverId: string; parentChannelId: string };
+}
+
 export interface ErrorEvent {
   op: 'ERROR';
   d: { code: number; message: string };
@@ -234,6 +249,9 @@ export type ServerEvent =
   | ProducerClosedServerEvent
   | ReactionAddEvent
   | ReactionRemoveEvent
+  | ThreadCreateEvent
+  | ThreadUpdateEvent
+  | ThreadDeleteEvent
   | ErrorEvent;
 
 // Union of all events

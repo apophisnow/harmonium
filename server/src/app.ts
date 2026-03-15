@@ -20,6 +20,7 @@ import { registerGateway } from './ws/gateway.js';
 import { voiceRoutes } from './modules/voice/voice.routes.js';
 import { getVoiceServer } from './voice/voice-server.js';
 import { configRoutes } from './modules/config/config.routes.js';
+import { threadRoutes } from './modules/threads/threads.routes.js';
 import { AppError } from './utils/errors.js';
 
 export async function buildApp(): Promise<FastifyInstance> {
@@ -99,6 +100,7 @@ export async function buildApp(): Promise<FastifyInstance> {
   await app.register(messageRoutes);
   await app.register(reactionRoutes);
   await app.register(readStateRoutes);
+  await app.register(threadRoutes);
 
   // Register WebSocket gateway
   await registerGateway(app);

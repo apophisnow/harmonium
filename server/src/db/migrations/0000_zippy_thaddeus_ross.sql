@@ -24,8 +24,22 @@ CREATE TABLE "channels" (
 	"topic" varchar(1024),
 	"position" integer DEFAULT 0 NOT NULL,
 	"is_private" boolean DEFAULT false NOT NULL,
+	"is_thread" boolean DEFAULT false NOT NULL,
+	"parent_channel_id" bigint,
+	"origin_message_id" bigint,
+	"thread_archived" boolean DEFAULT false NOT NULL,
+	"thread_archived_at" timestamp with time zone,
+	"last_message_at" timestamp with time zone,
+	"message_count" integer DEFAULT 0 NOT NULL,
 	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
 	"updated_at" timestamp with time zone DEFAULT now() NOT NULL
+);
+--> statement-breakpoint
+CREATE TABLE "thread_members" (
+	"channel_id" bigint NOT NULL,
+	"user_id" bigint NOT NULL,
+	"joined_at" timestamp with time zone DEFAULT now() NOT NULL,
+	CONSTRAINT "thread_members_channel_id_user_id_pk" PRIMARY KEY("channel_id","user_id")
 );
 --> statement-breakpoint
 CREATE TABLE "attachments" (
@@ -195,4 +209,9 @@ CREATE INDEX "refresh_tokens_user_id_idx" ON "refresh_tokens" USING btree ("user
 CREATE INDEX "roles_server_id_idx" ON "roles" USING btree ("server_id");--> statement-breakpoint
 CREATE INDEX "server_members_user_id_idx" ON "server_members" USING btree ("user_id");--> statement-breakpoint
 CREATE UNIQUE INDEX "users_username_discriminator_idx" ON "users" USING btree ("username","discriminator");--> statement-breakpoint
-CREATE INDEX "voice_states_channel_id_idx" ON "voice_states" USING btree ("channel_id");
+CREATE INDEX "voice_states_channel_id_idx" ON "voice_states" USING btree ("channel_id");--> statement-breakpoint
+ALTER TABLE "thread_members" ADD CONSTRAINT "thread_members_channel_id_channels_id_fk" FOREIGN KEY ("channel_id") REFERENCES "public"."channels"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "thread_members" ADD CONSTRAINT "thread_members_user_id_users_id_fk" FOREIGN KEY ("user_id") REFERENCES "public"."users"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
+CREATE INDEX "channels_parent_channel_id_idx" ON "channels" USING btree ("parent_channel_id");--> statement-breakpoint
+CREATE INDEX "thread_members_channel_id_idx" ON "thread_members" USING btree ("channel_id");--> statement-breakpoint
+CREATE INDEX "thread_members_user_id_idx" ON "thread_members" USING btree ("user_id");

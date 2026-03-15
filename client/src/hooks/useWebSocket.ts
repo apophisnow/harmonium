@@ -9,6 +9,7 @@ import { useChannelStore } from '../stores/channel.store.js';
 import { useServerStore } from '../stores/server.store.js';
 import { useVoiceStore } from '../stores/voice.store.js';
 import { useUnreadStore } from '../stores/unread.store.js';
+import { useThreadStore } from '../stores/thread.store.js';
 
 const WS_URL =
   import.meta.env.VITE_WS_URL ??
@@ -53,6 +54,10 @@ export function useWebSocket() {
 
   const setReadStates = useUnreadStore((s) => s.setReadStates);
   const handleNewMessage = useUnreadStore((s) => s.handleNewMessage);
+
+  const addThread = useThreadStore((s) => s.addThread);
+  const updateThread = useThreadStore((s) => s.updateThread);
+  const removeThread = useThreadStore((s) => s.removeThread);
 
   const clearHeartbeat = useCallback(() => {
     if (heartbeatRef.current) {
@@ -233,6 +238,15 @@ export function useWebSocket() {
         );
         break;
       }
+      case 'THREAD_CREATE':
+        addThread(data.d.thread);
+        break;
+      case 'THREAD_UPDATE':
+        updateThread(data.d.thread);
+        break;
+      case 'THREAD_DELETE':
+        removeThread(data.d.threadId, data.d.parentChannelId);
+        break;
       case 'ERROR':
         console.error('[WS] Server error:', data.d.message);
         break;

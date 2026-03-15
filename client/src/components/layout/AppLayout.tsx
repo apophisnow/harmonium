@@ -26,6 +26,8 @@ import { UserSettingsLayout } from '../user/settings/UserSettingsLayout.js';
 import { ScreenShareViewer } from '../voice/ScreenShareViewer.js';
 import { VoiceGrid } from '../voice/VoiceGrid.js';
 import { VoicePiP } from '../voice/VoicePiP.js';
+import { ThreadPanel } from '../thread/ThreadPanel.js';
+import { useThreadStore } from '../../stores/thread.store.js';
 
 const EMPTY_CHANNELS: Channel[] = [];
 
@@ -53,6 +55,8 @@ export function AppLayout({ sendEvent, isConnected }: AppLayoutProps) {
 
   const showMemberSidebar = useUIStore((s) => s.showMemberSidebar);
   const showMobileSidebar = useUIStore((s) => s.showMobileSidebar);
+  const activeThread = useThreadStore((s) => s.activeThread);
+  const fetchThreads = useThreadStore((s) => s.fetchThreads);
   const closeMobileSidebar = useUIStore((s) => s.closeMobileSidebar);
   const openModal = useUIStore((s) => s.openModal);
 
@@ -159,6 +163,13 @@ export function AppLayout({ sendEvent, isConnected }: AppLayoutProps) {
       }
     }
   }, [currentChannel, voiceIsConnected, voiceIsConnecting, channels, currentServerId, setCurrentChannel, navigate]);
+
+  // Fetch threads for the current text channel
+  useEffect(() => {
+    if (textChannelId) {
+      fetchThreads(textChannelId);
+    }
+  }, [textChannelId, fetchThreads]);
 
   // Subscribe to server events via WebSocket
   useEffect(() => {
@@ -288,6 +299,11 @@ export function AppLayout({ sendEvent, isConnected }: AppLayoutProps) {
           </div>
         )}
       </div>
+
+      {/* Thread panel */}
+      {activeThread && currentServerId && !isMobile && (
+        <ThreadPanel sendEvent={sendEvent} serverId={currentServerId} />
+      )}
 
       {/* Member sidebar - 240px (toggleable, hidden on mobile) */}
       {showMemberSidebar && currentServerId && !isMobile && <MemberSidebar />}

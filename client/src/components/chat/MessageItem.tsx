@@ -1,13 +1,16 @@
 import { useState, type ReactNode } from 'react';
-import type { Message, Attachment, Reaction, ServerMember } from '@harmonium/shared';
+import type { Message, Attachment, Reaction, ServerMember, ThreadListItem } from '@harmonium/shared';
 import { useAuthStore } from '../../stores/auth.store.js';
 import { useMessageStore } from '../../stores/message.store.js';
 import { useMemberStore } from '../../stores/member.store.js';
 import { useServerStore } from '../../stores/server.store.js';
+import { useThreadStore } from '../../stores/thread.store.js';
 
 const EMPTY_MEMBERS: ServerMember[] = [];
+const EMPTY_THREADS: ThreadListItem[] = [];
 import { editMessage, deleteMessage } from '../../api/messages.js';
 import { addReaction, removeReaction } from '../../api/reactions.js';
+import { createThread, getThread } from '../../api/threads.js';
 import { UserAvatar } from '../user/UserAvatar.js';
 import { formatDate } from '../../lib/formatters.js';
 import { ContextMenu, type ContextMenuState } from '../shared/ContextMenu.js';
@@ -165,6 +168,28 @@ function MessageReactions({
   );
 }
 
+function ThreadIndicator({
+  thread,
+  onClick,
+}: {
+  thread: ThreadListItem;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      onClick={onClick}
+      className="mt-1 flex items-center gap-1.5 text-sm text-th-brand hover:underline cursor-pointer"
+    >
+      <svg className="h-4 w-4" viewBox="0 0 24 24" fill="currentColor">
+        <path d="M22 6C22 4.9 21.1 4 20 4H4C2.9 4 2 4.9 2 6V18C2 19.1 2.9 20 4 20H18L22 24V6ZM20 6V17.17L18.83 16H4V6H20ZM6 12H18V14H6V12ZM6 9H18V11H6V9Z" />
+      </svg>
+      <span className="font-medium">
+        {thread.messageCount} {thread.messageCount === 1 ? 'reply' : 'replies'}
+      </span>
+    </button>
+  );
+}
+
 function MessageContent({ content }: { content: string }) {
   const currentServerId = useServerStore((s) => s.currentServerId);
   const members = useMemberStore((s) => currentServerId ? (s.members.get(currentServerId) ?? EMPTY_MEMBERS) : EMPTY_MEMBERS);
@@ -213,11 +238,41 @@ export function MessageItem({ message, isGrouped }: MessageItemProps) {
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const currentUserId = useAuthStore((s) => s.user?.id);
   const setReplyingTo = useMessageStore((s) => s.setReplyingTo);
+  const threads = useThreadStore((s) => s.threads.get(message.channelId) ?? EMPTY_THREADS);
+  const setActiveThread = useThreadStore((s) => s.setActiveThread);
 
   const isOwnMessage = message.authorId === currentUserId;
 
+  // Check if this message has a thread
+  const messageThread = threads.find((t) => t.originMessageId === message.id);
+
   const handleReply = () => {
     setReplyingTo(message);
+  };
+
+  const handleCreateThread = async () => {
+    try {
+      const contentPreview = message.content
+        ? message.content.slice(0, 30).replace(/\s+/g, '-')
+        : 'thread';
+      const thread = await createThread(message.channelId, {
+        name: contentPreview,
+        messageId: message.id,
+      });
+      setActiveThread(thread);
+    } catch {
+      console.error('Failed to create thread');
+    }
+  };
+
+  const handleOpenThread = async () => {
+    if (!messageThread) return;
+    try {
+      const thread = await getThread(messageThread.id);
+      setActiveThread(thread);
+    } catch {
+      console.error('Failed to open thread');
+    }
   };
 
   const handleEditSubmit = async () => {
@@ -281,6 +336,18 @@ export function MessageItem({ message, isGrouped }: MessageItemProps) {
       label: 'Reply',
       onClick: handleReply,
     });
+
+    if (messageThread) {
+      items.push({
+        label: 'Open Thread',
+        onClick: handleOpenThread,
+      });
+    } else {
+      items.push({
+        label: 'Create Thread',
+        onClick: handleCreateThread,
+      });
+    }
 
     if (isOwnMessage) {
       items.push({
@@ -369,6 +436,9 @@ export function MessageItem({ message, isGrouped }: MessageItemProps) {
             currentUserId={currentUserId}
             onToggle={handleReactionToggle}
           />
+          {messageThread && (
+            <ThreadIndicator thread={messageThread} onClick={handleOpenThread} />
+          )}
         </div>
 
         {/* Action buttons */}

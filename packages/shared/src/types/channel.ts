@@ -11,6 +11,14 @@ export interface Channel {
   isPrivate: boolean;
   createdAt: string;
   updatedAt: string;
+  // Thread fields (only present when isThread is true)
+  isThread?: boolean;
+  parentChannelId?: string | null;
+  originMessageId?: string | null;
+  threadArchived?: boolean;
+  threadArchivedAt?: string | null;
+  lastMessageAt?: string | null;
+  messageCount?: number;
 }
 
 export interface ChannelCategory {
