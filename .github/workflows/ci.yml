@@ -107,5 +107,5 @@ jobs:
           done
 
       - name: Run integration tests
-        run: npx vitest run src/__tests__/integration.test.ts
+        run: npx vitest run --config vitest.integration.config.ts
         working-directory: server
