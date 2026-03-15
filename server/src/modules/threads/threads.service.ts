@@ -40,7 +40,7 @@ export async function createThread(
     throw new ForbiddenError('Cannot create a thread within a thread');
   }
 
-  const serverId = parentChannel.serverId.toString();
+  const serverId = parentChannel.serverId!.toString();
   await requireMembership(serverId, userId);
 
   // Verify the origin message exists in this channel
@@ -120,7 +120,7 @@ export async function getThreads(channelId: string, userId: string) {
     throw new NotFoundError('Channel not found');
   }
 
-  await requireMembership(parentChannel.serverId.toString(), userId);
+  await requireMembership(parentChannel.serverId!.toString(), userId);
 
   const threads = await db
     .select()
@@ -160,7 +160,7 @@ export async function archiveThread(threadId: string, userId: string) {
     throw new NotFoundError('Thread not found');
   }
 
-  const serverId = thread.serverId.toString();
+  const serverId = thread.serverId!.toString();
   await requireMembership(serverId, userId);
 
   const [updated] = await db
@@ -199,7 +199,7 @@ export async function unarchiveThread(threadId: string, userId: string) {
     throw new NotFoundError('Thread not found');
   }
 
-  const serverId = thread.serverId.toString();
+  const serverId = thread.serverId!.toString();
   await requireMembership(serverId, userId);
 
   const [updated] = await db
@@ -238,7 +238,7 @@ export async function joinThread(threadId: string, userId: string) {
     throw new NotFoundError('Thread not found');
   }
 
-  await requireMembership(thread.serverId.toString(), userId);
+  await requireMembership(thread.serverId!.toString(), userId);
 
   await db
     .insert(schema.threadMembers)
@@ -289,7 +289,7 @@ export async function deleteThread(threadId: string, userId: string) {
     throw new NotFoundError('Thread not found');
   }
 
-  const serverId = thread.serverId.toString();
+  const serverId = thread.serverId!.toString();
   await requireMembership(serverId, userId);
 
   const parentChannelId = thread.parentChannelId?.toString() ?? '';
@@ -318,7 +318,7 @@ export async function getThread(threadId: string, userId: string) {
     throw new NotFoundError('Thread not found');
   }
 
-  await requireMembership(thread.serverId.toString(), userId);
+  await requireMembership(thread.serverId!.toString(), userId);
 
   return channelToResponse(thread);
 }

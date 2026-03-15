@@ -13,6 +13,11 @@ export const users = pgTable('users', {
   customStatus: varchar('custom_status', { length: 128 }),
   theme: varchar('theme', { length: 50 }),
   mode: varchar('mode', { length: 10 }),
+  // Privacy settings
+  allowDmsFromServerMembers: boolean('allow_dms_from_server_members').notNull().default(true),
+  friendRequestFromEveryone: boolean('friend_request_from_everyone').notNull().default(false),
+  friendRequestFromFof: boolean('friend_request_from_fof').notNull().default(true),
+  friendRequestFromServerMembers: boolean('friend_request_from_server_members').notNull().default(true),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
 }, (table) => [

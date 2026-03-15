@@ -330,6 +330,9 @@ export async function executeWebhook(
     webhookId: msg.webhookId?.toString() ?? null,
     webhookName: msg.webhookName ?? null,
     webhookAvatarUrl: msg.webhookAvatarUrl ?? null,
+    isPinned: false,
+    pinnedAt: null,
+    pinnedBy: null,
   };
 
   // Get serverId for broadcasting
@@ -339,7 +342,7 @@ export async function executeWebhook(
 
   if (channel) {
     const pubsub = getPubSubManager();
-    broadcastMessageCreate(pubsub, channel.serverId.toString(), messageResponse);
+    broadcastMessageCreate(pubsub, channel.serverId!.toString(), messageResponse);
   }
 
   return messageResponse;

@@ -10,7 +10,7 @@ function discoveryServerToResponse(server: typeof schema.servers.$inferSelect) {
     iconUrl: server.iconUrl,
     bannerUrl: server.bannerUrl,
     description: server.description,
-    category: server.category,
+    categories: server.categories ?? [],
     memberCount: server.memberCount ?? 0,
     primaryLanguage: server.primaryLanguage ?? 'en',
   };
@@ -24,7 +24,8 @@ export async function getDiscoverableServers(query: DiscoveryQuery) {
   const conditions = [eq(schema.servers.isDiscoverable, true)];
 
   if (category) {
-    conditions.push(eq(schema.servers.category, category));
+    // Filter servers that have this category in their categories array
+    conditions.push(sql`${schema.servers.categories} @> ARRAY[${category}]::text[]`);
   }
 
   if (search) {

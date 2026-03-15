@@ -9,6 +9,11 @@ export interface User {
   customStatus: string | null;
   theme?: string | null;
   mode?: string | null;
+  // Privacy settings (only on full User, not PublicUser)
+  allowDmsFromServerMembers: boolean;
+  friendRequestFromEveryone: boolean;
+  friendRequestFromFof: boolean;
+  friendRequestFromServerMembers: boolean;
   createdAt: string;
   updatedAt: string;
 }
@@ -16,7 +21,7 @@ export interface User {
 export type UserStatus = 'online' | 'idle' | 'dnd' | 'offline';
 
 // User without sensitive fields (for public display)
-export type PublicUser = Omit<User, 'email'>;
+export type PublicUser = Omit<User, 'email' | 'allowDmsFromServerMembers' | 'friendRequestFromEveryone' | 'friendRequestFromFof' | 'friendRequestFromServerMembers'>;
 
 export interface UserProfile {
   id: string;

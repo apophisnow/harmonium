@@ -2,6 +2,11 @@ import fp from 'fastify-plugin';
 import rateLimit from '@fastify/rate-limit';
 
 export default fp(async (app) => {
+  // Disable rate limiting in test environment
+  if (process.env.NODE_ENV === 'test') {
+    return;
+  }
+
   await app.register(rateLimit, {
     global: true,
     max: 100,

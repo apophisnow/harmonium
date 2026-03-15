@@ -19,7 +19,7 @@ export interface DiscoveryServer {
   iconUrl: string | null;
   bannerUrl: string | null;
   description: string | null;
-  category: string | null;
+  categories: string[];
   memberCount: number;
   primaryLanguage: string;
 }
@@ -34,7 +34,7 @@ export interface DiscoveryResponse {
 export interface DiscoverySettings {
   isDiscoverable: boolean;
   description: string | null;
-  category: string | null;
+  categories: string[];
   vanityUrl: string | null;
   bannerUrl: string | null;
   primaryLanguage: string;

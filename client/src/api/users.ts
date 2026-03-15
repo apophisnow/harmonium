@@ -1,4 +1,4 @@
-import type { PublicUser } from '@harmonium/shared';
+import type { PublicUser, PrivacySettings } from '@harmonium/shared';
 import { apiClient } from './client.js';
 
 export async function getProfile(): Promise<PublicUser> {
@@ -29,4 +29,16 @@ export async function changePassword(
   newPassword: string,
 ): Promise<void> {
   await apiClient.post('/users/@me/password', { currentPassword, newPassword });
+}
+
+export async function getPrivacySettings(): Promise<PrivacySettings> {
+  const response = await apiClient.get<PrivacySettings>('/users/@me/privacy');
+  return response.data;
+}
+
+export async function updatePrivacySettings(
+  data: Partial<PrivacySettings>,
+): Promise<PrivacySettings> {
+  const response = await apiClient.patch<PrivacySettings>('/users/@me/privacy', data);
+  return response.data;
 }

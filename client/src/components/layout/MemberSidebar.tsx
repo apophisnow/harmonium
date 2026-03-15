@@ -5,7 +5,7 @@ import { usePresenceStore } from '../../stores/presence.store.js';
 import { UserAvatar } from '../user/UserAvatar.js';
 import type { ServerMember, UserStatus, Role } from '@harmonium/shared';
 import { getRoles } from '../../api/roles.js';
-import { MemberUserCard } from '../member/MemberUserCard.js';
+import { UserProfilePopover } from '../user/UserProfilePopover.js';
 
 const EMPTY_MEMBERS: ServerMember[] = [];
 
@@ -120,10 +120,12 @@ export function MemberSidebar() {
         </div>
       )}
 
-      {contextMenu && (
-        <MemberUserCard
+      {contextMenu && contextMenu.member.user && (
+        <UserProfilePopover
+          user={contextMenu.member.user}
           member={contextMenu.member}
           roles={roles}
+          serverId={currentServerId ?? undefined}
           position={contextMenu.position}
           onClose={() => setContextMenu(null)}
         />

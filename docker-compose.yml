@@ -39,7 +39,7 @@ services:
       redis:
         condition: service_healthy
     environment:
-      NODE_ENV: production
+      NODE_ENV: test
       DATABASE_URL: postgresql://harmonium:harmonium@postgres:5432/harmonium
       REDIS_URL: redis://redis:6379
       JWT_SECRET: ${JWT_SECRET:-change-me-in-production-min-16-chars}

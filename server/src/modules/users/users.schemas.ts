@@ -27,6 +27,14 @@ export const changePasswordSchema = z.object({
   newPassword: z.string().min(8, 'New password must be at least 8 characters').max(128),
 });
 
+export const updatePrivacySchema = z.object({
+  allowDmsFromServerMembers: z.boolean().optional(),
+  friendRequestFromEveryone: z.boolean().optional(),
+  friendRequestFromFof: z.boolean().optional(),
+  friendRequestFromServerMembers: z.boolean().optional(),
+});
+
 export type UpdateUserInput = z.infer<typeof updateUserSchema>;
 export type UserParams = z.infer<typeof userParamsSchema>;
 export type ChangePasswordInput = z.infer<typeof changePasswordSchema>;
+export type UpdatePrivacyInput = z.infer<typeof updatePrivacySchema>;

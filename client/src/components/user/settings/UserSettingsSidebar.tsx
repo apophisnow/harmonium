@@ -1,7 +1,8 @@
-export type UserSettingsTab = 'account' | 'appearance' | 'voice';
+export type UserSettingsTab = 'account' | 'privacy' | 'appearance' | 'voice';
 
 const NAV_ITEMS: Array<{ id: UserSettingsTab; label: string }> = [
   { id: 'account', label: 'My Account' },
+  { id: 'privacy', label: 'Privacy & Safety' },
   { id: 'appearance', label: 'Appearance' },
   { id: 'voice', label: 'Voice & Audio' },
 ];

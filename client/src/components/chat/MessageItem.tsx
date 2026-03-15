@@ -12,6 +12,7 @@ import { editMessage, deleteMessage, pinMessage, unpinMessage } from '../../api/
 import { addReaction, removeReaction } from '../../api/reactions.js';
 import { createThread, getThread } from '../../api/threads.js';
 import { UserAvatar } from '../user/UserAvatar.js';
+import { UserProfilePopover } from '../user/UserProfilePopover.js';
 import { formatDate } from '../../lib/formatters.js';
 import { ContextMenu, type ContextMenuState } from '../shared/ContextMenu.js';
 import { EmojiPicker } from './EmojiPicker.js';
@@ -148,13 +149,26 @@ export function MessageItem({ message, isGrouped }: MessageItemProps) {
   const [editContent, setEditContent] = useState(message.content ?? '');
   const [contextMenu, setContextMenu] = useState<ContextMenuState | null>(null);
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
+  const [profilePopover, setProfilePopover] = useState<{ position: { x: number; y: number } } | null>(null);
   const currentUserId = useAuthStore((s) => s.user?.id);
+  const currentServerId = useServerStore((s) => s.currentServerId);
+  const members = useMemberStore((s) => currentServerId ? (s.members.get(currentServerId) ?? EMPTY_MEMBERS) : EMPTY_MEMBERS);
   const setReplyingTo = useMessageStore((s) => s.setReplyingTo);
   const threads = useThreadStore((s) => s.threads.get(message.channelId) ?? EMPTY_THREADS);
   const setActiveThread = useThreadStore((s) => s.setActiveThread);
 
   const isWebhookMessage = !!message.webhookId;
   const isOwnMessage = message.authorId === currentUserId && !isWebhookMessage;
+
+  const handleAuthorClick = (e: React.MouseEvent) => {
+    if (isWebhookMessage || !message.author) return;
+    e.stopPropagation();
+    setProfilePopover({ position: { x: e.clientX, y: e.clientY } });
+  };
+
+  const authorMember = message.author
+    ? members.find((m) => m.userId === message.authorId)
+    : undefined;
 
   // Check if this message has a thread
   const messageThread = threads.find((t) => t.originMessageId === message.id);
@@ -332,7 +346,7 @@ export function MessageItem({ message, isGrouped }: MessageItemProps) {
           </span>
         </span>
         {message.isPinned && (
-          <svg className="absolute left-1 top-1/2 -translate-y-1/2 h-3 w-3 text-th-text-muted" viewBox="0 0 24 24" fill="currentColor" title="Pinned">
+          <svg className="absolute left-1 top-1/2 -translate-y-1/2 h-3 w-3 text-th-text-muted" viewBox="0 0 24 24" fill="currentColor" aria-label="Pinned">
             <path d="M16 12V4h1V2H7v2h1v8l-2 2v2h5.2v6h1.6v-6H18v-2l-2-2z" />
           </svg>
         )}
@@ -412,6 +426,17 @@ export function MessageItem({ message, isGrouped }: MessageItemProps) {
             onClose={() => setContextMenu(null)}
           />
         )}
+
+        {/* User profile popover */}
+        {profilePopover && message.author && (
+          <UserProfilePopover
+            user={message.author}
+            member={authorMember}
+            serverId={currentServerId ?? undefined}
+            position={profilePopover.position}
+            onClose={() => setProfilePopover(null)}
+          />
+        )}
       </div>
     );
   }
@@ -424,7 +449,10 @@ export function MessageItem({ message, isGrouped }: MessageItemProps) {
       onContextMenu={handleContextMenu}
       data-message-id={message.id}
     >
-      <div className="mr-4 mt-0.5 flex-shrink-0">
+      <div
+        className={`mr-4 mt-0.5 flex-shrink-0 ${!isWebhookMessage && message.author ? 'cursor-pointer' : ''}`}
+        onClick={handleAuthorClick}
+      >
         <UserAvatar
           username={isWebhookMessage ? (message.webhookName ?? 'Webhook') : (message.author?.username ?? 'Unknown')}
           avatarUrl={isWebhookMessage ? (message.webhookAvatarUrl ?? undefined) : message.author?.avatarUrl}
@@ -436,7 +464,10 @@ export function MessageItem({ message, isGrouped }: MessageItemProps) {
       <div className="min-w-0 flex-1">
         {hasReply && <ReplyPreview replyTo={message.replyTo!} />}
         <div className="flex items-baseline gap-2">
-          <span className="font-medium text-white hover:underline cursor-pointer">
+          <span
+            className="font-medium text-white hover:underline cursor-pointer"
+            onClick={handleAuthorClick}
+          >
             {isWebhookMessage ? (message.webhookName ?? 'Webhook') : (message.author?.username ?? 'Unknown')}
           </span>
           {isWebhookMessage && (
@@ -448,7 +479,7 @@ export function MessageItem({ message, isGrouped }: MessageItemProps) {
             {formatDate(message.createdAt)}
           </span>
           {message.isPinned && (
-            <svg className="h-3 w-3 text-th-text-muted flex-shrink-0 translate-y-[1px]" viewBox="0 0 24 24" fill="currentColor" title="Pinned">
+            <svg className="h-3 w-3 text-th-text-muted flex-shrink-0 translate-y-[1px]" viewBox="0 0 24 24" fill="currentColor" aria-label="Pinned">
               <path d="M16 12V4h1V2H7v2h1v8l-2 2v2h5.2v6h1.6v-6H18v-2l-2-2z" />
             </svg>
           )}
@@ -519,6 +550,17 @@ export function MessageItem({ message, isGrouped }: MessageItemProps) {
         <ContextMenu
           {...contextMenu}
           onClose={() => setContextMenu(null)}
+        />
+      )}
+
+      {/* User profile popover */}
+      {profilePopover && message.author && (
+        <UserProfilePopover
+          user={message.author}
+          member={authorMember}
+          serverId={currentServerId ?? undefined}
+          position={profilePopover.position}
+          onClose={() => setProfilePopover(null)}
         />
       )}
     </div>

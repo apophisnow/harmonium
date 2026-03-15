@@ -9,7 +9,7 @@ export interface Server {
   defaultMode: string | null;
   isDiscoverable: boolean;
   description: string | null;
-  category: string | null;
+  categories: string[];
   vanityUrl: string | null;
   memberCount: number;
   bannerUrl: string | null;

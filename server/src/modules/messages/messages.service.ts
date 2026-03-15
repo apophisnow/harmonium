@@ -321,7 +321,7 @@ export async function createMessage(
 
   // Fire-and-forget embed fetching
   if (input.content) {
-    fetchAndStoreEmbeds(messageId, input.content, channelId, serverId).catch(() => {
+    fetchAndStoreEmbeds(messageId, input.content, channelId, serverId ?? '').catch(() => {
       // Silently ignore embed fetch failures
     });
   }
@@ -673,7 +673,7 @@ export async function pinMessage(
 
   // Broadcast
   const channel = await getChannelWithServer(channelId);
-  const serverId = channel.serverId.toString();
+  const serverId = channel.serverId!.toString();
   const pubsub = getPubSubManager();
   broadcastMessagePin(pubsub, serverId, channelId, message);
 
@@ -716,7 +716,7 @@ export async function unpinMessage(
 
   // Broadcast
   const channel = await getChannelWithServer(channelId);
-  const serverId = channel.serverId.toString();
+  const serverId = channel.serverId!.toString();
   const pubsub = getPubSubManager();
   broadcastMessageUnpin(pubsub, serverId, channelId, messageId);
 }

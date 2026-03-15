@@ -18,6 +18,10 @@ function userToFullResponse(user: typeof schema.users.$inferSelect) {
     customStatus: user.customStatus,
     theme: user.theme,
     mode: user.mode,
+    allowDmsFromServerMembers: user.allowDmsFromServerMembers,
+    friendRequestFromEveryone: user.friendRequestFromEveryone,
+    friendRequestFromFof: user.friendRequestFromFof,
+    friendRequestFromServerMembers: user.friendRequestFromServerMembers,
     createdAt: user.createdAt.toISOString(),
     updatedAt: user.updatedAt.toISOString(),
   };
@@ -140,6 +144,54 @@ export async function updateUserAvatar(userId: string, avatarUrl: string) {
   await broadcastUserUpdate(userId);
 
   return userToFullResponse(updated);
+}
+
+export async function getPrivacySettings(userId: string) {
+  const db = getDb();
+  const user = await db.query.users.findFirst({
+    where: eq(schema.users.id, BigInt(userId)),
+  });
+  if (!user) throw new NotFoundError('User not found');
+  return {
+    allowDmsFromServerMembers: user.allowDmsFromServerMembers,
+    friendRequestFromEveryone: user.friendRequestFromEveryone,
+    friendRequestFromFof: user.friendRequestFromFof,
+    friendRequestFromServerMembers: user.friendRequestFromServerMembers,
+  };
+}
+
+export async function updatePrivacySettings(
+  userId: string,
+  input: {
+    allowDmsFromServerMembers?: boolean;
+    friendRequestFromEveryone?: boolean;
+    friendRequestFromFof?: boolean;
+    friendRequestFromServerMembers?: boolean;
+  },
+) {
+  const db = getDb();
+  const userIdBigInt = BigInt(userId);
+
+  const existing = await db.query.users.findFirst({
+    where: eq(schema.users.id, userIdBigInt),
+  });
+  if (!existing) throw new NotFoundError('User not found');
+
+  const [updated] = await db
+    .update(schema.users)
+    .set({
+      ...input,
+      updatedAt: new Date(),
+    })
+    .where(eq(schema.users.id, userIdBigInt))
+    .returning();
+
+  return {
+    allowDmsFromServerMembers: updated.allowDmsFromServerMembers,
+    friendRequestFromEveryone: updated.friendRequestFromEveryone,
+    friendRequestFromFof: updated.friendRequestFromFof,
+    friendRequestFromServerMembers: updated.friendRequestFromServerMembers,
+  };
 }
 
 export async function changePassword(

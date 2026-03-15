@@ -1,8 +1,71 @@
-import { eq, and, or } from 'drizzle-orm';
+import { eq, and, or, inArray } from 'drizzle-orm';
 import { getDb, schema } from '../../db/index.js';
 import { NotFoundError, ForbiddenError, ConflictError, ValidationError } from '../../utils/errors.js';
 import { getPubSubManager } from '../../ws/pubsub.js';
 import type { Relationship, RelationshipType } from '@harmonium/shared';
+
+/**
+ * Check if a user is allowed to send a friend request to the target based on their privacy settings.
+ */
+async function canSendFriendRequest(
+  senderId: string,
+  targetUser: typeof schema.users.$inferSelect,
+): Promise<boolean> {
+  // If they accept from everyone, always allow
+  if (targetUser.friendRequestFromEveryone) return true;
+
+  const db = getDb();
+  const senderIdBigInt = BigInt(senderId);
+  const targetIdBigInt = targetUser.id;
+
+  // Check if they share a server (for friendRequestFromServerMembers)
+  if (targetUser.friendRequestFromServerMembers) {
+    const senderServers = await db
+      .select({ serverId: schema.serverMembers.serverId })
+      .from(schema.serverMembers)
+      .where(eq(schema.serverMembers.userId, senderIdBigInt));
+
+    if (senderServers.length > 0) {
+      const senderServerIds = senderServers.map((s) => s.serverId);
+      const sharedServer = await db.query.serverMembers.findFirst({
+        where: and(
+          eq(schema.serverMembers.userId, targetIdBigInt),
+          inArray(schema.serverMembers.serverId, senderServerIds),
+        ),
+      });
+      if (sharedServer) return true;
+    }
+  }
+
+  // Check friend-of-friend (for friendRequestFromFof)
+  if (targetUser.friendRequestFromFof) {
+    // Get sender's friends
+    const senderFriends = await db
+      .select({ targetId: schema.relationships.targetId })
+      .from(schema.relationships)
+      .where(
+        and(
+          eq(schema.relationships.userId, senderIdBigInt),
+          eq(schema.relationships.type, 'friend'),
+        ),
+      );
+
+    if (senderFriends.length > 0) {
+      const senderFriendIds = senderFriends.map((f) => f.targetId);
+      // Check if any of sender's friends are also friends with target
+      const mutualFriend = await db.query.relationships.findFirst({
+        where: and(
+          eq(schema.relationships.userId, targetIdBigInt),
+          eq(schema.relationships.type, 'friend'),
+          inArray(schema.relationships.targetId, senderFriendIds),
+        ),
+      });
+      if (mutualFriend) return true;
+    }
+  }
+
+  return false;
+}
 
 function userToPublic(user: typeof schema.users.$inferSelect) {
   return {
@@ -70,6 +133,12 @@ export async function sendFriendRequest(
   // Cannot friend yourself
   if (userIdBigInt === targetIdBigInt) {
     throw new ValidationError('You cannot send a friend request to yourself');
+  }
+
+  // Check target's privacy settings for friend requests
+  const canSendRequest = await canSendFriendRequest(userId, targetUser);
+  if (!canSendRequest) {
+    throw new ForbiddenError('This user is not accepting friend requests from you');
   }
 
   // Check if blocked by target

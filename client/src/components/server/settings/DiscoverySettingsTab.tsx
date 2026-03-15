@@ -18,7 +18,7 @@ export function DiscoverySettingsTab({ serverId }: DiscoverySettingsTabProps) {
   // Form state
   const [isDiscoverable, setIsDiscoverable] = useState(false);
   const [description, setDescription] = useState('');
-  const [category, setCategory] = useState('');
+  const [categories, setCategories] = useState<string[]>([]);
   const [vanityUrl, setVanityUrl] = useState('');
   const [primaryLanguage, setPrimaryLanguage] = useState('en');
 
@@ -29,13 +29,23 @@ export function DiscoverySettingsTab({ serverId }: DiscoverySettingsTabProps) {
         setSettings(s);
         setIsDiscoverable(s.isDiscoverable);
         setDescription(s.description ?? '');
-        setCategory(s.category ?? '');
+        setCategories(s.categories ?? []);
         setVanityUrl(s.vanityUrl ?? '');
         setPrimaryLanguage(s.primaryLanguage);
       })
       .catch(() => setError('Failed to load discovery settings'))
       .finally(() => setIsLoading(false));
   }, [serverId]);
+
+  const toggleCategory = (cat: string) => {
+    setCategories((prev) => {
+      if (prev.includes(cat)) {
+        return prev.filter((c) => c !== cat);
+      }
+      if (prev.length >= 5) return prev;
+      return [...prev, cat];
+    });
+  };
 
   const handleSave = async () => {
     setIsSaving(true);
@@ -45,7 +55,7 @@ export function DiscoverySettingsTab({ serverId }: DiscoverySettingsTabProps) {
       const updated = await updateDiscoverySettings(serverId, {
         isDiscoverable,
         description: description || null,
-        category: category || null,
+        categories,
         vanityUrl: vanityUrl || null,
         primaryLanguage,
       });
@@ -59,11 +69,14 @@ export function DiscoverySettingsTab({ serverId }: DiscoverySettingsTabProps) {
     }
   };
 
+  const arraysEqual = (a: string[], b: string[]) =>
+    a.length === b.length && a.every((v, i) => v === b[i]);
+
   const hasChanges =
     settings !== null &&
     (isDiscoverable !== settings.isDiscoverable ||
       (description || null) !== (settings.description ?? null) ||
-      (category || null) !== (settings.category ?? null) ||
+      !arraysEqual(categories, settings.categories ?? []) ||
       (vanityUrl || null) !== (settings.vanityUrl ?? null) ||
       primaryLanguage !== settings.primaryLanguage);
 
@@ -131,23 +144,41 @@ export function DiscoverySettingsTab({ serverId }: DiscoverySettingsTabProps) {
         <span className="text-xs text-th-text-muted">{description.length}/1000</span>
       </div>
 
-      {/* Category */}
+      {/* Categories (tags) */}
       <div className="mb-4">
         <label className="mb-1.5 block text-xs font-bold uppercase text-th-text-secondary">
-          Category
+          Categories
         </label>
-        <select
-          value={category}
-          onChange={(e) => setCategory(e.target.value)}
-          className="w-full rounded-md border border-th-border bg-th-bg-primary px-3 py-2 text-sm text-th-text-primary outline-none focus:border-th-brand"
-        >
-          <option value="">None</option>
-          {SERVER_CATEGORIES.map((cat) => (
-            <option key={cat} value={cat}>
-              {cat}
-            </option>
-          ))}
-        </select>
+        <p className="mb-2 text-xs text-th-text-muted">
+          Select up to 5 categories that describe your server.
+        </p>
+        <div className="flex flex-wrap gap-2">
+          {SERVER_CATEGORIES.map((cat) => {
+            const selected = categories.includes(cat);
+            const disabled = !selected && categories.length >= 5;
+            return (
+              <button
+                key={cat}
+                onClick={() => toggleCategory(cat)}
+                disabled={disabled}
+                className={`rounded-full border px-3 py-1 text-sm font-medium transition-colors ${
+                  selected
+                    ? 'border-th-brand bg-th-brand/15 text-th-brand'
+                    : disabled
+                      ? 'cursor-not-allowed border-th-border bg-th-bg-primary text-th-text-muted opacity-50'
+                      : 'border-th-border bg-th-bg-primary text-th-text-secondary hover:border-th-brand hover:text-th-text-primary'
+                }`}
+              >
+                {selected && (
+                  <svg className="mr-1 inline-block h-3 w-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                    <polyline points="20 6 9 17 4 12" />
+                  </svg>
+                )}
+                {cat}
+              </button>
+            );
+          })}
+        </div>
       </div>
 
       {/* Vanity URL */}

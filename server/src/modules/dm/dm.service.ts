@@ -86,6 +86,21 @@ export async function createDm(userId: string, recipientId: string): Promise<DmC
     throw new NotFoundError('User not found');
   }
 
+  // Check if the recipient allows DMs (skip for self-DMs and existing friends)
+  if (userId !== recipientId && !recipient.allowDmsFromServerMembers) {
+    // Check if they are friends - friends can always DM
+    const friendship = await db.query.relationships.findFirst({
+      where: and(
+        eq(schema.relationships.userId, recipientIdBigInt),
+        eq(schema.relationships.targetId, userIdBigInt),
+        eq(schema.relationships.type, 'friend'),
+      ),
+    });
+    if (!friendship) {
+      throw new ForbiddenError('This user has DMs disabled');
+    }
+  }
+
   // Check if a 1:1 DM channel already exists between these two users
   // Find channels where both users are members, the channel is a DM, and has no owner (not group)
   const existingChannels = await db

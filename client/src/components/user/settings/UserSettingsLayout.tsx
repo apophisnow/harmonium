@@ -6,6 +6,7 @@ import type { UserSettingsTab } from './UserSettingsSidebar.js';
 import { MyAccountTab } from './MyAccountTab.js';
 import { AppearanceTab } from './AppearanceTab.js';
 import { VoiceAudioTab } from './VoiceAudioTab.js';
+import { PrivacyTab } from './PrivacyTab.js';
 
 export function UserSettingsLayout() {
   const activeModal = useUIStore((s) => s.activeModal);
@@ -59,6 +60,7 @@ export function UserSettingsLayout() {
       <div className="flex flex-[1.5] bg-th-bg-primary">
         <div className="w-[740px] max-w-full overflow-y-auto px-10 py-[60px]">
           {activeTab === 'account' && <MyAccountTab />}
+          {activeTab === 'privacy' && <PrivacyTab />}
           {activeTab === 'appearance' && <AppearanceTab />}
           {activeTab === 'voice' && <VoiceAudioTab />}
         </div>

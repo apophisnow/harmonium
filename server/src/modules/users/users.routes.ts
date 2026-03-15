@@ -1,6 +1,6 @@
 import type { FastifyInstance } from 'fastify';
 import sharp from 'sharp';
-import { changePasswordSchema, updateUserSchema, userParamsSchema } from './users.schemas.js';
+import { changePasswordSchema, updateUserSchema, updatePrivacySchema, userParamsSchema } from './users.schemas.js';
 import * as usersService from './users.service.js';
 import { ValidationError } from '../../utils/errors.js';
 
@@ -94,6 +94,23 @@ export async function userRoutes(app: FastifyInstance) {
     // Update user record in DB
     const updatedUser = await usersService.updateUserAvatar(userId, avatarUrl);
     return reply.send(updatedUser);
+  });
+
+  // GET /api/users/@me/privacy - Get privacy settings
+  app.get('/api/users/@me/privacy', async (request, reply) => {
+    const settings = await usersService.getPrivacySettings(request.user.userId);
+    return reply.send(settings);
+  });
+
+  // PATCH /api/users/@me/privacy - Update privacy settings
+  app.patch('/api/users/@me/privacy', async (request, reply) => {
+    const parsed = updatePrivacySchema.safeParse(request.body);
+    if (!parsed.success) {
+      throw new ValidationError(parsed.error.errors[0].message);
+    }
+
+    const settings = await usersService.updatePrivacySettings(request.user.userId, parsed.data);
+    return reply.send(settings);
   });
 
   // GET /api/users/:userId - Get public user profile

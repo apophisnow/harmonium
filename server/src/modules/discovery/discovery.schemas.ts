@@ -12,7 +12,7 @@ export const discoveryQuerySchema = z.object({
 export const updateDiscoverySchema = z.object({
   isDiscoverable: z.boolean().optional(),
   description: z.union([safeText(z.string().max(1000, 'Description must be at most 1000 characters')), z.null()]).optional(),
-  category: z.union([safeLine(z.string().max(50)), z.null()]).optional(),
+  categories: z.array(safeLine(z.string().max(50))).max(5, 'You can select up to 5 categories').optional(),
   vanityUrl: z.union([safeLine(z.string().max(32).regex(/^[a-zA-Z0-9-]+$/, 'Vanity URL may only contain letters, numbers, and hyphens')), z.null()]).optional(),
   bannerUrl: z.union([z.string().url('Invalid banner URL').max(512), z.null()]).optional(),
   primaryLanguage: safeLine(z.string().max(10)).optional(),

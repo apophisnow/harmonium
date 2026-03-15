@@ -292,10 +292,19 @@ export function DiscoveryPage() {
 
                         <div className="mt-auto flex items-center justify-between">
                           <div className="flex items-center gap-3">
-                            {server.category && (
-                              <span className="rounded bg-th-bg-primary px-2 py-0.5 text-[11px] font-medium text-th-text-secondary">
-                                {server.category}
-                              </span>
+                            {server.categories.length > 0 && (
+                              <div className="flex flex-wrap gap-1">
+                                {server.categories.slice(0, 3).map((cat) => (
+                                  <span key={cat} className="rounded bg-th-bg-primary px-2 py-0.5 text-[11px] font-medium text-th-text-secondary">
+                                    {cat}
+                                  </span>
+                                ))}
+                                {server.categories.length > 3 && (
+                                  <span className="rounded bg-th-bg-primary px-2 py-0.5 text-[11px] font-medium text-th-text-muted">
+                                    +{server.categories.length - 3}
+                                  </span>
+                                )}
+                              </div>
                             )}
                             <span className="flex items-center gap-1 text-xs text-th-text-muted">
                               <svg className="h-3 w-3" viewBox="0 0 24 24" fill="currentColor">

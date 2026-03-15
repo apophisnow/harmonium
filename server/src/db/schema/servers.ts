@@ -1,4 +1,4 @@
-import { pgTable, bigint, varchar, timestamp, index, primaryKey, boolean, integer, uniqueIndex } from 'drizzle-orm/pg-core';
+import { pgTable, bigint, varchar, timestamp, index, primaryKey, boolean, integer, uniqueIndex, text } from 'drizzle-orm/pg-core';
 import { users } from './users.js';
 
 export const servers = pgTable('servers', {
@@ -10,7 +10,7 @@ export const servers = pgTable('servers', {
   defaultMode: varchar('default_mode', { length: 10 }),
   isDiscoverable: boolean('is_discoverable').notNull().default(false),
   description: varchar('description', { length: 1000 }),
-  category: varchar('category', { length: 50 }),
+  categories: text('categories').array().notNull().default([]),
   vanityUrl: varchar('vanity_url', { length: 32 }),
   memberCount: integer('member_count').notNull().default(0),
   bannerUrl: varchar('banner_url', { length: 512 }),
