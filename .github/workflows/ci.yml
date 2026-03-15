@@ -97,14 +97,17 @@ jobs:
       - name: Start server for integration tests
         run: |
           cd server && node dist/index.js &
-          # Wait for server to be ready
+          # Wait for server to be ready (fail if it doesn't start in 30s)
           for i in $(seq 1 30); do
             if curl -s http://localhost:3001/health > /dev/null 2>&1; then
               echo "Server is ready"
-              break
+              exit 0
             fi
+            echo "Waiting for server... ($i/30)"
             sleep 1
           done
+          echo "Server failed to start"
+          exit 1
 
       - name: Run integration tests
         run: npx vitest run --config vitest.integration.config.ts

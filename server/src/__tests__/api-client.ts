@@ -134,8 +134,17 @@ export async function registerUser(prefix = 'user'): Promise<ApiClient> {
 export async function setupServerWithOwner(serverName = 'Test Server') {
   const owner = await registerUser('owner');
   const srv = await owner.createServer(serverName);
+  if (!srv.ok) {
+    throw new Error(`createServer failed (${srv.status}): ${JSON.stringify(srv.data)}`);
+  }
   const channels = await owner.getChannels(srv.data.id);
-  const generalChannel = channels.data.uncategorized.find(c => c.type === 'text')!;
+  if (!channels.ok) {
+    throw new Error(`getChannels failed (${channels.status}): ${JSON.stringify(channels.data)}`);
+  }
+  const generalChannel = channels.data.uncategorized.find(c => c.type === 'text');
+  if (!generalChannel) {
+    throw new Error(`No text channel found in uncategorized: ${JSON.stringify(channels.data)}`);
+  }
   return { owner, serverId: srv.data.id, channelId: generalChannel.id };
 }
 
