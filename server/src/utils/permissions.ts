@@ -232,6 +232,7 @@ export function requirePermission(permission: bigint) {
 /**
  * Fastify preHandler factory that checks a channel-level permission.
  * Expects `channelId` in request params, looks up `serverId` from the channel.
+ * For DM channels (serverId is null), checks membership instead of server permissions.
  */
 export function requireChannelPermission(permission: bigint) {
   return async (request: FastifyRequest, _reply: FastifyReply) => {
@@ -244,19 +245,34 @@ export function requireChannelPermission(permission: bigint) {
 
     const db = getDb();
 
-    // Look up the serverId from the channel
-    let serverId = params.serverId;
-    if (!serverId) {
-      const channel = await db.query.channels.findFirst({
-        where: eq(schema.channels.id, BigInt(channelId)),
+    // Look up the channel
+    const channel = await db.query.channels.findFirst({
+      where: eq(schema.channels.id, BigInt(channelId)),
+    });
+
+    if (!channel) {
+      throw new NotFoundError('Channel not found');
+    }
+
+    // DM channels: check membership instead of server permissions
+    if (channel.isDm || channel.serverId === null) {
+      const membership = await db.query.dmChannelMembers.findFirst({
+        where: and(
+          eq(schema.dmChannelMembers.channelId, BigInt(channelId)),
+          eq(schema.dmChannelMembers.userId, BigInt(request.user.userId)),
+        ),
       });
 
-      if (!channel) {
-        throw new NotFoundError('Channel not found');
+      if (!membership) {
+        throw new ForbiddenError('You are not a member of this DM channel');
       }
 
-      serverId = channel.serverId.toString();
+      // DM members have all basic message permissions (read, send)
+      return;
     }
+
+    // Server channels: use server permission system
+    const serverId = params.serverId ?? channel.serverId.toString();
 
     const userPermissions = await computeChannelPermissions(
       db,

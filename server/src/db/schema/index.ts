@@ -8,3 +8,4 @@ export { voiceStates } from './voice-states.js';
 export { reactions } from './reactions.js';
 export { readStates } from './read-states.js';
 export { bans } from './bans.js';
+export { dmChannelMembers } from './dm-channels.js';

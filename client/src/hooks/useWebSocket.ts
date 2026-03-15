@@ -9,6 +9,7 @@ import { useChannelStore } from '../stores/channel.store.js';
 import { useServerStore } from '../stores/server.store.js';
 import { useVoiceStore } from '../stores/voice.store.js';
 import { useUnreadStore } from '../stores/unread.store.js';
+import { useDmStore } from '../stores/dm.store.js';
 
 const WS_URL =
   import.meta.env.VITE_WS_URL ??
@@ -53,6 +54,10 @@ export function useWebSocket() {
 
   const setReadStates = useUnreadStore((s) => s.setReadStates);
   const handleNewMessage = useUnreadStore((s) => s.handleNewMessage);
+
+  const addDmChannel = useDmStore((s) => s.addDmChannel);
+  const updateDmChannel = useDmStore((s) => s.updateDmChannel);
+  const setDmChannels = useDmStore((s) => s.setDmChannels);
 
   const clearHeartbeat = useCallback(() => {
     if (heartbeatRef.current) {
@@ -107,6 +112,10 @@ export function useWebSocket() {
         // Set initial read states
         if (data.d.readStates) {
           setReadStates(data.d.readStates);
+        }
+        // Set DM channels from READY
+        if (data.d.dmChannels) {
+          setDmChannels(data.d.dmChannels);
         }
         setIsConnected(true);
         reconnectAttemptRef.current = 0;
@@ -245,6 +254,12 @@ export function useWebSocket() {
         );
         break;
       }
+      case 'DM_CHANNEL_CREATE':
+        addDmChannel(data.d.channel);
+        break;
+      case 'DM_CHANNEL_UPDATE':
+        updateDmChannel(data.d.channel);
+        break;
       case 'ERROR':
         console.error('[WS] Server error:', data.d.message);
         break;

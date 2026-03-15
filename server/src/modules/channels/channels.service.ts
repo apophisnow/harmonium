@@ -26,7 +26,7 @@ function normalizeChannelName(name: string): string {
 function channelToResponse(channel: typeof schema.channels.$inferSelect) {
   return {
     id: channel.id.toString(),
-    serverId: channel.serverId.toString(),
+    serverId: channel.serverId?.toString() ?? '',
     categoryId: channel.categoryId?.toString() ?? null,
     name: channel.name,
     type: channel.type as 'text' | 'voice',
@@ -346,7 +346,7 @@ export async function updateChannel(channelId: string, userId: string, input: Up
     throw new NotFoundError('Channel not found');
   }
 
-  const serverId = channel.serverId.toString();
+  const serverId = channel.serverId!.toString();
   await requirePermission(serverId, userId, Permission.MANAGE_CHANNELS);
 
   const updateData: Record<string, unknown> = {
@@ -396,7 +396,7 @@ export async function deleteChannel(channelId: string, userId: string) {
     throw new NotFoundError('Channel not found');
   }
 
-  const serverId = channel.serverId.toString();
+  const serverId = channel.serverId!.toString();
   await requirePermission(serverId, userId, Permission.MANAGE_CHANNELS);
 
   await db.delete(schema.channels).where(eq(schema.channels.id, channelIdBigInt));
@@ -516,7 +516,7 @@ export async function setPermissionOverride(
     throw new NotFoundError('Channel not found');
   }
 
-  const serverId = channel.serverId.toString();
+  const serverId = channel.serverId!.toString();
   await requirePermission(serverId, userId, Permission.MANAGE_ROLES);
 
   const targetIdBigInt = BigInt(input.targetId);
@@ -566,7 +566,7 @@ export async function deletePermissionOverride(
     throw new NotFoundError('Channel not found');
   }
 
-  const serverId = channel.serverId.toString();
+  const serverId = channel.serverId!.toString();
   await requirePermission(serverId, userId, Permission.MANAGE_ROLES);
 
   const targetIdBigInt = BigInt(targetId);
@@ -594,7 +594,7 @@ export async function getChannelPermissionOverrides(channelId: string, userId: s
     throw new NotFoundError('Channel not found');
   }
 
-  const serverId = channel.serverId.toString();
+  const serverId = channel.serverId!.toString();
   await requireMembership(serverId, userId);
 
   const overrides = await db
@@ -607,7 +607,7 @@ export async function getChannelPermissionOverrides(channelId: string, userId: s
 
 // ===== Lookup helpers (used by routes) =====
 
-export async function getChannelServerId(channelId: string): Promise<string> {
+export async function getChannelServerId(channelId: string): Promise<string | null> {
   const db = getDb();
   const channel = await db.query.channels.findFirst({
     where: eq(schema.channels.id, BigInt(channelId)),
@@ -615,5 +615,5 @@ export async function getChannelServerId(channelId: string): Promise<string> {
   if (!channel) {
     throw new NotFoundError('Channel not found');
   }
-  return channel.serverId.toString();
+  return channel.serverId?.toString() ?? null;
 }

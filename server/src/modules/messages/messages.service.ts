@@ -154,9 +154,9 @@ export async function createMessage(
 ): Promise<Message> {
   const db = getDb();
 
-  // Look up channel to get serverId
+  // Look up channel to get serverId (may be null for DM channels)
   const channel = await getChannelWithServer(channelId);
-  const serverId = channel.serverId.toString();
+  const serverId = channel.serverId?.toString() ?? null;
 
   // Validate replyToId if provided
   let replyToIdBigInt: bigint | undefined;
@@ -248,7 +248,26 @@ export async function createMessage(
 
   // Publish MESSAGE_CREATE event via pub/sub
   const pubsub = getPubSubManager();
-  broadcastMessageCreate(pubsub, serverId, message);
+  if (serverId) {
+    broadcastMessageCreate(pubsub, serverId, message);
+  } else {
+    // DM channel: broadcast to all DM members via user-scoped pub/sub
+    const dmMembers = await db
+      .select({ userId: schema.dmChannelMembers.userId })
+      .from(schema.dmChannelMembers)
+      .where(eq(schema.dmChannelMembers.channelId, BigInt(channelId)));
+
+    for (const member of dmMembers) {
+      const memberUserId = member.userId.toString();
+      await pubsub.publishToUser(memberUserId, { op: 'MESSAGE_CREATE', d: { message } });
+    }
+
+    // Reopen the DM for all members who may have closed it
+    await db
+      .update(schema.dmChannelMembers)
+      .set({ isOpen: true })
+      .where(eq(schema.dmChannelMembers.channelId, BigInt(channelId)));
+  }
 
   // Parse mentions and increment mention counts
   if (input.content) {
@@ -431,11 +450,22 @@ export async function updateMessage(
 
   // Get serverId for broadcasting
   const channel = await getChannelWithServer(existing.channelId.toString());
-  const serverId = channel.serverId.toString();
-
-  // Publish MESSAGE_UPDATE event
   const pubsub = getPubSubManager();
-  broadcastMessageUpdate(pubsub, serverId, message);
+
+  if (channel.serverId) {
+    const serverId = channel.serverId.toString();
+    broadcastMessageUpdate(pubsub, serverId, message);
+  } else {
+    // DM channel: broadcast to all DM members via user-scoped pub/sub
+    const dmMembers = await db
+      .select({ userId: schema.dmChannelMembers.userId })
+      .from(schema.dmChannelMembers)
+      .where(eq(schema.dmChannelMembers.channelId, BigInt(existing.channelId.toString())));
+
+    for (const member of dmMembers) {
+      await pubsub.publishToUser(member.userId.toString(), { op: 'MESSAGE_UPDATE', d: { message } });
+    }
+  }
 
   return message;
 }
@@ -468,12 +498,16 @@ export async function deleteMessage(
 
   // Check permissions: author can delete own messages, MANAGE_MESSAGES can delete any
   const isAuthor = existing.authorId.toString() === userId;
+  const channel = await getChannelWithServer(channelId);
 
   if (!isAuthor) {
-    // Check if user has MANAGE_MESSAGES permission
-    const channel = await getChannelWithServer(channelId);
-    const serverId = channel.serverId.toString();
+    if (channel.isDm || channel.serverId === null) {
+      // In DMs, only the author can delete their own messages
+      throw new ForbiddenError('You can only delete your own messages in DMs');
+    }
 
+    // Check if user has MANAGE_MESSAGES permission
+    const serverId = channel.serverId.toString();
     const permissions = await computeChannelPermissions(db, serverId, channelId, userId);
 
     if (!hasPermission(permissions, Permission.MANAGE_MESSAGES)) {
@@ -490,11 +524,24 @@ export async function deleteMessage(
     })
     .where(eq(schema.messages.id, messageIdBigInt));
 
-  // Get serverId for broadcasting
-  const channel = await getChannelWithServer(channelId);
-  const serverId = channel.serverId.toString();
-
   // Publish MESSAGE_DELETE event
   const pubsub = getPubSubManager();
-  broadcastMessageDelete(pubsub, serverId, messageId, channelId);
+
+  if (channel.serverId) {
+    const serverId = channel.serverId.toString();
+    broadcastMessageDelete(pubsub, serverId, messageId, channelId);
+  } else {
+    // DM channel: broadcast to all DM members
+    const dmMembers = await db
+      .select({ userId: schema.dmChannelMembers.userId })
+      .from(schema.dmChannelMembers)
+      .where(eq(schema.dmChannelMembers.channelId, BigInt(channelId)));
+
+    for (const member of dmMembers) {
+      await pubsub.publishToUser(member.userId.toString(), {
+        op: 'MESSAGE_DELETE',
+        d: { id: messageId, channelId },
+      });
+    }
+  }
 }

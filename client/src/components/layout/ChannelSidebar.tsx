@@ -6,6 +6,7 @@ import { useAuthStore } from '../../stores/auth.store.js';
 import { usePresenceStore } from '../../stores/presence.store.js';
 import { useVoiceStore } from '../../stores/voice.store.js';
 import { ChannelList } from '../channel/ChannelList.js';
+import { DmSidebar } from '../dm/DmSidebar.js';
 import { VoiceControls } from '../voice/VoiceControls.js';
 import { UserAvatar } from '../user/UserAvatar.js';
 import { getVoiceStates } from '../../api/voice.js';
@@ -139,9 +140,7 @@ export function ChannelSidebar({
             </div>
           </>
         ) : (
-          <div className="p-4 text-sm text-th-text-secondary">
-            Select a server to see channels
-          </div>
+          <DmSidebar />
         )}
       </div>
 

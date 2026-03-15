@@ -16,6 +16,7 @@ import { handlePresenceUpdate, handleConnect, handleDisconnect } from './handler
 import { handleVoiceStateUpdate } from './handlers/voice-signal.handler.js';
 import { leaveVoice } from '../modules/voice/voice.service.js';
 import { markRead, getReadStates } from '../modules/read-states/read-states.service.js';
+import { getDmChannels } from '../modules/dm/dm.service.js';
 import { isValidSnowflake } from '../utils/validation.js';
 import { getDb, schema } from '../db/index.js';
 import { eq, inArray } from 'drizzle-orm';
@@ -127,6 +128,15 @@ export async function registerGateway(app: FastifyInstance): Promise<void> {
             if (markReadMeta) {
               await markRead(markReadMeta.userId, message.d.channelId, message.d.messageId);
             }
+            break;
+          }
+          case 'SUBSCRIBE_DM': {
+            if (!isValidSnowflake(message.d?.channelId)) {
+              sendError(ws, 4002, 'Invalid channelId');
+              break;
+            }
+            // No additional action needed; DM events are delivered via user-scoped pub/sub
+            // which is already set up during IDENTIFY
             break;
           }
           default:
@@ -298,6 +308,9 @@ export async function registerGateway(app: FastifyInstance): Promise<void> {
         ? await getReadStates(userId, serverIds)
         : [];
 
+      // Load user's DM channels
+      const dmChannels = await getDmChannels(userId);
+
       // Send READY event
       const readyEvent: ReadyEvent = {
         op: 'READY',
@@ -317,6 +330,7 @@ export async function registerGateway(app: FastifyInstance): Promise<void> {
           sessionId: sessId,
           presences,
           readStates,
+          dmChannels,
         },
       };
 

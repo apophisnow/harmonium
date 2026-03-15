@@ -63,9 +63,25 @@ export async function addReaction(
 
   // Broadcast
   const channel = await getChannelWithServer(channelId);
-  const serverId = channel.serverId.toString();
   const pubsub = getPubSubManager();
-  broadcastReactionAdd(pubsub, serverId, channelId, messageId, userId, emoji);
+
+  if (channel.serverId) {
+    const serverId = channel.serverId.toString();
+    broadcastReactionAdd(pubsub, serverId, channelId, messageId, userId, emoji);
+  } else {
+    // DM channel: broadcast to all DM members
+    const dmMembers = await db
+      .select({ userId: schema.dmChannelMembers.userId })
+      .from(schema.dmChannelMembers)
+      .where(eq(schema.dmChannelMembers.channelId, BigInt(channelId)));
+
+    for (const member of dmMembers) {
+      await pubsub.publishToUser(member.userId.toString(), {
+        op: 'REACTION_ADD',
+        d: { channelId, messageId, userId, emoji },
+      });
+    }
+  }
 }
 
 export async function removeReaction(
@@ -101,9 +117,25 @@ export async function removeReaction(
 
   // Broadcast
   const channel = await getChannelWithServer(channelId);
-  const serverId = channel.serverId.toString();
   const pubsub = getPubSubManager();
-  broadcastReactionRemove(pubsub, serverId, channelId, messageId, userId, emoji);
+
+  if (channel.serverId) {
+    const serverId = channel.serverId.toString();
+    broadcastReactionRemove(pubsub, serverId, channelId, messageId, userId, emoji);
+  } else {
+    // DM channel: broadcast to all DM members
+    const dmMembers = await db
+      .select({ userId: schema.dmChannelMembers.userId })
+      .from(schema.dmChannelMembers)
+      .where(eq(schema.dmChannelMembers.channelId, BigInt(channelId)));
+
+    for (const member of dmMembers) {
+      await pubsub.publishToUser(member.userId.toString(), {
+        op: 'REACTION_REMOVE',
+        d: { channelId, messageId, userId, emoji },
+      });
+    }
+  }
 }
 
 export async function getReactionsForMessages(messageIds: bigint[]): Promise<Map<string, Reaction[]>> {

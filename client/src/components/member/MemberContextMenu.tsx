@@ -1,9 +1,12 @@
 import { useState, useEffect, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
 import type { ServerMember, Role } from '@harmonium/shared';
 import { Permission } from '@harmonium/shared';
 import { usePermissions } from '../../hooks/usePermissions.js';
 import { useServerStore } from '../../stores/server.store.js';
 import { useAuthStore } from '../../stores/auth.store.js';
+import { useDmStore } from '../../stores/dm.store.js';
+import { useChannelStore } from '../../stores/channel.store.js';
 import { UserAvatar } from '../user/UserAvatar.js';
 import { assignRole, removeRole } from '../../api/roles.js';
 import { kickMember } from '../../api/servers.js';
@@ -25,6 +28,12 @@ export function MemberContextMenu({ member, roles, position, onClose }: MemberCo
   const currentUser = useAuthStore((s) => s.user);
   const { hasPermission } = usePermissions(currentServerId, roles);
   const menuRef = useRef<HTMLDivElement>(null);
+
+  const openDm = useDmStore((s) => s.openDm);
+  const setCurrentDmChannel = useDmStore((s) => s.setCurrentDmChannel);
+  const setCurrentChannel = useChannelStore((s) => s.setCurrentChannel);
+  const setCurrentServer = useServerStore((s) => s.setCurrentServer);
+  const navigate = useNavigate();
 
   const [isKicking, setIsKicking] = useState(false);
   const [showKickConfirm, setShowKickConfirm] = useState(false);
@@ -122,6 +131,19 @@ export function MemberContextMenu({ member, roles, position, onClose }: MemberCo
     }
   };
 
+  const handleMessage = async () => {
+    try {
+      const dmChannel = await openDm(member.userId);
+      setCurrentServer(null);
+      setCurrentDmChannel(dmChannel.id);
+      setCurrentChannel(dmChannel.id);
+      navigate(`/channels/@me/${dmChannel.id}`);
+      onClose();
+    } catch {
+      setError('Failed to open DM.');
+    }
+  };
+
   const username = member.user?.username ?? 'Unknown';
 
   return (
@@ -152,6 +174,21 @@ export function MemberContextMenu({ member, roles, position, onClose }: MemberCo
           )}
         </div>
       </div>
+
+      {/* Message button */}
+      {!isSelf && (
+        <div className="border-b border-th-border px-3 py-2">
+          <button
+            onClick={handleMessage}
+            className="flex w-full items-center gap-2 rounded px-2 py-1.5 text-left text-sm text-th-text-primary hover:bg-th-bg-secondary transition-colors"
+          >
+            <svg className="h-4 w-4 text-th-text-secondary" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z" />
+            </svg>
+            Message
+          </button>
+        </div>
+      )}
 
       {/* Roles section */}
       {canManageRoles && !isSelf && nonDefaultRoles.length > 0 && (

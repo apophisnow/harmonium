@@ -43,14 +43,15 @@ export async function handleTypingStart(
 
     // We need to find which server this channel belongs to for pub/sub routing
     const channelRow = await db
-      .select({ serverId: schema.channels.serverId })
+      .select({
+        serverId: schema.channels.serverId,
+        isDm: schema.channels.isDm,
+      })
       .from(schema.channels)
       .where(eq(schema.channels.id, BigInt(channelId)))
       .limit(1);
 
     if (!channelRow[0]) return;
-
-    const serverId = channelRow[0].serverId.toString();
 
     const event: TypingStartServerEvent = {
       op: 'TYPING_START',
@@ -63,6 +64,23 @@ export async function handleTypingStart(
     };
 
     const pubsub = getPubSubManager();
-    await pubsub.publishToServer(serverId, event, meta.userId);
+
+    if (channelRow[0].isDm || channelRow[0].serverId === null) {
+      // DM channel: broadcast to all DM members via user-scoped pub/sub
+      const dmMembers = await db
+        .select({ userId: schema.dmChannelMembers.userId })
+        .from(schema.dmChannelMembers)
+        .where(eq(schema.dmChannelMembers.channelId, BigInt(channelId)));
+
+      for (const member of dmMembers) {
+        const memberUserId = member.userId.toString();
+        if (memberUserId !== meta.userId) {
+          await pubsub.publishToUser(memberUserId, event);
+        }
+      }
+    } else {
+      const serverId = channelRow[0].serverId.toString();
+      await pubsub.publishToServer(serverId, event, meta.userId);
+    }
   }
 }
