@@ -26,6 +26,7 @@ import { UserSettingsLayout } from '../user/settings/UserSettingsLayout.js';
 import { ScreenShareViewer } from '../voice/ScreenShareViewer.js';
 import { VoiceGrid } from '../voice/VoiceGrid.js';
 import { VoicePiP } from '../voice/VoicePiP.js';
+import { SearchModal } from '../search/SearchModal.js';
 
 const EMPTY_CHANNELS: Channel[] = [];
 
@@ -299,6 +300,7 @@ export function AppLayout({ sendEvent, isConnected }: AppLayoutProps) {
       <ServerSettings />
       <EditProfileModal />
       <UserSettingsLayout />
+      <SearchModal />
       </div>
     </div>
   );

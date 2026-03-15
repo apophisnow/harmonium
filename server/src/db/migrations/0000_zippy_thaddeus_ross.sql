@@ -195,4 +195,6 @@ CREATE INDEX "refresh_tokens_user_id_idx" ON "refresh_tokens" USING btree ("user
 CREATE INDEX "roles_server_id_idx" ON "roles" USING btree ("server_id");--> statement-breakpoint
 CREATE INDEX "server_members_user_id_idx" ON "server_members" USING btree ("user_id");--> statement-breakpoint
 CREATE UNIQUE INDEX "users_username_discriminator_idx" ON "users" USING btree ("username","discriminator");--> statement-breakpoint
-CREATE INDEX "voice_states_channel_id_idx" ON "voice_states" USING btree ("channel_id");
+CREATE INDEX "voice_states_channel_id_idx" ON "voice_states" USING btree ("channel_id");--> statement-breakpoint
+ALTER TABLE "messages" ADD COLUMN "search_vector" tsvector GENERATED ALWAYS AS (to_tsvector('english', coalesce(content, ''))) STORED;--> statement-breakpoint
+CREATE INDEX "messages_search_idx" ON "messages" USING GIN ("search_vector");

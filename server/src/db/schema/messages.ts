@@ -11,6 +11,7 @@ export const messages = pgTable('messages', {
   isDeleted: boolean('is_deleted').notNull().default(false),
   replyToId: bigint('reply_to_id', { mode: 'bigint' }).references((): AnyPgColumn => messages.id, { onDelete: 'set null' }),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  searchVector: varchar('search_vector'),  // managed by Postgres, not by app code
 }, (table) => [
   index('messages_channel_id_id_idx').on(table.channelId, table.id),
 ]);

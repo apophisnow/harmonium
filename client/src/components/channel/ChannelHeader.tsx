@@ -1,6 +1,7 @@
 import type { Channel } from '@harmonium/shared';
 import { useUIStore } from '../../stores/ui.store.js';
 import { useVoiceStore } from '../../stores/voice.store.js';
+import { useSearchStore } from '../../stores/search.store.js';
 import { useIsMobile } from '../../hooks/useMediaQuery.js';
 
 interface ChannelHeaderProps {
@@ -12,6 +13,7 @@ export function ChannelHeader({ channel }: ChannelHeaderProps) {
   const toggleMobileSidebar = useUIStore((s) => s.toggleMobileSidebar);
   const showMemberSidebar = useUIStore((s) => s.showMemberSidebar);
   const voiceParticipantCount = useVoiceStore((s) => s.participants.size);
+  const setSearchOpen = useSearchStore((s) => s.setOpen);
   const isMobile = useIsMobile();
 
   if (!channel) {
@@ -80,6 +82,24 @@ export function ChannelHeader({ channel }: ChannelHeaderProps) {
 
       {/* Spacer */}
       <div className="flex-1" />
+
+      {/* Search button */}
+      <button
+        onClick={() => setSearchOpen(true)}
+        className="hidden rounded p-1.5 text-th-text-secondary hover:text-th-text-primary transition-colors md:block"
+        title="Search (Ctrl+F)"
+      >
+        <svg
+          className="h-5 w-5"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+        >
+          <circle cx="11" cy="11" r="8" />
+          <path d="M21 21l-4.35-4.35" />
+        </svg>
+      </button>
 
       {/* Member list toggle (hidden on mobile) */}
       <button
