@@ -74,6 +74,13 @@ vi.mock('../password.js', () => ({
   verifyPassword: mockVerifyPassword,
 }));
 
+// Mock email service (isSmtpConfigured reads config which needs env vars)
+vi.mock('../../email/email.service.js', () => ({
+  isSmtpConfigured: vi.fn(() => false),
+  sendVerificationEmail: vi.fn(),
+  createVerificationToken: vi.fn(),
+}));
+
 import { register, login, refresh, logout, getCurrentUser } from '../auth.service.js';
 import { generateId } from '../../../utils/snowflake.js';
 
@@ -85,10 +92,17 @@ function createMockUser(overrides: any = {}) {
     discriminator: '0001',
     email: 'test@example.com',
     passwordHash: 'hashed_password',
+    emailVerified: true,
     avatarUrl: null,
     aboutMe: null,
     status: 'offline',
     customStatus: null,
+    theme: null,
+    mode: null,
+    allowDmsFromServerMembers: true,
+    friendRequestFromEveryone: false,
+    friendRequestFromFof: true,
+    friendRequestFromServerMembers: true,
     createdAt: new Date('2024-01-01'),
     updatedAt: new Date('2024-01-01'),
     ...overrides,
