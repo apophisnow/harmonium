@@ -10,6 +10,9 @@ export const messages = pgTable('messages', {
   editedAt: timestamp('edited_at', { withTimezone: true }),
   isDeleted: boolean('is_deleted').notNull().default(false),
   replyToId: bigint('reply_to_id', { mode: 'bigint' }).references((): AnyPgColumn => messages.id, { onDelete: 'set null' }),
+  webhookId: bigint('webhook_id', { mode: 'bigint' }),
+  webhookName: varchar('webhook_name', { length: 80 }),
+  webhookAvatarUrl: varchar('webhook_avatar_url', { length: 512 }),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
 }, (table) => [
   index('messages_channel_id_id_idx').on(table.channelId, table.id),

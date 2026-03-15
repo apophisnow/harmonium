@@ -82,6 +82,9 @@ function messageToResponse(
       : undefined,
     attachments: attachmentRows ? attachmentRows.map(attachmentToResponse) : [],
     reactions: reactions ?? [],
+    webhookId: message.webhookId?.toString() ?? null,
+    webhookName: message.webhookName ?? null,
+    webhookAvatarUrl: message.webhookAvatarUrl ?? null,
   };
 }
 

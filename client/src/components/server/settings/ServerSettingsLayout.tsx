@@ -7,6 +7,7 @@ import { OverviewTab } from './OverviewTab.js';
 import { RolesTab } from './RolesTab.js';
 import { MembersTab } from './MembersTab.js';
 import { InvitesTab } from './InvitesTab.js';
+import { WebhooksTab } from './WebhooksTab.js';
 import { DeleteServerTab } from './DeleteServerTab.js';
 
 export function ServerSettingsLayout() {
@@ -120,6 +121,12 @@ export function ServerSettingsLayout() {
               handleCreateInvite={state.handleCreateInvite}
               handleDeleteInvite={state.handleDeleteInvite}
               handleCopyInvite={state.handleCopyInvite}
+            />
+          )}
+          {activeTab === 'webhooks' && (
+            <WebhooksTab
+              currentServerId={state.currentServerId}
+              canManageServer={state.canManageServer}
             />
           )}
           {activeTab === 'delete' && (

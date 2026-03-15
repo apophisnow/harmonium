@@ -214,7 +214,8 @@ export function MessageItem({ message, isGrouped }: MessageItemProps) {
   const currentUserId = useAuthStore((s) => s.user?.id);
   const setReplyingTo = useMessageStore((s) => s.setReplyingTo);
 
-  const isOwnMessage = message.authorId === currentUserId;
+  const isWebhookMessage = !!message.webhookId;
+  const isOwnMessage = message.authorId === currentUserId && !isWebhookMessage;
 
   const handleReply = () => {
     setReplyingTo(message);
@@ -416,8 +417,8 @@ export function MessageItem({ message, isGrouped }: MessageItemProps) {
     >
       <div className="mr-4 mt-0.5 flex-shrink-0">
         <UserAvatar
-          username={message.author?.username ?? 'Unknown'}
-          avatarUrl={message.author?.avatarUrl}
+          username={isWebhookMessage ? (message.webhookName ?? 'Webhook') : (message.author?.username ?? 'Unknown')}
+          avatarUrl={isWebhookMessage ? (message.webhookAvatarUrl ?? undefined) : message.author?.avatarUrl}
           size={40}
           showStatus={false}
         />
@@ -427,8 +428,13 @@ export function MessageItem({ message, isGrouped }: MessageItemProps) {
         {hasReply && <ReplyPreview replyTo={message.replyTo!} />}
         <div className="flex items-baseline gap-2">
           <span className="font-medium text-white hover:underline cursor-pointer">
-            {message.author?.username ?? 'Unknown'}
+            {isWebhookMessage ? (message.webhookName ?? 'Webhook') : (message.author?.username ?? 'Unknown')}
           </span>
+          {isWebhookMessage && (
+            <span className="relative -top-px rounded bg-th-brand/20 px-1.5 py-0.5 text-[10px] font-semibold uppercase text-th-brand">
+              BOT
+            </span>
+          )}
           <span className="text-xs text-th-text-muted">
             {formatDate(message.createdAt)}
           </span>
