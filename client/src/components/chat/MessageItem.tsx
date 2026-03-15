@@ -12,6 +12,7 @@ import { UserAvatar } from '../user/UserAvatar.js';
 import { formatDate } from '../../lib/formatters.js';
 import { ContextMenu, type ContextMenuState } from '../shared/ContextMenu.js';
 import { EmojiPicker } from './EmojiPicker.js';
+import { renderMarkdown } from '../../utils/markdown.js';
 
 interface MessageItemProps {
   message: Message;
@@ -169,40 +170,14 @@ function MessageContent({ content }: { content: string }) {
   const currentServerId = useServerStore((s) => s.currentServerId);
   const members = useMemberStore((s) => currentServerId ? (s.members.get(currentServerId) ?? EMPTY_MEMBERS) : EMPTY_MEMBERS);
 
-  const parts: ReactNode[] = [];
-  const mentionPattern = /<@(\d+)>/g;
-  let lastIndex = 0;
-  let match;
-  let key = 0;
-
-  while ((match = mentionPattern.exec(content)) !== null) {
-    // Add text before the mention
-    if (match.index > lastIndex) {
-      parts.push(content.slice(lastIndex, match.index));
-    }
-
-    const userId = match[1];
+  // Resolve mention placeholders before markdown parsing
+  const resolved = content.replace(/<@(\d+)>/g, (_match, userId: string) => {
     const member = members.find((m) => m.userId === userId);
     const username = member?.user?.username ?? 'Unknown User';
+    return `@${username}`;
+  });
 
-    parts.push(
-      <span
-        key={key++}
-        className="bg-th-brand/20 text-th-brand rounded px-1 cursor-pointer hover:underline"
-      >
-        @{username}
-      </span>,
-    );
-
-    lastIndex = match.index + match[0].length;
-  }
-
-  // Add remaining text
-  if (lastIndex < content.length) {
-    parts.push(content.slice(lastIndex));
-  }
-
-  return <>{parts}</>;
+  return <>{renderMarkdown(resolved)}</>;
 }
 
 export function MessageItem({ message, isGrouped }: MessageItemProps) {
@@ -352,14 +327,14 @@ export function MessageItem({ message, isGrouped }: MessageItemProps) {
           ) : (
             <>
               {message.content && (
-                <p className="text-sm text-th-text-primary break-words">
+                <div className="text-sm text-th-text-primary break-words">
                   <MessageContent content={message.content} />
                   {message.editedAt && (
                     <span className="ml-1 text-[10px] text-th-text-muted">
                       (edited)
                     </span>
                   )}
-                </p>
+                </div>
               )}
               <MessageAttachments attachments={message.attachments} />
             </>
@@ -451,14 +426,14 @@ export function MessageItem({ message, isGrouped }: MessageItemProps) {
         ) : (
           <>
             {message.content && (
-              <p className="text-sm text-th-text-primary break-words">
-                {message.content}
+              <div className="text-sm text-th-text-primary break-words">
+                <MessageContent content={message.content} />
                 {message.editedAt && (
                   <span className="ml-1 text-[10px] text-th-text-muted">
                     (edited)
                   </span>
                 )}
-              </p>
+              </div>
             )}
             <MessageAttachments attachments={message.attachments} />
           </>
