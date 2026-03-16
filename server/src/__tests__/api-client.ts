@@ -126,7 +126,10 @@ export async function registerUser(prefix = 'user'): Promise<ApiClient> {
   const client = new ApiClient();
   const n = ++userCounter;
   const ts = Date.now();
-  await client.register(`${prefix}${n}_${ts}`, `${prefix}${n}_${ts}@test.com`);
+  const res = await client.register(`${prefix}${n}_${ts}`, `${prefix}${n}_${ts}@test.com`);
+  if (!res.ok) {
+    throw new Error(`registerUser failed (${res.status}): ${JSON.stringify(res.data)}`);
+  }
   return client;
 }
 
