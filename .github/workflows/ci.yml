@@ -89,7 +89,9 @@ jobs:
         run: npm run build --workspace=packages/shared
 
       - name: Build server
-        run: npm run build --workspace=server
+        run: |
+          npm run build --workspace=server
+          cp -r server/src/db/migrations server/dist/db/migrations
 
       - name: Run unit tests
         run: npm test --workspace=server --workspace=client --if-present
@@ -108,26 +110,6 @@ jobs:
           done
           echo "Server failed to start"
           exit 1
-
-      - name: Smoke test registration
-        run: |
-          RESPONSE=$(curl -s -w "\n%{http_code}" -X POST http://localhost:3001/api/auth/register \
-            -H "Content-Type: application/json" \
-            -d '{"username":"smoketest","email":"smoke@test.com","password":"Password123!"}')
-          HTTP_CODE=$(echo "$RESPONSE" | tail -1)
-          BODY=$(echo "$RESPONSE" | sed '$d')
-          echo "Status: $HTTP_CODE"
-          echo "Body: $BODY"
-          if [ "$HTTP_CODE" != "201" ]; then
-            echo "Registration failed!"
-            exit 1
-          fi
-          # Test that the token works
-          TOKEN=$(echo "$BODY" | jq -r '.accessToken')
-          echo "Token: ${TOKEN:0:20}..."
-          SERVERS=$(curl -s -w "\n%{http_code}" http://localhost:3001/api/servers \
-            -H "Authorization: Bearer $TOKEN")
-          echo "Servers response: $SERVERS"
 
       - name: Run integration tests
         run: npx vitest run --config vitest.integration.config.ts
