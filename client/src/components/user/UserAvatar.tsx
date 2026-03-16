@@ -1,5 +1,6 @@
 import type { UserStatus } from '@harmonium/shared';
 import { getInitials } from '../../lib/formatters.js';
+import { Avatar, AvatarImage, AvatarFallback } from '../ui/avatar.js';
 
 interface UserAvatarProps {
   username: string;
@@ -33,20 +34,14 @@ export function UserAvatar({
       className={`relative flex-shrink-0 ${className}`}
       style={{ width: size, height: size }}
     >
-      {avatarUrl ? (
-        <img
-          src={avatarUrl}
-          alt={username}
-          className="h-full w-full rounded-full object-cover"
-        />
-      ) : (
-        <div
-          className="flex h-full w-full items-center justify-center rounded-full bg-th-brand text-white font-medium"
-          style={{ fontSize: size * 0.4 }}
-        >
+      <Avatar style={{ width: size, height: size }}>
+        {avatarUrl && (
+          <AvatarImage src={avatarUrl} alt={username} />
+        )}
+        <AvatarFallback style={{ fontSize: size * 0.4 }}>
           {getInitials(username)}
-        </div>
-      )}
+        </AvatarFallback>
+      </Avatar>
       {showStatus && (
         <div
           className={`absolute rounded-full border-[3px] border-th-border ${statusColors[status]}`}

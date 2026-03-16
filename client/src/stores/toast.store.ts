@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import { toast } from 'sonner';
 
 export type ToastType = 'success' | 'error' | 'info' | 'warning';
 
@@ -10,30 +11,27 @@ export interface Toast {
 }
 
 interface ToastState {
+  /** @deprecated kept for compat — toasts are now managed by Sonner */
   toasts: Toast[];
 
   addToast: (type: ToastType, message: string, duration?: number) => void;
   removeToast: (id: string) => void;
 }
 
-let toastCounter = 0;
-
-export const useToastStore = create<ToastState>((set, get) => ({
+export const useToastStore = create<ToastState>(() => ({
   toasts: [],
 
   addToast: (type, message, duration = 5000) => {
-    const id = `toast-${++toastCounter}`;
-    const toast: Toast = { id, type, message, duration };
-    set({ toasts: [...get().toasts, toast] });
-
-    if (duration > 0) {
-      setTimeout(() => {
-        get().removeToast(id);
-      }, duration);
+    const opts = { duration };
+    switch (type) {
+      case 'success': toast.success(message, opts); break;
+      case 'error':   toast.error(message, opts);   break;
+      case 'warning': toast.warning(message, opts); break;
+      case 'info':    toast.info(message, opts);     break;
     }
   },
 
-  removeToast: (id) => {
-    set({ toasts: get().toasts.filter((t) => t.id !== id) });
+  removeToast: () => {
+    // No-op — Sonner manages its own dismissals
   },
 }));

@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Modal } from '../shared/Modal.js';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../ui/dialog.js';
 import { createServer } from '../../api/servers.js';
 import { acceptInvite, getInviteInfo } from '../../api/invites.js';
 import { useServerStore } from '../../stores/server.store.js';
@@ -95,130 +95,136 @@ export function CreateServerModal() {
         : 'Add a Server';
 
   return (
-    <Modal isOpen={isOpen} onClose={handleClose} title={title}>
-      {view === 'choose' && (
-        <div className="space-y-3">
-          <p className="text-sm text-th-text-secondary">
-            Create your own server or join one with an invite link.
-          </p>
+    <Dialog open={isOpen} onOpenChange={(open) => { if (!open) handleClose(); }}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>{title}</DialogTitle>
+        </DialogHeader>
 
-          <button
-            onClick={() => setView('create')}
-            className="flex w-full items-center gap-3 rounded-lg border border-th-border bg-th-bg-secondary px-4 py-3 text-left transition-colors hover:border-th-text-secondary hover:bg-th-bg-primary"
-          >
-            <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-th-brand">
-              <svg className="h-5 w-5 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <path d="M12 5v14M5 12h14" />
-              </svg>
-            </div>
-            <div>
-              <p className="font-medium text-th-text-primary">Create My Own</p>
-              <p className="text-xs text-th-text-secondary">Start a new server from scratch</p>
-            </div>
-          </button>
+        {view === 'choose' && (
+          <div className="space-y-3">
+            <p className="text-sm text-th-text-secondary">
+              Create your own server or join one with an invite link.
+            </p>
 
-          <button
-            onClick={() => setView('join')}
-            className="flex w-full items-center gap-3 rounded-lg border border-th-border bg-th-bg-secondary px-4 py-3 text-left transition-colors hover:border-th-text-secondary hover:bg-th-bg-primary"
-          >
-            <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-th-green">
-              <svg className="h-5 w-5 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <path d="M15 3h4a2 2 0 012 2v14a2 2 0 01-2 2h-4M10 17l5-5-5-5M15 12H3" />
-              </svg>
-            </div>
-            <div>
-              <p className="font-medium text-th-text-primary">Join a Server</p>
-              <p className="text-xs text-th-text-secondary">Enter an invite link to join</p>
-            </div>
-          </button>
-        </div>
-      )}
-
-      {view === 'create' && (
-        <form onSubmit={handleCreate}>
-          <p className="mb-4 text-sm text-th-text-secondary">
-            Your server is where you and your friends hang out. Make yours and
-            start talking.
-          </p>
-
-          <label className="mb-2 block text-xs font-bold uppercase text-th-text-secondary">
-            Server Name
-          </label>
-          <input
-            type="text"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            placeholder="My Awesome Server"
-            className="mb-4 w-full rounded bg-th-bg-tertiary px-3 py-2 text-th-text-primary placeholder-th-text-muted outline-none focus:ring-2 focus:ring-th-brand"
-            autoFocus
-            maxLength={100}
-          />
-
-          {error && (
-            <p className="mb-4 text-sm text-th-red">{error}</p>
-          )}
-
-          <div className="flex justify-between">
             <button
-              type="button"
-              onClick={() => { setView('choose'); setError(''); }}
-              className="rounded px-4 py-2 text-sm text-th-text-secondary hover:text-th-text-primary transition-colors"
+              onClick={() => setView('create')}
+              className="flex w-full items-center gap-3 rounded-lg border border-th-border bg-th-bg-secondary px-4 py-3 text-left transition-colors hover:border-th-text-secondary hover:bg-th-bg-primary"
             >
-              Back
+              <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-th-brand">
+                <svg className="h-5 w-5 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M12 5v14M5 12h14" />
+                </svg>
+              </div>
+              <div>
+                <p className="font-medium text-th-text-primary">Create My Own</p>
+                <p className="text-xs text-th-text-secondary">Start a new server from scratch</p>
+              </div>
             </button>
+
             <button
-              type="submit"
-              disabled={isSubmitting || !name.trim()}
-              className="flex items-center gap-2 rounded bg-th-brand px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-th-brand-hover disabled:opacity-50 disabled:cursor-not-allowed"
+              onClick={() => setView('join')}
+              className="flex w-full items-center gap-3 rounded-lg border border-th-border bg-th-bg-secondary px-4 py-3 text-left transition-colors hover:border-th-text-secondary hover:bg-th-bg-primary"
             >
-              {isSubmitting && <LoadingSpinner size={16} />}
-              Create
+              <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-th-green">
+                <svg className="h-5 w-5 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M15 3h4a2 2 0 012 2v14a2 2 0 01-2 2h-4M10 17l5-5-5-5M15 12H3" />
+                </svg>
+              </div>
+              <div>
+                <p className="font-medium text-th-text-primary">Join a Server</p>
+                <p className="text-xs text-th-text-secondary">Enter an invite link to join</p>
+              </div>
             </button>
           </div>
-        </form>
-      )}
+        )}
 
-      {view === 'join' && (
-        <form onSubmit={handleJoin}>
-          <p className="mb-4 text-sm text-th-text-secondary">
-            Enter an invite link or code below to join an existing server.
-          </p>
+        {view === 'create' && (
+          <form onSubmit={handleCreate}>
+            <p className="mb-4 text-sm text-th-text-secondary">
+              Your server is where you and your friends hang out. Make yours and
+              start talking.
+            </p>
 
-          <label className="mb-2 block text-xs font-bold uppercase text-th-text-secondary">
-            Invite Link
-          </label>
-          <input
-            type="text"
-            value={inviteInput}
-            onChange={(e) => { setInviteInput(e.target.value); setError(''); }}
-            placeholder="https://example.com/invite/abc123"
-            className="mb-4 w-full rounded bg-th-bg-tertiary px-3 py-2 text-th-text-primary placeholder-th-text-muted outline-none focus:ring-2 focus:ring-th-brand"
-            autoFocus
-          />
+            <label className="mb-2 block text-xs font-bold uppercase text-th-text-secondary">
+              Server Name
+            </label>
+            <input
+              type="text"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder="My Awesome Server"
+              className="mb-4 w-full rounded bg-th-bg-tertiary px-3 py-2 text-th-text-primary placeholder-th-text-muted outline-none focus:ring-2 focus:ring-th-brand"
+              autoFocus
+              maxLength={100}
+            />
 
-          {error && (
-            <p className="mb-4 text-sm text-th-red">{error}</p>
-          )}
+            {error && (
+              <p className="mb-4 text-sm text-th-red">{error}</p>
+            )}
 
-          <div className="flex justify-between">
-            <button
-              type="button"
-              onClick={() => { setView('choose'); setError(''); }}
-              className="rounded px-4 py-2 text-sm text-th-text-secondary hover:text-th-text-primary transition-colors"
-            >
-              Back
-            </button>
-            <button
-              type="submit"
-              disabled={isSubmitting || !inviteInput.trim()}
-              className="flex items-center gap-2 rounded bg-th-brand px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-th-brand-hover disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {isSubmitting && <LoadingSpinner size={16} />}
-              Join Server
-            </button>
-          </div>
-        </form>
-      )}
-    </Modal>
+            <div className="flex justify-between">
+              <button
+                type="button"
+                onClick={() => { setView('choose'); setError(''); }}
+                className="rounded px-4 py-2 text-sm text-th-text-secondary hover:text-th-text-primary transition-colors"
+              >
+                Back
+              </button>
+              <button
+                type="submit"
+                disabled={isSubmitting || !name.trim()}
+                className="flex items-center gap-2 rounded bg-th-brand px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-th-brand-hover disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {isSubmitting && <LoadingSpinner size={16} />}
+                Create
+              </button>
+            </div>
+          </form>
+        )}
+
+        {view === 'join' && (
+          <form onSubmit={handleJoin}>
+            <p className="mb-4 text-sm text-th-text-secondary">
+              Enter an invite link or code below to join an existing server.
+            </p>
+
+            <label className="mb-2 block text-xs font-bold uppercase text-th-text-secondary">
+              Invite Link
+            </label>
+            <input
+              type="text"
+              value={inviteInput}
+              onChange={(e) => { setInviteInput(e.target.value); setError(''); }}
+              placeholder="https://example.com/invite/abc123"
+              className="mb-4 w-full rounded bg-th-bg-tertiary px-3 py-2 text-th-text-primary placeholder-th-text-muted outline-none focus:ring-2 focus:ring-th-brand"
+              autoFocus
+            />
+
+            {error && (
+              <p className="mb-4 text-sm text-th-red">{error}</p>
+            )}
+
+            <div className="flex justify-between">
+              <button
+                type="button"
+                onClick={() => { setView('choose'); setError(''); }}
+                className="rounded px-4 py-2 text-sm text-th-text-secondary hover:text-th-text-primary transition-colors"
+              >
+                Back
+              </button>
+              <button
+                type="submit"
+                disabled={isSubmitting || !inviteInput.trim()}
+                className="flex items-center gap-2 rounded bg-th-brand px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-th-brand-hover disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {isSubmitting && <LoadingSpinner size={16} />}
+                Join Server
+              </button>
+            </div>
+          </form>
+        )}
+      </DialogContent>
+    </Dialog>
   );
 }

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import type { Channel } from '@harmonium/shared';
-import { Modal } from '../shared/Modal.js';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '../ui/dialog.js';
 import { createInvite } from '../../api/invites.js';
 import { useUIStore } from '../../stores/ui.store.js';
 import { useServerStore } from '../../stores/server.store.js';
@@ -64,7 +64,6 @@ export function InviteModal() {
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     } catch {
-      // Fallback
       const input = document.createElement('input');
       input.value = inviteUrl;
       document.body.appendChild(input);
@@ -84,38 +83,43 @@ export function InviteModal() {
   };
 
   return (
-    <Modal isOpen={isOpen} onClose={handleClose} title="Invite Friends">
-      <p className="mb-4 text-sm text-th-text-secondary">
-        Share this link with others to grant access to your server.
-      </p>
+    <Dialog open={isOpen} onOpenChange={(open) => { if (!open) handleClose(); }}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Invite Friends</DialogTitle>
+          <DialogDescription>
+            Share this link with others to grant access to your server.
+          </DialogDescription>
+        </DialogHeader>
 
-      {isLoading ? (
-        <div className="flex items-center justify-center py-4">
-          <LoadingSpinner size={24} className="text-th-brand" />
-        </div>
-      ) : error ? (
-        <p className="py-4 text-sm text-th-red">{error}</p>
-      ) : (
-        <div className="flex gap-2">
-          <input
-            type="text"
-            readOnly
-            value={inviteUrl}
-            className="flex-1 rounded bg-th-bg-tertiary px-3 py-2 text-sm text-th-text-primary outline-none"
-            onClick={(e) => (e.target as HTMLInputElement).select()}
-          />
-          <button
-            onClick={handleCopy}
-            className={`rounded px-4 py-2 text-sm font-medium text-white transition-colors ${
-              copied
-                ? 'bg-th-green'
-                : 'bg-th-brand hover:bg-th-brand-hover'
-            }`}
-          >
-            {copied ? 'Copied!' : 'Copy'}
-          </button>
-        </div>
-      )}
-    </Modal>
+        {isLoading ? (
+          <div className="flex items-center justify-center py-4">
+            <LoadingSpinner size={24} className="text-th-brand" />
+          </div>
+        ) : error ? (
+          <p className="py-4 text-sm text-th-red">{error}</p>
+        ) : (
+          <div className="flex gap-2">
+            <input
+              type="text"
+              readOnly
+              value={inviteUrl}
+              className="flex-1 rounded bg-th-bg-tertiary px-3 py-2 text-sm text-th-text-primary outline-none"
+              onClick={(e) => (e.target as HTMLInputElement).select()}
+            />
+            <button
+              onClick={handleCopy}
+              className={`rounded px-4 py-2 text-sm font-medium text-white transition-colors ${
+                copied
+                  ? 'bg-th-green'
+                  : 'bg-th-brand hover:bg-th-brand-hover'
+              }`}
+            >
+              {copied ? 'Copied!' : 'Copy'}
+            </button>
+          </div>
+        )}
+      </DialogContent>
+    </Dialog>
   );
 }

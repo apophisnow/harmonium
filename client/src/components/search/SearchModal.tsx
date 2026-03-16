@@ -1,9 +1,10 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { createPortal } from 'react-dom';
-import { useNavigate } from 'react-router-dom';
 import type { SearchResult, SearchFilters } from '@harmonium/shared';
+import { Dialog, DialogContent, DialogTitle } from '../ui/dialog.js';
+import { VisuallyHidden } from '@radix-ui/react-visually-hidden';
 import { useSearchStore } from '../../stores/search.store.js';
 import { useServerStore } from '../../stores/server.store.js';
+import { useNavigate } from 'react-router-dom';
 
 function formatTimestamp(iso: string): string {
   const date = new Date(iso);
@@ -41,7 +42,6 @@ function highlightTerms(text: string, query: string): React.ReactNode[] {
         </mark>
       );
     }
-    // Reset lastIndex since we're using the same regex with global flag
     pattern.lastIndex = 0;
     return part;
   });
@@ -63,7 +63,6 @@ function SearchResultItem({
       onClick={onClick}
       className="w-full rounded-md p-3 text-left transition-colors hover:bg-th-bg-accent"
     >
-      {/* Header: author, channel, server */}
       <div className="mb-1 flex items-center gap-2 text-xs">
         <span className="font-semibold text-th-text-primary">
           {message.author?.username ?? 'Unknown'}
@@ -77,7 +76,6 @@ function SearchResultItem({
         </span>
       </div>
 
-      {/* Message content */}
       <div className="text-sm text-th-text-secondary line-clamp-2">
         {message.content ? highlightTerms(message.content, query) : (
           <span className="italic text-th-text-muted">No content</span>
@@ -192,15 +190,8 @@ export function SearchModal() {
   };
 
   const handleResultClick = (result: SearchResult) => {
-    // Find the serverId from channels - we need to navigate to the right place
-    // The message has channelId, and we need the serverId
-    // We can derive it from the search result's serverName by looking at user's servers
-    // But more reliably, since we filtered by serverId, we use that
-    // If no serverId filter, we need to find it from the channel
     const channelId = result.message.channelId;
 
-    // Navigate to the channel - the server can be found from the channel
-    // For now, if we have a serverId in filter, use it. Otherwise, we need to look it up.
     if (currentServerId) {
       navigate(`/channels/${currentServerId}/${channelId}`);
     }
@@ -212,22 +203,6 @@ export function SearchModal() {
     setOpen(false);
   }, [setOpen]);
 
-  const handleEscape = useCallback(
-    (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
-        handleClose();
-      }
-    },
-    [handleClose],
-  );
-
-  useEffect(() => {
-    if (isOpen) {
-      document.addEventListener('keydown', handleEscape);
-      return () => document.removeEventListener('keydown', handleEscape);
-    }
-  }, [isOpen, handleEscape]);
-
   // Cleanup debounce on unmount
   useEffect(() => {
     return () => {
@@ -237,25 +212,15 @@ export function SearchModal() {
     };
   }, []);
 
-  if (!isOpen) return null;
+  return (
+    <Dialog open={isOpen} onOpenChange={(open) => { if (!open) handleClose(); }}>
+      <DialogContent className="top-[20%] translate-y-0 max-w-2xl flex flex-col max-h-[70vh] gap-0 p-0">
+        <VisuallyHidden>
+          <DialogTitle>Search Messages</DialogTitle>
+        </VisuallyHidden>
 
-  return createPortal(
-    <div
-      className="fixed inset-0 z-50 flex items-start justify-center pt-20"
-      role="dialog"
-      aria-modal="true"
-    >
-      {/* Overlay */}
-      <div
-        className="absolute inset-0 bg-black/70"
-        onClick={handleClose}
-      />
-
-      {/* Panel */}
-      <div className="relative z-10 flex w-full max-w-2xl flex-col rounded-lg bg-th-bg-secondary shadow-xl max-h-[70vh]">
         {/* Search Input */}
         <div className="flex items-center border-b border-th-border p-4">
-          {/* Search icon */}
           <svg
             className="mr-3 h-5 w-5 flex-shrink-0 text-th-text-muted"
             viewBox="0 0 24 24"
@@ -275,24 +240,6 @@ export function SearchModal() {
             placeholder="Search messages..."
             className="flex-1 bg-transparent text-th-text-primary placeholder-th-text-muted outline-none"
           />
-
-          {/* Close button */}
-          <button
-            onClick={handleClose}
-            className="ml-3 rounded p-1 text-th-text-muted hover:text-th-text-primary transition-colors"
-            aria-label="Close"
-          >
-            <svg
-              width="20"
-              height="20"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-            >
-              <path d="M18 6L6 18M6 6l12 12" />
-            </svg>
-          </button>
         </div>
 
         {/* Filters */}
@@ -326,7 +273,6 @@ export function SearchModal() {
 
         {/* Results */}
         <div className="flex-1 overflow-y-auto p-2">
-          {/* Loading state */}
           {isSearching && results.length === 0 && (
             <div className="space-y-1">
               <SkeletonResult />
@@ -335,7 +281,6 @@ export function SearchModal() {
             </div>
           )}
 
-          {/* Empty state - no query */}
           {!isSearching && !query && (
             <div className="flex flex-col items-center justify-center py-12 text-th-text-muted">
               <svg
@@ -353,7 +298,6 @@ export function SearchModal() {
             </div>
           )}
 
-          {/* Empty state - no results */}
           {!isSearching && query && results.length === 0 && (
             <div className="flex flex-col items-center justify-center py-12 text-th-text-muted">
               <p className="text-sm">No results found</p>
@@ -361,7 +305,6 @@ export function SearchModal() {
             </div>
           )}
 
-          {/* Results list */}
           {results.length > 0 && (
             <>
               <div className="mb-2 px-3 text-xs text-th-text-muted">
@@ -378,7 +321,6 @@ export function SearchModal() {
                 ))}
               </div>
 
-              {/* Load more */}
               {results.length < totalCount && (
                 <div className="flex justify-center py-3">
                   <button
@@ -391,7 +333,6 @@ export function SearchModal() {
                 </div>
               )}
 
-              {/* Inline loading indicator when loading more */}
               {isSearching && results.length > 0 && (
                 <div className="flex justify-center py-2">
                   <div className="h-4 w-4 animate-spin rounded-full border-2 border-th-text-muted border-t-transparent" />
@@ -400,8 +341,7 @@ export function SearchModal() {
             </>
           )}
         </div>
-      </div>
-    </div>,
-    document.body,
+      </DialogContent>
+    </Dialog>
   );
 }

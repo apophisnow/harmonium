@@ -12,7 +12,8 @@ import { DiscoveryPage } from './pages/DiscoveryPage.js';
 import { VerifyEmailPage } from './pages/VerifyEmailPage.js';
 import { LoadingSpinner } from './components/shared/LoadingSpinner.js';
 import { ErrorBoundary } from './components/shared/ErrorBoundary.js';
-import { ToastContainer } from './components/shared/Toast.js';
+import { Toaster } from './components/ui/sonner.js';
+import { TooltipProvider } from './components/ui/tooltip.js';
 
 function AuthGuard({ children }: { children: ReactNode }) {
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
@@ -64,6 +65,7 @@ export function App() {
 
   return (
     <ErrorBoundary>
+      <TooltipProvider delayDuration={200}>
       <BrowserRouter>
         <Routes>
           <Route path="/login" element={<LoginPage />} />
@@ -93,8 +95,9 @@ export function App() {
           <Route path="/" element={<RootRedirect />} />
           <Route path="*" element={<NotFoundPage />} />
         </Routes>
-        <ToastContainer />
+        <Toaster />
       </BrowserRouter>
+      </TooltipProvider>
     </ErrorBoundary>
   );
 }

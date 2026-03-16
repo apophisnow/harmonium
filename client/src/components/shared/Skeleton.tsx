@@ -1,3 +1,6 @@
+import { Skeleton as SkeletonPrimitive } from '../ui/skeleton.js';
+import { cn } from '../../lib/utils.js';
+
 interface SkeletonProps {
   className?: string;
   width?: string | number;
@@ -18,10 +21,11 @@ export function Skeleton({
   if (height) style.height = typeof height === 'number' ? `${height}px` : height;
 
   return (
-    <div
-      className={`animate-pulse bg-th-bg-accent ${
-        circle ? 'rounded-full' : rounded ? 'rounded-md' : 'rounded'
-      } ${className}`}
+    <SkeletonPrimitive
+      className={cn(
+        circle ? 'rounded-full' : rounded ? 'rounded-md' : 'rounded',
+        className,
+      )}
       style={style}
     />
   );
