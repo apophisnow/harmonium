@@ -15,7 +15,9 @@ import { useThreadStore } from '../stores/thread.store.js';
 
 const WS_URL =
   import.meta.env.VITE_WS_URL ??
-  `${location.protocol === 'https:' ? 'wss:' : 'ws:'}//${location.host}/ws/gateway`;
+  (import.meta.env.DEV
+    ? `ws://${location.hostname}:3001/ws/gateway`
+    : `${location.protocol === 'https:' ? 'wss:' : 'ws:'}//${location.host}/ws/gateway`);
 
 const MAX_RECONNECT_DELAY = 30_000;
 const BASE_RECONNECT_DELAY = 1_000;
@@ -126,18 +128,23 @@ export function useWebSocket() {
         if (data.d.dmChannels) {
           setDmChannels(data.d.dmChannels);
         }
-        // Fetch relationships on connect
-        useRelationshipStore.getState().fetchRelationships();
+        // Refetch relationships on connect/reconnect (lightweight, won't blow away UI state).
+        // Wrapped in catch to prevent 401 → clearAuthAndRedirect cascade during reconnect.
+        useRelationshipStore.getState().fetchRelationships().catch(() => {});
         setIsConnected(true);
         reconnectAttemptRef.current = 0;
         break;
       }
       case 'MESSAGE_CREATE': {
         addMessage(data.d.message);
-        // Track unread for non-active channels
         const msgCurrentUserId = useAuthStore.getState().user?.id;
         const activeChannelId = useChannelStore.getState().currentChannelId;
         const msg = data.d.message;
+        // Own messages are always read
+        if (msgCurrentUserId && msg.authorId === msgCurrentUserId) {
+          useUnreadStore.getState().markRead(msg.channelId, msg.id);
+        }
+        // Track unread for non-active channels from other users
         if (msg.channelId !== activeChannelId && msgCurrentUserId && msg.authorId !== msgCurrentUserId) {
           // Parse mentions from message content
           const mentionPattern = /<@(\d+)>/g;

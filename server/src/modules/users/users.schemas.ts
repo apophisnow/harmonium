@@ -16,6 +16,7 @@ export const updateUserSchema = z.object({
   customStatus: safeLine(z.string().max(128, 'Custom status must be at most 128 characters')).nullable().optional(),
   theme: z.string().max(50).nullable().optional(),
   mode: z.enum(['dark', 'light']).nullable().optional(),
+  frequentEmoji: z.array(z.string().max(8)).min(1).max(4).optional(),
 });
 
 export const userParamsSchema = z.object({

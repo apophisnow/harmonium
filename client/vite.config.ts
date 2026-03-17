@@ -16,10 +16,9 @@ export default defineConfig({
         target: 'http://localhost:3001',
         changeOrigin: true,
       },
-      '/ws': {
-        target: 'ws://localhost:3001',
-        ws: true,
-      },
+      // WebSocket is NOT proxied through Vite — the client connects directly
+      // to the backend via VITE_WS_URL. Proxying WebSockets through Vite
+      // crashes the dev server when the backend goes down.
       '/uploads': {
         target: 'http://localhost:3001',
         changeOrigin: true,

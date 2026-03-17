@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import type { PublicUser } from '@harmonium/shared';
 import { loginApi, registerApi, logoutApi } from '../api/auth.js';
 import { useThemeStore } from './theme.store.js';
+import { useEmojiStore } from './emoji.store.js';
 
 interface AuthState {
   user: PublicUser | null;
@@ -42,6 +43,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       isAuthenticated: true,
     });
     useThemeStore.getState().loadFromUser(response.user);
+    useEmojiStore.getState().loadFromUser(response.user.frequentEmoji ?? []);
   },
 
   register: async (username: string, email: string, password: string) => {
@@ -58,6 +60,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         isAuthenticated: true,
       });
       useThemeStore.getState().loadFromUser(response.user);
+    useEmojiStore.getState().loadFromUser(response.user.frequentEmoji ?? []);
       return null; // signals: no verification needed
     }
     return response.email;
@@ -106,6 +109,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       isAuthenticated: true,
     });
     useThemeStore.getState().loadFromUser(response.user);
+    useEmojiStore.getState().loadFromUser(response.user.frequentEmoji ?? []);
   },
 
   hydrate: () => {
@@ -124,6 +128,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
           isLoading: false,
         });
         useThemeStore.getState().loadFromUser(user);
+        useEmojiStore.getState().loadFromUser(user.frequentEmoji ?? []);
       } catch {
         localStorage.removeItem('accessToken');
         localStorage.removeItem('refreshToken');

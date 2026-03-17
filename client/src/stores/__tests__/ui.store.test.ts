@@ -6,6 +6,8 @@ describe('useUIStore', () => {
     useUIStore.setState({
       showMemberSidebar: true,
       showMobileSidebar: false,
+      showPinnedMessages: false,
+      showThreadList: false,
       activeModal: null,
     });
   });
@@ -51,5 +53,21 @@ describe('useUIStore', () => {
     useUIStore.setState({ activeModal: 'editProfile' });
     useUIStore.getState().closeModal();
     expect(useUIStore.getState().activeModal).toBeNull();
+  });
+
+  it('toggleThreadList toggles the thread list visibility', () => {
+    expect(useUIStore.getState().showThreadList).toBe(false);
+
+    useUIStore.getState().toggleThreadList();
+    expect(useUIStore.getState().showThreadList).toBe(true);
+
+    useUIStore.getState().toggleThreadList();
+    expect(useUIStore.getState().showThreadList).toBe(false);
+  });
+
+  it('closeThreadList sets showThreadList to false', () => {
+    useUIStore.setState({ showThreadList: true });
+    useUIStore.getState().closeThreadList();
+    expect(useUIStore.getState().showThreadList).toBe(false);
   });
 });

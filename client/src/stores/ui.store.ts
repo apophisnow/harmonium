@@ -13,6 +13,7 @@ interface UIState {
   showMemberSidebar: boolean;
   showMobileSidebar: boolean;
   showPinnedMessages: boolean;
+  showThreadList: boolean;
   activeModal: ModalType;
   initialSettingsTab: string | null;
 
@@ -21,6 +22,8 @@ interface UIState {
   closeMobileSidebar: () => void;
   togglePinnedMessages: () => void;
   closePinnedMessages: () => void;
+  toggleThreadList: () => void;
+  closeThreadList: () => void;
   openModal: (modal: NonNullable<ModalType>, options?: { settingsTab?: string }) => void;
   closeModal: () => void;
 }
@@ -29,6 +32,7 @@ export const useUIStore = create<UIState>((set, get) => ({
   showMemberSidebar: true,
   showMobileSidebar: false,
   showPinnedMessages: false,
+  showThreadList: false,
   activeModal: null,
   initialSettingsTab: null,
 
@@ -50,6 +54,14 @@ export const useUIStore = create<UIState>((set, get) => ({
 
   closePinnedMessages: () => {
     set({ showPinnedMessages: false });
+  },
+
+  toggleThreadList: () => {
+    set({ showThreadList: !get().showThreadList });
+  },
+
+  closeThreadList: () => {
+    set({ showThreadList: false });
   },
 
   openModal: (modal, options) => {

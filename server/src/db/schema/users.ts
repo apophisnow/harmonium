@@ -1,4 +1,4 @@
-import { pgTable, bigint, varchar, boolean, timestamp, index, uniqueIndex } from 'drizzle-orm/pg-core';
+import { pgTable, bigint, varchar, boolean, timestamp, index, uniqueIndex, jsonb } from 'drizzle-orm/pg-core';
 
 export const users = pgTable('users', {
   id: bigint('id', { mode: 'bigint' }).primaryKey(),
@@ -18,6 +18,7 @@ export const users = pgTable('users', {
   friendRequestFromEveryone: boolean('friend_request_from_everyone').notNull().default(false),
   friendRequestFromFof: boolean('friend_request_from_fof').notNull().default(true),
   friendRequestFromServerMembers: boolean('friend_request_from_server_members').notNull().default(true),
+  frequentEmoji: jsonb('frequent_emoji').$type<string[]>().notNull().default(['👍', '❤️', '😂', '🔥']),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
 }, (table) => [

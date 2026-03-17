@@ -8,13 +8,14 @@ import { useThreadStore } from '../../stores/thread.store.js';
 
 const EMPTY_MEMBERS: ServerMember[] = [];
 const EMPTY_THREADS: ThreadListItem[] = [];
-import { editMessage, deleteMessage, pinMessage, unpinMessage } from '../../api/messages.js';
+import { editMessage, deleteMessage, pinMessage, unpinMessage, sendMessage } from '../../api/messages.js';
 import { addReaction, removeReaction } from '../../api/reactions.js';
 import { createThread, getThread } from '../../api/threads.js';
 import { UserAvatar } from '../user/UserAvatar.js';
 import { UserProfilePopover } from '../user/UserProfilePopover.js';
 import { formatDate } from '../../lib/formatters.js';
 import { ContextMenu, type ContextMenuState } from '../shared/ContextMenu.js';
+import { useEmojiStore } from '../../stores/emoji.store.js';
 import { EmojiPicker } from './EmojiPicker.js';
 import { MessageEmbed } from './MessageEmbed.js';
 import { renderMarkdown } from '../../utils/markdown.js';
@@ -154,9 +155,14 @@ export function MessageItem({ message, isGrouped }: MessageItemProps) {
   const currentServerId = useServerStore((s) => s.currentServerId);
   const members = useMemberStore((s) => currentServerId ? (s.members.get(currentServerId) ?? EMPTY_MEMBERS) : EMPTY_MEMBERS);
   const setReplyingTo = useMessageStore((s) => s.setReplyingTo);
+  const retryMessage = useMessageStore((s) => s.retryMessage);
+  const failMessageStore = useMessageStore((s) => s.failMessage);
+  const removeOptimisticMessage = useMessageStore((s) => s.removeMessage);
   const threads = useThreadStore((s) => s.threads.get(message.channelId) ?? EMPTY_THREADS);
   const setActiveThread = useThreadStore((s) => s.setActiveThread);
 
+  const isPending = message._isPending === true;
+  const isFailed = message._isFailed === true;
   const isWebhookMessage = !!message.webhookId;
   const isOwnMessage = message.authorId === currentUserId && !isWebhookMessage;
 
@@ -172,6 +178,30 @@ export function MessageItem({ message, isGrouped }: MessageItemProps) {
 
   // Check if this message has a thread
   const messageThread = threads.find((t) => t.originMessageId === message.id);
+
+  const handleRetry = async () => {
+    if (!message._tempId) return;
+    const retried = retryMessage(message.channelId, message._tempId);
+    if (!retried) return;
+    try {
+      await sendMessage(
+        retried.channelId,
+        retried.content ?? '',
+        undefined,
+        retried.replyToId ?? undefined,
+      );
+    } catch {
+      if (retried._tempId) {
+        failMessageStore(retried._tempId);
+      }
+    }
+  };
+
+  const handleDismissFailedMessage = () => {
+    if (message._tempId) {
+      removeOptimisticMessage(message.channelId, message._tempId);
+    }
+  };
 
   const handleReply = () => {
     setReplyingTo(message);
@@ -261,6 +291,7 @@ export function MessageItem({ message, isGrouped }: MessageItemProps) {
     if (!currentUserId) return;
     try {
       await addReaction(message.channelId, message.id, emoji);
+      useEmojiStore.getState().recordEmoji(emoji);
     } catch {
       console.error('Failed to add reaction');
     }
@@ -269,7 +300,36 @@ export function MessageItem({ message, isGrouped }: MessageItemProps) {
   const handleContextMenu = (e: React.MouseEvent) => {
     e.preventDefault();
 
+    const { frequentEmoji } = useEmojiStore.getState();
+
+    const quickReactHeader = (
+      <div className="flex items-center justify-around px-1 py-0.5">
+        {frequentEmoji.map((emoji) => (
+          <button
+            key={emoji}
+            className="flex h-8 w-8 items-center justify-center rounded text-lg hover:bg-th-bg-primary transition-colors"
+            onClick={() => {
+              addReaction(message.channelId, message.id, emoji).catch(() =>
+                console.error('Failed to add reaction'),
+              );
+              useEmojiStore.getState().recordEmoji(emoji);
+              setContextMenu(null);
+            }}
+          >
+            {emoji}
+          </button>
+        ))}
+      </div>
+    );
+
     const items: ContextMenuState['items'] = [];
+
+    items.push({
+      label: 'Add Reaction',
+      onClick: () => setShowEmojiPicker(true),
+    });
+
+    items.push({ separator: true });
 
     items.push({
       label: 'Reply',
@@ -287,6 +347,8 @@ export function MessageItem({ message, isGrouped }: MessageItemProps) {
         onClick: handleCreateThread,
       });
     }
+
+    items.push({ separator: true });
 
     if (isOwnMessage) {
       items.push({
@@ -312,6 +374,14 @@ export function MessageItem({ message, isGrouped }: MessageItemProps) {
       },
     });
 
+    items.push({
+      label: 'Copy Message Link',
+      onClick: () => {
+        const url = `${window.location.origin}${window.location.pathname}?message=${message.id}`;
+        navigator.clipboard.writeText(url);
+      },
+    });
+
     if (isOwnMessage) {
       items.push({ separator: true });
       items.push({
@@ -321,7 +391,7 @@ export function MessageItem({ message, isGrouped }: MessageItemProps) {
       });
     }
 
-    setContextMenu({ x: e.clientX, y: e.clientY, items });
+    setContextMenu({ x: e.clientX, y: e.clientY, items, header: quickReactHeader });
   };
 
   const hasReply = message.replyTo !== undefined && message.replyTo !== null;
@@ -329,10 +399,10 @@ export function MessageItem({ message, isGrouped }: MessageItemProps) {
   if (isGrouped) {
     return (
       <div
-        className="group relative flex items-start px-4 py-0.5 hover:bg-th-bg-message-hover"
+        className={`group relative flex items-start px-4 py-0.5 hover:bg-th-bg-message-hover ${isPending ? 'opacity-50' : ''} ${isFailed ? 'opacity-70' : ''}`}
         onMouseEnter={() => setIsHovering(true)}
         onMouseLeave={() => setIsHovering(false)}
-        onContextMenu={handleContextMenu}
+        onContextMenu={!isPending && !isFailed ? handleContextMenu : undefined}
         data-message-id={message.id}
       >
         {/* Timestamp on hover in grouped mode */}
@@ -393,22 +463,17 @@ export function MessageItem({ message, isGrouped }: MessageItemProps) {
           {messageThread && (
             <ThreadIndicator thread={messageThread} onClick={handleOpenThread} />
           )}
+          {isFailed && (
+            <FailedMessageBar onRetry={handleRetry} onDismiss={handleDismissFailedMessage} />
+          )}
         </div>
 
         {/* Action buttons */}
-        {isHovering && !isEditing && (
+        {isHovering && !isEditing && !isPending && !isFailed && (
           <MessageActions
-            isOwnMessage={isOwnMessage}
-            isPinned={message.isPinned}
-            isDeleted={message.isDeleted}
             onReply={handleReply}
-            onEdit={() => {
-              setEditContent(message.content ?? '');
-              setIsEditing(true);
-            }}
-            onDelete={handleDelete}
             onAddReaction={() => setShowEmojiPicker(true)}
-            onTogglePin={handleTogglePin}
+            onMore={handleContextMenu}
           />
         )}
 
@@ -446,10 +511,10 @@ export function MessageItem({ message, isGrouped }: MessageItemProps) {
 
   return (
     <div
-      className="group relative mt-4 flex items-start px-4 py-0.5 hover:bg-th-bg-message-hover"
+      className={`group relative mt-4 flex items-start px-4 py-0.5 hover:bg-th-bg-message-hover ${isPending ? 'opacity-50' : ''} ${isFailed ? 'opacity-70' : ''}`}
       onMouseEnter={() => setIsHovering(true)}
       onMouseLeave={() => setIsHovering(false)}
-      onContextMenu={handleContextMenu}
+      onContextMenu={!isPending && !isFailed ? handleContextMenu : undefined}
       data-message-id={message.id}
     >
       <div
@@ -515,6 +580,9 @@ export function MessageItem({ message, isGrouped }: MessageItemProps) {
               </div>
             )}
             <AttachmentPreview attachments={message.attachments ?? []} />
+            {message.embeds?.map((embed) => (
+              <MessageEmbed key={embed.id} embed={embed} />
+            ))}
           </>
         )}
         <MessageReactions
@@ -522,22 +590,20 @@ export function MessageItem({ message, isGrouped }: MessageItemProps) {
           currentUserId={currentUserId}
           onToggle={handleReactionToggle}
         />
+        {messageThread && (
+          <ThreadIndicator thread={messageThread} onClick={handleOpenThread} />
+        )}
+        {isFailed && (
+          <FailedMessageBar onRetry={handleRetry} onDismiss={handleDismissFailedMessage} />
+        )}
       </div>
 
       {/* Action buttons */}
-      {isHovering && !isEditing && (
+      {isHovering && !isEditing && !isPending && !isFailed && (
         <MessageActions
-          isOwnMessage={isOwnMessage}
-          isPinned={message.isPinned}
-          isDeleted={message.isDeleted}
           onReply={handleReply}
-          onEdit={() => {
-            setEditContent(message.content ?? '');
-            setIsEditing(true);
-          }}
-          onDelete={handleDelete}
           onAddReaction={() => setShowEmojiPicker(true)}
-          onTogglePin={handleTogglePin}
+          onMore={handleContextMenu}
         />
       )}
 
@@ -574,27 +640,14 @@ export function MessageItem({ message, isGrouped }: MessageItemProps) {
 }
 
 function MessageActions({
-  isOwnMessage,
-  isPinned,
-  isDeleted,
   onReply,
-  onEdit,
-  onDelete,
   onAddReaction,
-  onTogglePin,
+  onMore,
 }: {
-  isOwnMessage: boolean;
-  isPinned: boolean;
-  isDeleted: boolean;
   onReply: () => void;
-  onEdit: () => void;
-  onDelete: () => void;
   onAddReaction: () => void;
-  onTogglePin: () => void;
+  onMore: (e: React.MouseEvent) => void;
 }) {
-  const showPin = !isDeleted;
-  const isLastButton = !isOwnMessage && !showPin;
-
   return (
     <div className="absolute -top-3 right-4 flex rounded bg-th-bg-secondary shadow-md border border-th-border">
       <button
@@ -608,46 +661,49 @@ function MessageActions({
       </button>
       <button
         onClick={onReply}
-        className={`${isLastButton ? 'rounded-r' : ''} p-1.5 text-th-text-secondary hover:text-th-text-primary hover:bg-th-bg-primary transition-colors`}
+        className="p-1.5 text-th-text-secondary hover:text-th-text-primary hover:bg-th-bg-primary transition-colors"
         title="Reply"
       >
         <svg className="h-4 w-4" viewBox="0 0 24 24" fill="currentColor">
           <path d="M10 9V5l-7 7 7 7v-4.1c5 0 8.5 1.6 11 5.1-1-5-4-10-11-11z" />
         </svg>
       </button>
-      {showPin && (
-        <button
-          onClick={onTogglePin}
-          className={`${!isOwnMessage ? 'rounded-r' : ''} p-1.5 text-th-text-secondary hover:text-th-text-primary hover:bg-th-bg-primary transition-colors ${isPinned ? 'text-th-yellow' : ''}`}
-          title={isPinned ? 'Unpin Message' : 'Pin Message'}
-        >
-          <svg className="h-4 w-4" viewBox="0 0 24 24" fill="currentColor">
-            <path d="M16 12V4h1V2H7v2h1v8l-2 2v2h5.2v6h1.6v-6H18v-2l-2-2z" />
-          </svg>
-        </button>
-      )}
-      {isOwnMessage && (
-        <>
-          <button
-            onClick={onEdit}
-            className="p-1.5 text-th-text-secondary hover:text-th-text-primary hover:bg-th-bg-primary transition-colors"
-            title="Edit"
-          >
-            <svg className="h-4 w-4" viewBox="0 0 24 24" fill="currentColor">
-              <path d="M16.293 2.293a1 1 0 0 1 1.414 0l4 4a1 1 0 0 1 0 1.414l-13 13A1 1 0 0 1 8 21H4a1 1 0 0 1-1-1v-4a1 1 0 0 1 .293-.707l13-13zM5 16.414V19h2.586l12-12L17 4.414l-12 12z" />
-            </svg>
-          </button>
-          <button
-            onClick={onDelete}
-            className="rounded-r p-1.5 text-th-text-secondary hover:text-th-red hover:bg-th-bg-primary transition-colors"
-            title="Delete"
-          >
-            <svg className="h-4 w-4" viewBox="0 0 24 24" fill="currentColor">
-              <path d="M15 3.999V2H9V3.999H3V5.999H21V3.999H15ZM5 6.99902V18.999C5 20.101 5.897 20.999 7 20.999H17C18.103 20.999 19 20.101 19 18.999V6.99902H5Z" />
-            </svg>
-          </button>
-        </>
-      )}
+      <button
+        onClick={onMore}
+        className="rounded-r p-1.5 text-th-text-secondary hover:text-th-text-primary hover:bg-th-bg-primary transition-colors"
+        title="More"
+      >
+        <svg className="h-4 w-4" viewBox="0 0 24 24" fill="currentColor">
+          <path d="M6 10c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm12 0c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm-6 0c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z" />
+        </svg>
+      </button>
+    </div>
+  );
+}
+
+function FailedMessageBar({
+  onRetry,
+  onDismiss,
+}: {
+  onRetry: () => void;
+  onDismiss: () => void;
+}) {
+  return (
+    <div className="mt-1 flex items-center gap-2 text-xs">
+      <span className="text-red-400">Failed to send</span>
+      <button
+        onClick={onRetry}
+        className="text-red-400 hover:text-red-300 underline transition-colors"
+      >
+        Retry
+      </button>
+      <span className="text-th-text-muted">|</span>
+      <button
+        onClick={onDismiss}
+        className="text-th-text-muted hover:text-th-text-secondary underline transition-colors"
+      >
+        Dismiss
+      </button>
     </div>
   );
 }

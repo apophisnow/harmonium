@@ -35,8 +35,15 @@ export function MessageList({
   // Mark channel as read when near bottom and there are messages
   const markAsRead = useCallback(() => {
     if (!channelId || !sendEvent || messages.length === 0) return;
-    const latestId = messages[messages.length - 1].id;
-    if (latestId === lastMarkedReadRef.current) return;
+    // Find the latest non-pending message (skip temp IDs)
+    let latestId: string | null = null;
+    for (let i = messages.length - 1; i >= 0; i--) {
+      if (!messages[i].id.startsWith('temp-')) {
+        latestId = messages[i].id;
+        break;
+      }
+    }
+    if (!latestId || latestId === lastMarkedReadRef.current) return;
 
     lastMarkedReadRef.current = latestId;
     markRead(channelId, latestId);
@@ -114,9 +121,12 @@ export function MessageList({
   // Find the index where the "New" divider should appear
   const newDividerIndex = (() => {
     if (!lastReadMessageId || messages.length === 0) return -1;
+    if (lastReadMessageId.startsWith('temp-')) return -1;
     const lastReadBigInt = BigInt(lastReadMessageId);
     for (let i = 0; i < messages.length; i++) {
-      if (BigInt(messages[i].id) > lastReadBigInt) {
+      const msgId = messages[i].id;
+      if (msgId.startsWith('temp-')) continue;
+      if (BigInt(msgId) > lastReadBigInt) {
         return i;
       }
     }

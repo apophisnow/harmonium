@@ -4,6 +4,7 @@ import { useVoiceStore } from '../../stores/voice.store.js';
 import { useSearchStore } from '../../stores/search.store.js';
 import { useIsMobile } from '../../hooks/useMediaQuery.js';
 import { useMessageStore } from '../../stores/message.store.js';
+import { useThreadStore } from '../../stores/thread.store.js';
 
 interface ChannelHeaderProps {
   channel: Channel | null;
@@ -13,10 +14,18 @@ export function ChannelHeader({ channel }: ChannelHeaderProps) {
   const toggleMemberSidebar = useUIStore((s) => s.toggleMemberSidebar);
   const toggleMobileSidebar = useUIStore((s) => s.toggleMobileSidebar);
   const togglePinnedMessages = useUIStore((s) => s.togglePinnedMessages);
+  const toggleThreadList = useUIStore((s) => s.toggleThreadList);
   const showMemberSidebar = useUIStore((s) => s.showMemberSidebar);
   const showPinnedMessages = useUIStore((s) => s.showPinnedMessages);
+  const showThreadList = useUIStore((s) => s.showThreadList);
   const voiceParticipantCount = useVoiceStore((s) => s.participants.size);
   const pinnedCount = useMessageStore((s) => (channel ? (s.pinnedMessages.get(channel.id)?.length ?? 0) : 0));
+  const activeThreadCount = useThreadStore((s) => {
+    if (!channel) return 0;
+    const threads = s.threads.get(channel.id);
+    if (!threads) return 0;
+    return threads.filter((t) => !t.threadArchived).length;
+  });
   const setSearchOpen = useSearchStore((s) => s.setOpen);
   const isMobile = useIsMobile();
 
@@ -104,6 +113,28 @@ export function ChannelHeader({ channel }: ChannelHeaderProps) {
           {pinnedCount > 0 && (
             <span className="absolute -right-1 -top-1 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-th-brand px-1 text-[10px] font-bold text-white">
               {pinnedCount}
+            </span>
+          )}
+        </button>
+      )}
+
+      {/* Threads toggle */}
+      {channel.type === 'text' && (
+        <button
+          onClick={toggleThreadList}
+          className={`relative hidden rounded p-1.5 transition-colors md:block ${
+            showThreadList
+              ? 'text-white bg-th-bg-accent'
+              : 'text-th-text-secondary hover:text-th-text-primary'
+          }`}
+          title="Threads"
+        >
+          <svg className="h-5 w-5" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M22 6C22 4.9 21.1 4 20 4H4C2.9 4 2 4.9 2 6V18C2 19.1 2.9 20 4 20H18L22 24V6ZM20 6V17.17L18.83 16H4V6H20ZM6 12H18V14H6V12ZM6 9H18V11H6V9Z" />
+          </svg>
+          {activeThreadCount > 0 && (
+            <span className="absolute -right-1 -top-1 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-th-brand px-1 text-[10px] font-bold text-white">
+              {activeThreadCount}
             </span>
           )}
         </button>

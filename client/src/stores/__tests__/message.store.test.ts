@@ -242,4 +242,133 @@ describe('useMessageStore', () => {
       expect(pinned[0].id).toBe('m2');
     });
   });
+
+  describe('optimistic messages', () => {
+    it('addMessage replaces a pending message when author and content match', () => {
+      const pending = {
+        ...makeMessage('temp-1', 'c1', 'Hello'),
+        _isPending: true,
+        _tempId: 'temp-1',
+      };
+      useMessageStore.setState({
+        messages: new Map([['c1', [pending]]]),
+      });
+
+      const real = makeMessage('m1', 'c1', 'Hello');
+      useMessageStore.getState().addMessage(real);
+
+      const list = useMessageStore.getState().messages.get('c1')!;
+      expect(list).toHaveLength(1);
+      expect(list[0].id).toBe('m1');
+      expect(list[0]._isPending).toBeUndefined();
+      expect(list[0]._tempId).toBeUndefined();
+    });
+
+    it('addMessage does not replace pending message when content differs', () => {
+      const pending = {
+        ...makeMessage('temp-1', 'c1', 'Hello'),
+        _isPending: true,
+        _tempId: 'temp-1',
+      };
+      useMessageStore.setState({
+        messages: new Map([['c1', [pending]]]),
+      });
+
+      const real = makeMessage('m1', 'c1', 'Different content');
+      useMessageStore.getState().addMessage(real);
+
+      const list = useMessageStore.getState().messages.get('c1')!;
+      expect(list).toHaveLength(2);
+    });
+
+    it('addOptimisticMessage adds message with _isPending flag', () => {
+      const msg = {
+        ...makeMessage('temp-1', 'c1', 'Hello'),
+        _tempId: 'temp-1',
+      };
+      useMessageStore.getState().addOptimisticMessage(msg);
+
+      const list = useMessageStore.getState().messages.get('c1')!;
+      expect(list).toHaveLength(1);
+      expect(list[0]._isPending).toBe(true);
+    });
+
+    it('failMessage marks a pending message as failed', () => {
+      const pending = {
+        ...makeMessage('temp-1', 'c1', 'Hello'),
+        _isPending: true,
+        _tempId: 'temp-1',
+      };
+      useMessageStore.setState({
+        messages: new Map([['c1', [pending]]]),
+      });
+
+      useMessageStore.getState().failMessage('temp-1');
+
+      const list = useMessageStore.getState().messages.get('c1')!;
+      expect(list).toHaveLength(1);
+      expect(list[0]._isPending).toBe(false);
+      expect(list[0]._isFailed).toBe(true);
+    });
+
+    it('removeMessage removes a message by tempId', () => {
+      const pending = {
+        ...makeMessage('temp-1', 'c1', 'Hello'),
+        _isPending: true,
+        _tempId: 'temp-1',
+      };
+      const normal = makeMessage('m2', 'c1', 'World');
+      useMessageStore.setState({
+        messages: new Map([['c1', [pending, normal]]]),
+      });
+
+      useMessageStore.getState().removeMessage('c1', 'temp-1');
+
+      const list = useMessageStore.getState().messages.get('c1')!;
+      expect(list).toHaveLength(1);
+      expect(list[0].id).toBe('m2');
+    });
+
+    it('retryMessage resets failed message to pending with new tempId', () => {
+      const failed = {
+        ...makeMessage('temp-1', 'c1', 'Hello'),
+        _isPending: false,
+        _isFailed: true,
+        _tempId: 'temp-1',
+      };
+      useMessageStore.setState({
+        messages: new Map([['c1', [failed]]]),
+      });
+
+      const retried = useMessageStore.getState().retryMessage('c1', 'temp-1');
+
+      expect(retried).toBeDefined();
+      expect(retried!._tempId).not.toBe('temp-1');
+
+      const list = useMessageStore.getState().messages.get('c1')!;
+      expect(list).toHaveLength(1);
+      expect(list[0]._isPending).toBe(true);
+      expect(list[0]._isFailed).toBe(false);
+      expect(list[0]._tempId).toBe(retried!._tempId);
+    });
+
+    it('confirmMessage replaces pending message by tempId', () => {
+      const pending = {
+        ...makeMessage('temp-1', 'c1', 'Hello'),
+        _isPending: true,
+        _tempId: 'temp-1',
+      };
+      useMessageStore.setState({
+        messages: new Map([['c1', [pending]]]),
+      });
+
+      const real = makeMessage('m1', 'c1', 'Hello');
+      useMessageStore.getState().confirmMessage('temp-1', real);
+
+      const list = useMessageStore.getState().messages.get('c1')!;
+      expect(list).toHaveLength(1);
+      expect(list[0].id).toBe('m1');
+      expect(list[0]._isPending).toBeUndefined();
+    });
+  });
 });

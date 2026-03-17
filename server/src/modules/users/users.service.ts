@@ -18,6 +18,7 @@ function userToFullResponse(user: typeof schema.users.$inferSelect) {
     customStatus: user.customStatus,
     theme: user.theme,
     mode: user.mode,
+    frequentEmoji: user.frequentEmoji,
     allowDmsFromServerMembers: user.allowDmsFromServerMembers,
     friendRequestFromEveryone: user.friendRequestFromEveryone,
     friendRequestFromFof: user.friendRequestFromFof,
@@ -36,6 +37,7 @@ function userToPublicResponse(user: typeof schema.users.$inferSelect) {
     aboutMe: user.aboutMe,
     status: user.status as UserStatus,
     customStatus: user.customStatus,
+    frequentEmoji: user.frequentEmoji,
     createdAt: user.createdAt.toISOString(),
     updatedAt: user.updatedAt.toISOString(),
   };

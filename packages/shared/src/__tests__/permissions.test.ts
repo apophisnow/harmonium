@@ -22,8 +22,8 @@ describe('Permission constants', () => {
     }
   });
 
-  it('there are exactly 15 permission flags', () => {
-    expect(Object.keys(Permission).length).toBe(15);
+  it('there are exactly 16 permission flags', () => {
+    expect(Object.keys(Permission).length).toBe(16);
   });
 });
 

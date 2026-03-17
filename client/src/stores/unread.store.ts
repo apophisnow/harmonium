@@ -73,9 +73,9 @@ export const useUnreadStore = create<UnreadState>((set, get) => ({
       };
     }
 
-    // Snowflake IDs are time-ordered, so we can compare as strings
-    // (they're numeric strings, so lexicographic comparison works for same-length IDs)
-    const hasUnread = latestMessageId
+    // Snowflake IDs are time-ordered — compare as BigInt.
+    // Skip temp IDs from optimistic messages.
+    const hasUnread = latestMessageId && !latestMessageId.startsWith('temp-')
       ? BigInt(latestMessageId) > BigInt(state.lastReadMessageId)
       : false;
 

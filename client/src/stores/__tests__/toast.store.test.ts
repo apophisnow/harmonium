@@ -1,67 +1,50 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { useToastStore } from '../toast.store.js';
+
+// Mock Sonner's toast module
+vi.mock('sonner', () => ({
+  toast: {
+    success: vi.fn(),
+    error: vi.fn(),
+    warning: vi.fn(),
+    info: vi.fn(),
+  },
+}));
+
+import { toast } from 'sonner';
 
 describe('useToastStore', () => {
   beforeEach(() => {
-    useToastStore.setState({ toasts: [] });
-    vi.useFakeTimers();
+    vi.clearAllMocks();
   });
 
-  afterEach(() => {
-    vi.useRealTimers();
+  it('addToast delegates to Sonner toast.success', () => {
+    useToastStore.getState().addToast('success', 'Well done!');
+    expect(toast.success).toHaveBeenCalledWith('Well done!', { duration: 5000 });
   });
 
-  it('addToast creates a toast with incrementing id', () => {
-    useToastStore.getState().addToast('success', 'First toast');
-    useToastStore.getState().addToast('error', 'Second toast');
-
-    const toasts = useToastStore.getState().toasts;
-    expect(toasts.length).toBe(2);
-    expect(toasts[0].type).toBe('success');
-    expect(toasts[0].message).toBe('First toast');
-    expect(toasts[1].type).toBe('error');
-    expect(toasts[1].message).toBe('Second toast');
-    // IDs should be different and follow the toast-N pattern
-    expect(toasts[0].id).toMatch(/^toast-\d+$/);
-    expect(toasts[1].id).toMatch(/^toast-\d+$/);
-    expect(toasts[0].id).not.toBe(toasts[1].id);
+  it('addToast delegates to Sonner toast.error', () => {
+    useToastStore.getState().addToast('error', 'Something broke');
+    expect(toast.error).toHaveBeenCalledWith('Something broke', { duration: 5000 });
   });
 
-  it('removeToast removes a toast by id', () => {
-    useToastStore.getState().addToast('info', 'Toast to keep');
-    useToastStore.getState().addToast('warning', 'Toast to remove');
-
-    const toasts = useToastStore.getState().toasts;
-    const idToRemove = toasts[1].id;
-
-    useToastStore.getState().removeToast(idToRemove);
-
-    const remaining = useToastStore.getState().toasts;
-    expect(remaining.length).toBe(1);
-    expect(remaining[0].message).toBe('Toast to keep');
+  it('addToast delegates to Sonner toast.warning', () => {
+    useToastStore.getState().addToast('warning', 'Watch out', 3000);
+    expect(toast.warning).toHaveBeenCalledWith('Watch out', { duration: 3000 });
   });
 
-  it('auto-removes toast after duration via setTimeout', () => {
-    useToastStore.getState().addToast('success', 'Auto-remove me', 3000);
-
-    expect(useToastStore.getState().toasts.length).toBe(1);
-
-    vi.advanceTimersByTime(2999);
-    expect(useToastStore.getState().toasts.length).toBe(1);
-
-    vi.advanceTimersByTime(1);
-    expect(useToastStore.getState().toasts.length).toBe(0);
+  it('addToast delegates to Sonner toast.info', () => {
+    useToastStore.getState().addToast('info', 'FYI', 7000);
+    expect(toast.info).toHaveBeenCalledWith('FYI', { duration: 7000 });
   });
 
-  it('uses default duration of 5000ms', () => {
-    useToastStore.getState().addToast('info', 'Default duration');
+  it('addToast uses default duration of 5000ms', () => {
+    useToastStore.getState().addToast('success', 'Default');
+    expect(toast.success).toHaveBeenCalledWith('Default', { duration: 5000 });
+  });
 
-    expect(useToastStore.getState().toasts.length).toBe(1);
-
-    vi.advanceTimersByTime(4999);
-    expect(useToastStore.getState().toasts.length).toBe(1);
-
-    vi.advanceTimersByTime(1);
-    expect(useToastStore.getState().toasts.length).toBe(0);
+  it('removeToast is a no-op (Sonner manages dismissals)', () => {
+    // Should not throw
+    useToastStore.getState().removeToast('any-id');
   });
 });

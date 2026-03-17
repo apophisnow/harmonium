@@ -22,6 +22,11 @@ export interface Message {
   webhookId?: string | null;
   webhookName?: string | null;
   webhookAvatarUrl?: string | null;
+
+  // Client-only fields for optimistic UI
+  _isPending?: boolean;
+  _isFailed?: boolean;
+  _tempId?: string;
 }
 
 export interface Attachment {

@@ -243,6 +243,7 @@ CREATE TABLE "users" (
 	"friend_request_from_everyone" boolean DEFAULT false NOT NULL,
 	"friend_request_from_fof" boolean DEFAULT true NOT NULL,
 	"friend_request_from_server_members" boolean DEFAULT true NOT NULL,
+	"frequent_emoji" jsonb DEFAULT '["👍","❤️","😂","🔥"]'::jsonb NOT NULL,
 	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
 	"updated_at" timestamp with time zone DEFAULT now() NOT NULL,
 	CONSTRAINT "users_email_unique" UNIQUE("email")

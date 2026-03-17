@@ -142,7 +142,14 @@ function ChannelItem({
   onClick: () => void;
 }) {
   const messages = useMessageStore((s) => s.messages.get(channel.id));
-  const latestMessageId = messages && messages.length > 0 ? messages[messages.length - 1].id : undefined;
+  // Find the latest real (non-temp) message ID for unread comparison
+  const latestMessageId = (() => {
+    if (!messages || messages.length === 0) return undefined;
+    for (let i = messages.length - 1; i >= 0; i--) {
+      if (!messages[i].id.startsWith('temp-')) return messages[i].id;
+    }
+    return undefined;
+  })();
   const readState = useUnreadStore((s) => s.readStates.get(channel.id));
   const mentionCount = readState?.mentionCount ?? 0;
 

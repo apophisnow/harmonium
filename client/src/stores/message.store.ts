@@ -12,6 +12,11 @@ interface MessageState {
 
   fetchMessages: (channelId: string, before?: string) => Promise<void>;
   addMessage: (message: Message) => void;
+  addOptimisticMessage: (message: Message) => void;
+  confirmMessage: (tempId: string, realMessage: Message) => void;
+  failMessage: (tempId: string) => void;
+  removeMessage: (channelId: string, tempId: string) => void;
+  retryMessage: (channelId: string, tempId: string) => Message | undefined;
   updateMessage: (message: Partial<Message> & { id: string; channelId: string }) => void;
   deleteMessage: (channelId: string, messageId: string) => void;
   setReplyingTo: (message: Message | null) => void;
@@ -48,8 +53,86 @@ export const useMessageStore = create<MessageState>((set, get) => ({
   addMessage: (message) => {
     const messages = new Map(get().messages);
     const list = messages.get(message.channelId) ?? [];
-    messages.set(message.channelId, [...list, message]);
+
+    // Check if there's a pending optimistic message that matches this real message
+    const pendingIndex = list.findIndex(
+      (m) =>
+        m._isPending &&
+        m.authorId === message.authorId &&
+        m.content === message.content &&
+        m.channelId === message.channelId,
+    );
+
+    if (pendingIndex !== -1) {
+      // Replace the pending message with the real one
+      const updated = [...list];
+      updated[pendingIndex] = message;
+      messages.set(message.channelId, updated);
+    } else {
+      messages.set(message.channelId, [...list, message]);
+    }
     set({ messages });
+  },
+
+  addOptimisticMessage: (message) => {
+    const messages = new Map(get().messages);
+    const list = messages.get(message.channelId) ?? [];
+    messages.set(message.channelId, [...list, { ...message, _isPending: true }]);
+    set({ messages });
+  },
+
+  confirmMessage: (tempId, realMessage) => {
+    const messages = new Map(get().messages);
+    for (const [channelId, list] of messages) {
+      const index = list.findIndex((m) => m._tempId === tempId);
+      if (index !== -1) {
+        const updated = [...list];
+        updated[index] = realMessage;
+        messages.set(channelId, updated);
+        set({ messages });
+        return;
+      }
+    }
+  },
+
+  failMessage: (tempId) => {
+    const messages = new Map(get().messages);
+    for (const [channelId, list] of messages) {
+      const index = list.findIndex((m) => m._tempId === tempId);
+      if (index !== -1) {
+        const updated = [...list];
+        updated[index] = { ...updated[index], _isPending: false, _isFailed: true };
+        messages.set(channelId, updated);
+        set({ messages });
+        return;
+      }
+    }
+  },
+
+  removeMessage: (channelId, tempId) => {
+    const messages = new Map(get().messages);
+    const list = messages.get(channelId) ?? [];
+    messages.set(
+      channelId,
+      list.filter((m) => m._tempId !== tempId),
+    );
+    set({ messages });
+  },
+
+  retryMessage: (channelId, tempId) => {
+    const messages = new Map(get().messages);
+    const list = messages.get(channelId) ?? [];
+    const index = list.findIndex((m) => m._tempId === tempId);
+    if (index === -1) return undefined;
+
+    const failedMsg = list[index];
+    // Generate a new temp ID for the retry
+    const newTempId = `temp-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+    const updated = [...list];
+    updated[index] = { ...failedMsg, _isPending: true, _isFailed: false, _tempId: newTempId };
+    messages.set(channelId, updated);
+    set({ messages });
+    return { ...failedMsg, _tempId: newTempId };
   },
 
   updateMessage: (partial) => {

@@ -323,6 +323,7 @@ export async function registerGateway(app: FastifyInstance): Promise<void> {
             aboutMe: userRow.aboutMe,
             status: userRow.status as 'online' | 'idle' | 'dnd' | 'offline',
             customStatus: userRow.customStatus,
+            frequentEmoji: userRow.frequentEmoji,
             createdAt: userRow.createdAt.toISOString(),
             updatedAt: userRow.updatedAt.toISOString(),
           },

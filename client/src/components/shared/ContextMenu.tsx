@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, type ReactNode } from 'react';
 
 interface ContextMenuItem {
   label: string;
@@ -17,13 +17,14 @@ export interface ContextMenuState {
   x: number;
   y: number;
   items: ContextMenuEntry[];
+  header?: ReactNode;
 }
 
 interface ContextMenuProps extends ContextMenuState {
   onClose: () => void;
 }
 
-export function ContextMenu({ x, y, items, onClose }: ContextMenuProps) {
+export function ContextMenu({ x, y, items, header, onClose }: ContextMenuProps) {
   const menuRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -51,6 +52,12 @@ export function ContextMenu({ x, y, items, onClose }: ContextMenuProps) {
       className="fixed z-50 min-w-[180px] rounded-md bg-th-bg-floating p-1.5 shadow-xl"
       style={{ left: x, top: y }}
     >
+      {header && (
+        <>
+          {header}
+          <div className="my-1 h-px bg-th-bg-primary" />
+        </>
+      )}
       {items.map((item, i) => {
         if (item.separator) {
           return (

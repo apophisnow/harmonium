@@ -9,7 +9,8 @@ export interface User {
   customStatus: string | null;
   theme?: string | null;
   mode?: string | null;
-  // Privacy settings (only on full User, not PublicUser)
+  frequentEmoji: string[];
+  // Privacy settings (only on full User, not PublicUser, along with frequentEmoji)
   allowDmsFromServerMembers: boolean;
   friendRequestFromEveryone: boolean;
   friendRequestFromFof: boolean;
@@ -21,7 +22,10 @@ export interface User {
 export type UserStatus = 'online' | 'idle' | 'dnd' | 'offline';
 
 // User without sensitive fields (for public display)
-export type PublicUser = Omit<User, 'email' | 'allowDmsFromServerMembers' | 'friendRequestFromEveryone' | 'friendRequestFromFof' | 'friendRequestFromServerMembers'>;
+// frequentEmoji is included as optional — present on own profile, absent on other users
+export type PublicUser = Omit<User, 'email' | 'frequentEmoji' | 'allowDmsFromServerMembers' | 'friendRequestFromEveryone' | 'friendRequestFromFof' | 'friendRequestFromServerMembers'> & {
+  frequentEmoji?: string[];
+};
 
 export interface UserProfile {
   id: string;

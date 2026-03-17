@@ -1,7 +1,8 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
-import type { ServerMember } from '@harmonium/shared';
+import type { ServerMember, Message } from '@harmonium/shared';
 import { sendMessage } from '../../api/messages.js';
 import { useMessageStore } from '../../stores/message.store.js';
+import { useAuthStore } from '../../stores/auth.store.js';
 import { useMemberStore } from '../../stores/member.store.js';
 
 const EMPTY_MEMBERS: ServerMember[] = [];
@@ -34,6 +35,9 @@ export function MessageInput({
   const fileInputRef = useRef<HTMLInputElement>(null);
   const replyingTo = useMessageStore((s) => s.replyingTo);
   const setReplyingTo = useMessageStore((s) => s.setReplyingTo);
+  const addOptimisticMessage = useMessageStore((s) => s.addOptimisticMessage);
+  const failMessage = useMessageStore((s) => s.failMessage);
+  const currentUser = useAuthStore((s) => s.user);
   const members = useMemberStore((s) => s.members.get(serverId) ?? EMPTY_MEMBERS);
 
   // Filter members by mention query
@@ -49,23 +53,60 @@ export function MessageInput({
     const trimmed = content.trim();
     if ((!trimmed && files.length === 0) || isSending) return;
 
+    // Generate a temp ID for optimistic message tracking
+    const tempId = `temp-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+
+    // Only show optimistic message for text-only sends (no files)
+    const hasFiles = files.length > 0;
+    if (!hasFiles && trimmed && currentUser) {
+      const optimisticMsg: Message = {
+        id: tempId,
+        channelId,
+        authorId: currentUser.id,
+        content: trimmed,
+        editedAt: null,
+        isDeleted: false,
+        replyToId: replyingTo?.id ?? null,
+        replyTo: replyingTo,
+        isPinned: false,
+        pinnedAt: null,
+        pinnedBy: null,
+        createdAt: new Date().toISOString(),
+        author: currentUser,
+        attachments: [],
+        reactions: [],
+        _isPending: true,
+        _tempId: tempId,
+      };
+      addOptimisticMessage(optimisticMsg);
+    }
+
+    // Clear input immediately for snappy UX
+    const savedContent = trimmed;
+    const savedFiles = files;
+    const savedReplyTo = replyingTo?.id;
+    setContent('');
+    setFiles([]);
+    setReplyingTo(null);
+    setMentionQuery(null);
+    if (textareaRef.current) {
+      textareaRef.current.style.height = 'auto';
+    }
+
     setIsSending(true);
     try {
       await sendMessage(
         channelId,
-        trimmed,
-        files.length > 0 ? files : undefined,
-        replyingTo?.id,
+        savedContent,
+        savedFiles.length > 0 ? savedFiles : undefined,
+        savedReplyTo,
       );
-      setContent('');
-      setFiles([]);
-      setReplyingTo(null);
-      setMentionQuery(null);
-      // Reset textarea height
-      if (textareaRef.current) {
-        textareaRef.current.style.height = 'auto';
-      }
+      // Server confirmation comes via WebSocket MESSAGE_CREATE,
+      // which will replace the optimistic message in addMessage.
     } catch {
+      if (!hasFiles && savedContent) {
+        failMessage(tempId);
+      }
       console.error('Failed to send message');
     } finally {
       setIsSending(false);
