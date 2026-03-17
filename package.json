@@ -17,6 +17,7 @@
     "db:generate": "npm run db:generate --workspace=server",
     "db:migrate": "npm run db:migrate --workspace=server",
     "test": "npm run test --workspaces --if-present",
+    "test:integration": "cd server && npx vitest run --config vitest.integration.config.ts",
     "test:coverage": "npm run test:coverage --workspaces --if-present"
   },
   "devDependencies": {
