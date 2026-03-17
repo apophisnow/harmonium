@@ -399,6 +399,8 @@ export function MessageItem({ message, isGrouped }: MessageItemProps) {
         {isHovering && !isEditing && (
           <MessageActions
             isOwnMessage={isOwnMessage}
+            isPinned={message.isPinned}
+            isDeleted={message.isDeleted}
             onReply={handleReply}
             onEdit={() => {
               setEditContent(message.content ?? '');
@@ -406,6 +408,7 @@ export function MessageItem({ message, isGrouped }: MessageItemProps) {
             }}
             onDelete={handleDelete}
             onAddReaction={() => setShowEmojiPicker(true)}
+            onTogglePin={handleTogglePin}
           />
         )}
 
@@ -525,6 +528,8 @@ export function MessageItem({ message, isGrouped }: MessageItemProps) {
       {isHovering && !isEditing && (
         <MessageActions
           isOwnMessage={isOwnMessage}
+          isPinned={message.isPinned}
+          isDeleted={message.isDeleted}
           onReply={handleReply}
           onEdit={() => {
             setEditContent(message.content ?? '');
@@ -532,6 +537,7 @@ export function MessageItem({ message, isGrouped }: MessageItemProps) {
           }}
           onDelete={handleDelete}
           onAddReaction={() => setShowEmojiPicker(true)}
+          onTogglePin={handleTogglePin}
         />
       )}
 
@@ -569,17 +575,26 @@ export function MessageItem({ message, isGrouped }: MessageItemProps) {
 
 function MessageActions({
   isOwnMessage,
+  isPinned,
+  isDeleted,
   onReply,
   onEdit,
   onDelete,
   onAddReaction,
+  onTogglePin,
 }: {
   isOwnMessage: boolean;
+  isPinned: boolean;
+  isDeleted: boolean;
   onReply: () => void;
   onEdit: () => void;
   onDelete: () => void;
   onAddReaction: () => void;
+  onTogglePin: () => void;
 }) {
+  const showPin = !isDeleted;
+  const isLastButton = !isOwnMessage && !showPin;
+
   return (
     <div className="absolute -top-3 right-4 flex rounded bg-th-bg-secondary shadow-md border border-th-border">
       <button
@@ -593,13 +608,24 @@ function MessageActions({
       </button>
       <button
         onClick={onReply}
-        className={`${isOwnMessage ? '' : 'rounded-r'} p-1.5 text-th-text-secondary hover:text-th-text-primary hover:bg-th-bg-primary transition-colors`}
+        className={`${isLastButton ? 'rounded-r' : ''} p-1.5 text-th-text-secondary hover:text-th-text-primary hover:bg-th-bg-primary transition-colors`}
         title="Reply"
       >
         <svg className="h-4 w-4" viewBox="0 0 24 24" fill="currentColor">
           <path d="M10 9V5l-7 7 7 7v-4.1c5 0 8.5 1.6 11 5.1-1-5-4-10-11-11z" />
         </svg>
       </button>
+      {showPin && (
+        <button
+          onClick={onTogglePin}
+          className={`${!isOwnMessage ? 'rounded-r' : ''} p-1.5 text-th-text-secondary hover:text-th-text-primary hover:bg-th-bg-primary transition-colors ${isPinned ? 'text-th-yellow' : ''}`}
+          title={isPinned ? 'Unpin Message' : 'Pin Message'}
+        >
+          <svg className="h-4 w-4" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M16 12V4h1V2H7v2h1v8l-2 2v2h5.2v6h1.6v-6H18v-2l-2-2z" />
+          </svg>
+        </button>
+      )}
       {isOwnMessage && (
         <>
           <button

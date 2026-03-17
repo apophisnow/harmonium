@@ -5,6 +5,8 @@ import { unpinMessage } from '../../api/messages.js';
 import { UserAvatar } from '../user/UserAvatar.js';
 import { formatDate } from '../../lib/formatters.js';
 
+const EMPTY_MESSAGES: Message[] = [];
+
 interface PinnedMessagesProps {
   channelId: string;
   onClose: () => void;
@@ -88,7 +90,7 @@ function PinnedMessageItem({
 }
 
 export function PinnedMessages({ channelId, onClose, canUnpin }: PinnedMessagesProps) {
-  const pinnedMessages = useMessageStore((s) => s.pinnedMessages.get(channelId) ?? []);
+  const pinnedMessages = useMessageStore((s) => s.pinnedMessages.get(channelId) ?? EMPTY_MESSAGES);
   const fetchPinnedMessages = useMessageStore((s) => s.fetchPinnedMessages);
 
   useEffect(() => {
