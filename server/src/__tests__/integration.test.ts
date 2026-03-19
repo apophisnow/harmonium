@@ -557,3 +557,92 @@ describe('Privacy Settings', () => {
     expect(res.ok).toBe(true);
   });
 });
+
+// ─── Block & Ignore Enforcement ──────────────────────────────────────────────
+
+describe('Block & Ignore Enforcement', () => {
+  let userA: ApiClient;
+  let userB: ApiClient;
+
+  beforeAll(async () => {
+    userA = await registerUser('blocktest_a');
+    userB = await registerUser('blocktest_b');
+  });
+
+  it('ignore endpoint returns 204', async () => {
+    const res = await userA.ignoreUser(userB.userId!);
+    expect(res.status).toBe(204);
+  });
+
+  it('ignore appears in relationships list', async () => {
+    const res = await userA.get<Array<{ user: { id: string }; type: string }>>('/api/relationships');
+    expect(res.ok).toBe(true);
+    const ignored = res.data.find((r) => r.user.id === userB.userId && r.type === 'ignored');
+    expect(ignored).toBeTruthy();
+  });
+
+  it('ignore does NOT prevent DM creation', async () => {
+    const res = await userB.createDmChannel(userA.userId!);
+    expect(res.ok).toBe(true);
+  });
+
+  it('ignore does NOT prevent messaging', async () => {
+    // Create DM from ignored user's side
+    const dm = await userB.createDmChannel(userA.userId!);
+    expect(dm.ok).toBe(true);
+
+    const msg = await userB.sendMessage(dm.data.id, 'hello from ignored user');
+    expect(msg.ok).toBe(true);
+  });
+
+  it('unignore endpoint returns 204', async () => {
+    const res = await userA.unignoreUser(userB.userId!);
+    expect(res.status).toBe(204);
+  });
+
+  it('block prevents DM creation', async () => {
+    await userA.blockUser(userB.userId!);
+
+    const res = await userB.createDmChannel(userA.userId!);
+    expect(res.ok).toBe(false);
+    expect(res.status).toBe(403);
+  });
+
+  it('block prevents messaging in existing DM', async () => {
+    // Unblock first to create a DM, then re-block
+    await userA.unblockUser(userB.userId!);
+    const dm = await userA.createDmChannel(userB.userId!);
+    expect(dm.ok).toBe(true);
+
+    // Now block
+    await userA.blockUser(userB.userId!);
+
+    // userB tries to send a message in the DM
+    const msg = await userB.sendMessage(dm.data.id, 'should fail');
+    expect(msg.ok).toBe(false);
+    expect(msg.status).toBe(403);
+  });
+
+  it('blocker also cannot message blocked user in DM', async () => {
+    // userA blocked userB, so userA also can't send in the DM
+    await userA.unblockUser(userB.userId!);
+    const dm = await userA.createDmChannel(userB.userId!);
+    expect(dm.ok).toBe(true);
+
+    await userA.blockUser(userB.userId!);
+
+    const msg = await userA.sendMessage(dm.data.id, 'should also fail');
+    expect(msg.ok).toBe(false);
+    expect(msg.status).toBe(403);
+  });
+
+  it('unblock restores DM ability', async () => {
+    await userA.unblockUser(userB.userId!);
+
+    const dm = await userA.createDmChannel(userB.userId!);
+    expect(dm.ok).toBe(true);
+
+    const msg = await userB.sendMessage(dm.data.id, 'hello again');
+    expect(msg.ok).toBe(true);
+  });
+});

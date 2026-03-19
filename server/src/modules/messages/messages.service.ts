@@ -2,6 +2,7 @@ import { eq, and, lt, gt, desc, asc, inArray, sql } from 'drizzle-orm';
 import { getDb, schema } from '../../db/index.js';
 import { generateId } from '../../utils/snowflake.js';
 import { NotFoundError, ForbiddenError, ValidationError } from '../../utils/errors.js';
+import { isBlocked } from '../relationships/relationships.service.js';
 import { getPubSubManager } from '../../ws/pubsub.js';
 import { computeChannelPermissions } from '../../utils/permissions.js';
 import { Permission, hasPermission } from '@harmonium/shared';
@@ -170,6 +171,24 @@ export async function createMessage(
   // Look up channel to get serverId (may be null for DM channels)
   const channel = await getChannelWithServer(channelId);
   const serverId = channel.serverId?.toString() ?? null;
+
+  // Block enforcement for 1:1 DM channels
+  if (channel.isDm && channel.ownerId === null) {
+    const dmMembers = await db
+      .select({ userId: schema.dmChannelMembers.userId })
+      .from(schema.dmChannelMembers)
+      .where(eq(schema.dmChannelMembers.channelId, BigInt(channelId)));
+
+    for (const member of dmMembers) {
+      const memberId = member.userId.toString();
+      if (memberId !== authorId) {
+        const blocked = await isBlocked(authorId, memberId);
+        if (blocked) {
+          throw new ForbiddenError('Cannot send messages to this user');
+        }
+      }
+    }
+  }
 
   // Validate replyToId if provided
   let replyToIdBigInt: bigint | undefined;

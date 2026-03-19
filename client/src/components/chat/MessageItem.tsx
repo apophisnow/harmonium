@@ -16,6 +16,7 @@ import { UserProfilePopover } from '../user/UserProfilePopover.js';
 import { formatDate } from '../../lib/formatters.js';
 import { ContextMenu, type ContextMenuState } from '../shared/ContextMenu.js';
 import { useEmojiStore } from '../../stores/emoji.store.js';
+import { useRelationshipStore } from '../../stores/relationship.store.js';
 import { EmojiPicker } from './EmojiPicker.js';
 import { MessageEmbed } from './MessageEmbed.js';
 import { renderMarkdown } from '../../utils/markdown.js';
@@ -151,7 +152,10 @@ export function MessageItem({ message, isGrouped }: MessageItemProps) {
   const [contextMenu, setContextMenu] = useState<ContextMenuState | null>(null);
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const [profilePopover, setProfilePopover] = useState<{ position: { x: number; y: number } } | null>(null);
+  const [showIgnoredMessage, setShowIgnoredMessage] = useState(false);
   const currentUserId = useAuthStore((s) => s.user?.id);
+  const isBlockedUser = useRelationshipStore((s) => s.isBlocked(message.authorId));
+  const isIgnoredUser = useRelationshipStore((s) => s.isIgnored(message.authorId));
   const currentServerId = useServerStore((s) => s.currentServerId);
   const members = useMemberStore((s) => currentServerId ? (s.members.get(currentServerId) ?? EMPTY_MEMBERS) : EMPTY_MEMBERS);
   const setReplyingTo = useMessageStore((s) => s.setReplyingTo);
@@ -165,6 +169,27 @@ export function MessageItem({ message, isGrouped }: MessageItemProps) {
   const isFailed = message._isFailed === true;
   const isWebhookMessage = !!message.webhookId;
   const isOwnMessage = message.authorId === currentUserId && !isWebhookMessage;
+
+  // Hide messages from blocked users
+  if (isBlockedUser && !isOwnMessage) {
+    return (
+      <div className="px-4 py-1 text-sm text-th-text-muted italic">
+        Message from a blocked user
+      </div>
+    );
+  }
+
+  // Collapse messages from ignored users with click-to-reveal
+  if (isIgnoredUser && !isOwnMessage && !showIgnoredMessage) {
+    return (
+      <div
+        className="px-4 py-1 text-sm text-th-text-muted italic cursor-pointer hover:text-th-text-secondary transition-colors"
+        onClick={() => setShowIgnoredMessage(true)}
+      >
+        Message from an ignored user — click to reveal
+      </div>
+    );
+  }
 
   const handleAuthorClick = (e: React.MouseEvent) => {
     if (isWebhookMessage || !message.author) return;

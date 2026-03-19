@@ -29,3 +29,11 @@ export async function blockUser(userId: string): Promise<void> {
 export async function unblockUser(userId: string): Promise<void> {
   await apiClient.delete(`/relationships/blocks/${userId}`);
 }
+
+export async function ignoreUser(userId: string): Promise<void> {
+  await apiClient.put(`/relationships/ignores/${userId}`);
+}
+
+export async function unignoreUser(userId: string): Promise<void> {
+  await apiClient.delete(`/relationships/ignores/${userId}`);
+}

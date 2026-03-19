@@ -2,6 +2,7 @@ import { eq, and, desc, sql, inArray } from 'drizzle-orm';
 import { getDb, schema } from '../../db/index.js';
 import { generateId } from '../../utils/snowflake.js';
 import { NotFoundError, ForbiddenError, ValidationError } from '../../utils/errors.js';
+import { isBlocked } from '../relationships/relationships.service.js';
 import { getPubSubManager } from '../../ws/pubsub.js';
 import type { DmChannel } from '@harmonium/shared';
 import type { PublicUser } from '@harmonium/shared';
@@ -84,6 +85,14 @@ export async function createDm(userId: string, recipientId: string): Promise<DmC
   });
   if (!recipient) {
     throw new NotFoundError('User not found');
+  }
+
+  // Check if either user has blocked the other
+  if (userId !== recipientId) {
+    const blocked = await isBlocked(userId, recipientId);
+    if (blocked) {
+      throw new ForbiddenError('Cannot create DM with this user');
+    }
   }
 
   // Check if the recipient allows DMs (skip for self-DMs and existing friends)

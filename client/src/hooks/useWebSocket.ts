@@ -136,16 +136,18 @@ export function useWebSocket() {
         break;
       }
       case 'MESSAGE_CREATE': {
-        addMessage(data.d.message);
+        const msg = data.d.message;
+        addMessage(msg);
         const msgCurrentUserId = useAuthStore.getState().user?.id;
         const activeChannelId = useChannelStore.getState().currentChannelId;
-        const msg = data.d.message;
+        const { isBlocked, isIgnored } = useRelationshipStore.getState();
+        const isHiddenUser = isBlocked(msg.authorId) || isIgnored(msg.authorId);
         // Own messages are always read
         if (msgCurrentUserId && msg.authorId === msgCurrentUserId) {
           useUnreadStore.getState().markRead(msg.channelId, msg.id);
         }
-        // Track unread for non-active channels from other users
-        if (msg.channelId !== activeChannelId && msgCurrentUserId && msg.authorId !== msgCurrentUserId) {
+        // Track unread for non-active channels from other users (skip blocked/ignored)
+        if (!isHiddenUser && msg.channelId !== activeChannelId && msgCurrentUserId && msg.authorId !== msgCurrentUserId) {
           // Parse mentions from message content
           const mentionPattern = /<@(\d+)>/g;
           const mentions: string[] = [];

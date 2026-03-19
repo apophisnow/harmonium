@@ -523,3 +523,174 @@ export async function isBlocked(userId: string, targetId: string): Promise<boole
 
   return !!blocked;
 }
+
+export async function ignoreUser(userId: string, targetId: string): Promise<void> {
+  const db = getDb();
+  const userIdBigInt = BigInt(userId);
+  const targetIdBigInt = BigInt(targetId);
+
+  if (userIdBigInt === targetIdBigInt) {
+    throw new ValidationError('You cannot ignore yourself');
+  }
+
+  // Check if we have blocked this user — must unblock first
+  const existingBlock = await db.query.relationships.findFirst({
+    where: and(
+      eq(schema.relationships.userId, userIdBigInt),
+      eq(schema.relationships.targetId, targetIdBigInt),
+      eq(schema.relationships.type, 'blocked'),
+    ),
+  });
+
+  if (existingBlock) {
+    throw new ForbiddenError('You have blocked this user. Unblock them first.');
+  }
+
+  // Check if already ignored
+  const existingIgnore = await db.query.relationships.findFirst({
+    where: and(
+      eq(schema.relationships.userId, userIdBigInt),
+      eq(schema.relationships.targetId, targetIdBigInt),
+      eq(schema.relationships.type, 'ignored'),
+    ),
+  });
+
+  if (existingIgnore) {
+    throw new ConflictError('You have already ignored this user');
+  }
+
+  // Check for existing relationship (friend or pending)
+  const existing = await db.query.relationships.findFirst({
+    where: and(
+      eq(schema.relationships.userId, userIdBigInt),
+      eq(schema.relationships.targetId, targetIdBigInt),
+    ),
+  });
+
+  // If friends, remove the bidirectional friend rows
+  if (existing?.type === 'friend') {
+    await db
+      .delete(schema.relationships)
+      .where(
+        or(
+          and(
+            eq(schema.relationships.userId, userIdBigInt),
+            eq(schema.relationships.targetId, targetIdBigInt),
+          ),
+          and(
+            eq(schema.relationships.userId, targetIdBigInt),
+            eq(schema.relationships.targetId, userIdBigInt),
+          ),
+        ),
+      );
+
+    // Notify the target that they lost the friend
+    const pubsub = getPubSubManager();
+    await pubsub.publishToUser(targetId, {
+      op: 'RELATIONSHIP_REMOVE',
+      d: { userId },
+    });
+  } else if (existing) {
+    // Remove any pending relationship from this side
+    await db
+      .delete(schema.relationships)
+      .where(
+        and(
+          eq(schema.relationships.userId, userIdBigInt),
+          eq(schema.relationships.targetId, targetIdBigInt),
+        ),
+      );
+
+    // Also remove the other side of pending requests
+    await db
+      .delete(schema.relationships)
+      .where(
+        and(
+          eq(schema.relationships.userId, targetIdBigInt),
+          eq(schema.relationships.targetId, userIdBigInt),
+        ),
+      );
+
+    const pubsub = getPubSubManager();
+    await pubsub.publishToUser(targetId, {
+      op: 'RELATIONSHIP_REMOVE',
+      d: { userId },
+    });
+  }
+
+  // Insert ignore row
+  await db.insert(schema.relationships).values({
+    userId: userIdBigInt,
+    targetId: targetIdBigInt,
+    type: 'ignored',
+  });
+
+  // Get ignored user for WS event
+  const ignoredUser = await db.query.users.findFirst({
+    where: eq(schema.users.id, targetIdBigInt),
+  });
+
+  const pubsub = getPubSubManager();
+
+  if (ignoredUser) {
+    await pubsub.publishToUser(userId, {
+      op: 'RELATIONSHIP_UPDATE',
+      d: {
+        relationship: {
+          user: userToPublic(ignoredUser),
+          type: 'ignored',
+          createdAt: new Date().toISOString(),
+        },
+      },
+    });
+  }
+}
+
+export async function unignoreUser(userId: string, targetId: string): Promise<void> {
+  const db = getDb();
+  const userIdBigInt = BigInt(userId);
+  const targetIdBigInt = BigInt(targetId);
+
+  const existing = await db.query.relationships.findFirst({
+    where: and(
+      eq(schema.relationships.userId, userIdBigInt),
+      eq(schema.relationships.targetId, targetIdBigInt),
+      eq(schema.relationships.type, 'ignored'),
+    ),
+  });
+
+  if (!existing) {
+    throw new NotFoundError('You have not ignored this user');
+  }
+
+  await db
+    .delete(schema.relationships)
+    .where(
+      and(
+        eq(schema.relationships.userId, userIdBigInt),
+        eq(schema.relationships.targetId, targetIdBigInt),
+      ),
+    );
+
+  const pubsub = getPubSubManager();
+  await pubsub.publishToUser(userId, {
+    op: 'RELATIONSHIP_REMOVE',
+    d: { userId: targetId },
+  });
+}
+
+export async function isIgnored(userId: string, targetId: string): Promise<boolean> {
+  const db = getDb();
+  const userIdBigInt = BigInt(userId);
+  const targetIdBigInt = BigInt(targetId);
+
+  const ignored = await db.query.relationships.findFirst({
+    where: and(
+      eq(schema.relationships.userId, userIdBigInt),
+      eq(schema.relationships.targetId, targetIdBigInt),
+      eq(schema.relationships.type, 'ignored'),
+    ),
+  });
+
+  return !!ignored;
+}

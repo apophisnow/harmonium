@@ -43,6 +43,8 @@ export function UserProfilePopover({
   const removeFriend = useRelationshipStore((s) => s.removeFriend);
   const blockUser = useRelationshipStore((s) => s.blockUser);
   const unblockUser = useRelationshipStore((s) => s.unblockUser);
+  const ignoreUser = useRelationshipStore((s) => s.ignoreUser);
+  const unignoreUser = useRelationshipStore((s) => s.unignoreUser);
   const openDm = useDmStore((s) => s.openDm);
 
   const server = useServerStore((s) =>
@@ -158,6 +160,22 @@ export function UserProfilePopover({
       setIsActioning(false);
     }
   }, [relationship, user.id, blockUser, unblockUser]);
+
+  const handleIgnoreToggle = useCallback(async () => {
+    setIsActioning(true);
+    setActionError('');
+    try {
+      if (relationship?.type === 'ignored') {
+        await unignoreUser(user.id);
+      } else {
+        await ignoreUser(user.id);
+      }
+    } catch {
+      setActionError('Action failed.');
+    } finally {
+      setIsActioning(false);
+    }
+  }, [relationship, user.id, ignoreUser, unignoreUser]);
 
   const handleToggleRole = async (roleId: string) => {
     if (!serverId) return;
@@ -450,6 +468,17 @@ export function UserProfilePopover({
                   </button>
                 </div>
               </div>
+            )}
+
+            {/* Ignore/Unignore — only show when not blocked */}
+            {!showKickConfirm && !showBanConfirm && relationship?.type !== 'blocked' && (
+              <button
+                onClick={handleIgnoreToggle}
+                disabled={isActioning}
+                className="w-full rounded px-2 py-1.5 text-left text-sm text-th-text-secondary transition-colors hover:bg-th-bg-accent disabled:opacity-50"
+              >
+                {relationship?.type === 'ignored' ? 'Unignore' : 'Ignore'} {user.username}
+              </button>
             )}
 
             {/* Block/Unblock */}

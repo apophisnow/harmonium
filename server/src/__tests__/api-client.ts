@@ -114,6 +114,30 @@ export class ApiClient {
       `/api/channels/${channelId}/messages`,
     );
   }
+
+  // ===== Relationship helpers =====
+
+  async blockUser(userId: string) {
+    return this.put(`/api/relationships/blocks/${userId}`);
+  }
+
+  async unblockUser(userId: string) {
+    return this.delete(`/api/relationships/blocks/${userId}`);
+  }
+
+  async ignoreUser(userId: string) {
+    return this.put(`/api/relationships/ignores/${userId}`);
+  }
+
+  async unignoreUser(userId: string) {
+    return this.delete(`/api/relationships/ignores/${userId}`);
+  }
+
+  // ===== DM helpers =====
+
+  async createDmChannel(recipientId: string) {
+    return this.post<{ id: string; type: string }>('/api/dm/channels', { recipientId });
+  }
 }
 
 /** Create a fresh user with a unique name */

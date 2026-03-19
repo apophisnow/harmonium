@@ -91,4 +91,32 @@ export async function relationshipRoutes(app: FastifyInstance) {
     );
     return reply.status(204).send();
   });
+
+  // PUT /api/relationships/ignores/:userId — ignore user
+  app.put('/api/relationships/ignores/:userId', async (request, reply) => {
+    const paramsParsed = userIdParamsSchema.safeParse(request.params);
+    if (!paramsParsed.success) {
+      throw new ValidationError(paramsParsed.error.errors[0].message);
+    }
+
+    await relationshipsService.ignoreUser(
+      request.user.userId,
+      paramsParsed.data.userId,
+    );
+    return reply.status(204).send();
+  });
+
+  // DELETE /api/relationships/ignores/:userId — unignore user
+  app.delete('/api/relationships/ignores/:userId', async (request, reply) => {
+    const paramsParsed = userIdParamsSchema.safeParse(request.params);
+    if (!paramsParsed.success) {
+      throw new ValidationError(paramsParsed.error.errors[0].message);
+    }
+
+    await relationshipsService.unignoreUser(
+      request.user.userId,
+      paramsParsed.data.userId,
+    );
+    return reply.status(204).send();
+  });
 }
