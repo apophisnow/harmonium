@@ -1,5 +1,5 @@
 import React, { useState, type ReactNode } from 'react';
-import type { Attachment, Reaction, ServerMember, ThreadListItem } from '@harmonium/shared';
+import type { Attachment, Message, Reaction, ServerMember, ThreadListItem } from '@harmonium/shared';
 import type { ClientMessage } from '../../types.js';
 import { useAuthStore } from '../../stores/auth.store.js';
 import { useMessageStore } from '../../stores/message.store.js';
