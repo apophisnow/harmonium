@@ -6,7 +6,7 @@ import { useTypingIndicator } from '../../hooks/useTypingIndicator.js';
 import { MessageList } from '../chat/MessageList.js';
 import { MessageInput } from '../chat/MessageInput.js';
 import { TypingIndicator } from '../chat/TypingIndicator.js';
-import { archiveThread, unarchiveThread, joinThread } from '../../api/threads.js';
+import { archiveThread, unarchiveThread, joinThread, leaveThread } from '../../api/threads.js';
 
 interface ThreadPanelProps {
   sendEvent: (event: ClientEvent) => void;
@@ -16,6 +16,7 @@ interface ThreadPanelProps {
 export function ThreadPanel({ sendEvent, serverId }: ThreadPanelProps) {
   const activeThread = useThreadStore((s) => s.activeThread);
   const setActiveThread = useThreadStore((s) => s.setActiveThread);
+  const markThreadLeft = useThreadStore((s) => s.markThreadLeft);
 
   const threadId = activeThread?.id ?? null;
 
@@ -26,10 +27,16 @@ export function ThreadPanel({ sendEvent, serverId }: ThreadPanelProps) {
     sendEvent,
   );
 
-  // Join thread automatically when opening
+  // Join thread automatically when opening (also re-joins if previously left)
   useEffect(() => {
     if (threadId) {
       joinThread(threadId).catch(() => {});
+      // Clear left state so it reappears in sidebar
+      if (useThreadStore.getState().leftThreadIds.has(threadId)) {
+        const leftThreadIds = new Set(useThreadStore.getState().leftThreadIds);
+        leftThreadIds.delete(threadId);
+        useThreadStore.setState({ leftThreadIds });
+      }
     }
   }, [threadId]);
 
@@ -37,6 +44,15 @@ export function ThreadPanel({ sendEvent, serverId }: ThreadPanelProps) {
 
   const handleClose = () => {
     setActiveThread(null);
+  };
+
+  const handleLeave = async () => {
+    try {
+      await leaveThread(activeThread.id);
+      markThreadLeft(activeThread.id);
+    } catch {
+      console.error('Failed to leave thread');
+    }
   };
 
   const handleArchiveToggle = async () => {
@@ -73,6 +89,15 @@ export function ThreadPanel({ sendEvent, serverId }: ThreadPanelProps) {
           >
             <svg className="h-4 w-4" viewBox="0 0 24 24" fill="currentColor">
               <path d="M20.54 5.23l-1.39-1.68C18.88 3.21 18.47 3 18 3H6c-.47 0-.88.21-1.16.55L3.46 5.23C3.17 5.57 3 6.02 3 6.5V19c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V6.5c0-.48-.17-.93-.46-1.27zM12 17.5L6.5 12H10v-2h4v2h3.5L12 17.5zM5.12 5l.81-1h12l.94 1H5.12z" />
+            </svg>
+          </button>
+          <button
+            onClick={handleLeave}
+            className="rounded p-1.5 text-th-text-secondary hover:text-th-text-primary hover:bg-th-bg-accent transition-colors"
+            title="Leave thread"
+          >
+            <svg className="h-4 w-4" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M10.09 15.59L11.5 17l5-5-5-5-1.41 1.41L12.67 11H3v2h9.67l-2.58 2.59zM19 3H5c-1.11 0-2 .9-2 2v4h2V5h14v14H5v-4H3v4c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2z" />
             </svg>
           </button>
           <button

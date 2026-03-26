@@ -663,7 +663,7 @@ export const MessageItem = React.memo(function MessageItem({ message, isGrouped 
       )}
     </div>
   );
-}
+});
 
 function MessageActions({
   onReply,
@@ -732,5 +732,5 @@ function FailedMessageBar({
       </button>
     </div>
   );
-});
+}
 

@@ -176,6 +176,10 @@ export const useThemeStore = create<ThemeState>((set, get) => ({
   },
 
   loadFromUser: (user) => {
+    // Only apply server-stored preference if there's no existing local preference.
+    // Local preference (from localStorage) takes priority since it reflects the
+    // user's most recent choice on this device.
+    if (get().hasUserPreference) return;
     if (user.theme && user.mode) {
       const theme = isValidTheme(user.theme) ? user.theme : DEFAULT_THEME;
       const mode = isValidMode(user.mode) ? user.mode : DEFAULT_MODE;

@@ -1,11 +1,13 @@
 import { useState, useCallback } from 'react';
-import type { Channel } from '@harmonium/shared';
+import type { Channel, ThreadListItem } from '@harmonium/shared';
 import { useChannelStore } from '../../stores/channel.store.js';
 import { useUIStore } from '../../stores/ui.store.js';
 import { useUnreadStore } from '../../stores/unread.store.js';
 import { useMessageStore } from '../../stores/message.store.js';
+import { useThreadStore } from '../../stores/thread.store.js';
 import { useNavigate } from 'react-router-dom';
 import { VoiceChannel } from '../voice/VoiceChannel.js';
+import { getThread } from '../../api/threads.js';
 
 const EMPTY_CHANNELS: Channel[] = [];
 
@@ -19,6 +21,9 @@ export function ChannelList({ serverId, onJoinVoice }: ChannelListProps) {
   const currentChannelId = useChannelStore((s) => s.currentChannelId);
   const setCurrentChannel = useChannelStore((s) => s.setCurrentChannel);
   const closeMobileSidebar = useUIStore((s) => s.closeMobileSidebar);
+  const threads = useThreadStore((s) => s.threads);
+  const leftThreadIds = useThreadStore((s) => s.leftThreadIds);
+  const setActiveThread = useThreadStore((s) => s.setActiveThread);
   const navigate = useNavigate();
 
   const [collapsedCategories, setCollapsedCategories] = useState<Set<string>>(
@@ -62,6 +67,12 @@ export function ChannelList({ serverId, onJoinVoice }: ChannelListProps) {
     closeMobileSidebar();
   };
 
+  const handleThreadClick = async (thread: ThreadListItem) => {
+    const fullThread = await getThread(thread.id);
+    setActiveThread(fullThread);
+    closeMobileSidebar();
+  };
+
   const isTextCollapsed = collapsedCategories.has('text');
   const isVoiceCollapsed = collapsedCategories.has('voice');
 
@@ -87,14 +98,25 @@ export function ChannelList({ serverId, onJoinVoice }: ChannelListProps) {
             Text Channels
           </h3>
           {!isTextCollapsed &&
-            textChannels.map((channel) => (
-              <ChannelItem
-                key={channel.id}
-                channel={channel}
-                isActive={channel.id === currentChannelId}
-                onClick={() => handleChannelClick(channel)}
-              />
-            ))}
+            textChannels.map((channel) => {
+              const channelThreads = (threads.get(channel.id) ?? []).filter((t) => !t.threadArchived && !leftThreadIds.has(t.id));
+              return (
+                <div key={channel.id}>
+                  <ChannelItem
+                    channel={channel}
+                    isActive={channel.id === currentChannelId}
+                    onClick={() => handleChannelClick(channel)}
+                  />
+                  {channelThreads.length > 0 && channelThreads.map((thread) => (
+                    <ThreadItem
+                      key={thread.id}
+                      thread={thread}
+                      onClick={() => handleThreadClick(thread)}
+                    />
+                  ))}
+                </div>
+              );
+            })}
         </div>
       )}
 
@@ -194,6 +216,31 @@ function ChannelItem({
       {mentionCount > 0 && (
         <span className="ml-auto flex-shrink-0 min-w-[18px] h-[18px] flex items-center justify-center rounded-full bg-th-red text-white text-xs font-bold px-1">
           {mentionCount}
+        </span>
+      )}
+    </button>
+  );
+}
+
+function ThreadItem({
+  thread,
+  onClick,
+}: {
+  thread: ThreadListItem;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      onClick={onClick}
+      className="group flex w-full items-center gap-1.5 rounded px-2 py-1 ml-4 text-sm text-th-text-secondary hover:bg-th-bg-primary hover:text-th-text-primary transition-colors"
+    >
+      <svg className="h-3.5 w-3.5 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+        <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+      </svg>
+      <span className="truncate">{thread.name}</span>
+      {thread.messageCount > 0 && (
+        <span className="ml-auto flex-shrink-0 text-xs text-th-text-muted">
+          {thread.messageCount}
         </span>
       )}
     </button>

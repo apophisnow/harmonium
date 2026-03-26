@@ -32,7 +32,6 @@ import { FriendsPage } from '../friends/FriendsPage.js';
 import { PinnedMessages } from '../chat/PinnedMessages.js';
 import { SearchModal } from '../search/SearchModal.js';
 import { ThreadPanel } from '../thread/ThreadPanel.js';
-import { ThreadList } from '../thread/ThreadList.js';
 import { useThreadStore } from '../../stores/thread.store.js';
 
 const EMPTY_CHANNELS: Channel[] = [];
@@ -66,8 +65,6 @@ export function AppLayout({ sendEvent, isConnected }: AppLayoutProps) {
   const showMemberSidebar = useUIStore((s) => s.showMemberSidebar);
   const showMobileSidebar = useUIStore((s) => s.showMobileSidebar);
   const showPinnedMessages = useUIStore((s) => s.showPinnedMessages);
-  const showThreadList = useUIStore((s) => s.showThreadList);
-  const closeThreadList = useUIStore((s) => s.closeThreadList);
   const activeThread = useThreadStore((s) => s.activeThread);
   const fetchThreads = useThreadStore((s) => s.fetchThreads);
   const closeMobileSidebar = useUIStore((s) => s.closeMobileSidebar);
@@ -381,14 +378,6 @@ export function AppLayout({ sendEvent, isConnected }: AppLayoutProps) {
           channelId={currentChannelId}
           onClose={closePinnedMessages}
           canUnpin={true}
-        />
-      )}
-
-      {/* Thread list panel (toggleable) */}
-      {showThreadList && currentChannelId && !isMobile && (
-        <ThreadList
-          channelId={currentChannelId}
-          onClose={closeThreadList}
         />
       )}
 

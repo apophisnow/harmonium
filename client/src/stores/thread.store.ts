@@ -7,17 +7,21 @@ interface ThreadState {
   threads: Map<string, ThreadListItem[]>;
   // Currently open thread (shown in side panel)
   activeThread: Channel | null;
+  // Threads the user has left (hidden from sidebar, still visible inline)
+  leftThreadIds: Set<string>;
 
   fetchThreads: (channelId: string) => Promise<void>;
   setActiveThread: (thread: Channel | null) => void;
   addThread: (thread: Channel) => void;
   updateThread: (thread: Channel) => void;
   removeThread: (threadId: string, parentChannelId: string) => void;
+  markThreadLeft: (threadId: string) => void;
 }
 
 export const useThreadStore = create<ThreadState>((set, get) => ({
   threads: new Map(),
   activeThread: null,
+  leftThreadIds: new Set(),
 
   fetchThreads: async (channelId) => {
     const threadList = await getThreads(channelId);
@@ -35,7 +39,13 @@ export const useThreadStore = create<ThreadState>((set, get) => ({
     const threads = new Map(get().threads);
     const parentId = thread.parentChannelId;
     const list = threads.get(parentId) ?? [];
-    if (list.some((t) => t.id === thread.id)) return;
+    // Re-joining a previously left thread
+    const leftThreadIds = new Set(get().leftThreadIds);
+    leftThreadIds.delete(thread.id);
+    if (list.some((t) => t.id === thread.id)) {
+      set({ leftThreadIds });
+      return;
+    }
     const item: ThreadListItem = {
       id: thread.id,
       name: thread.name,
@@ -47,7 +57,7 @@ export const useThreadStore = create<ThreadState>((set, get) => ({
       createdAt: thread.createdAt,
     };
     threads.set(parentId, [item, ...list]);
-    set({ threads });
+    set({ threads, leftThreadIds });
   },
 
   updateThread: (thread) => {
@@ -78,6 +88,17 @@ export const useThreadStore = create<ThreadState>((set, get) => ({
       set({ threads, activeThread: thread });
     } else {
       set({ threads });
+    }
+  },
+
+  markThreadLeft: (threadId) => {
+    const leftThreadIds = new Set(get().leftThreadIds);
+    leftThreadIds.add(threadId);
+    const active = get().activeThread;
+    if (active && active.id === threadId) {
+      set({ leftThreadIds, activeThread: null });
+    } else {
+      set({ leftThreadIds });
     }
   },
 
