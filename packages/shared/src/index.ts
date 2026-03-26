@@ -20,3 +20,4 @@ export * from './types/discovery.js';
 export * from './types/privacy.js';
 export * from './permissions.js';
 export * from './ws-events.js';
+export * from './ws-schemas.js';

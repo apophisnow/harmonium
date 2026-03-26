@@ -19,7 +19,7 @@ import { markRead, getReadStates } from '../modules/read-states/read-states.serv
 import { getDmChannels } from '../modules/dm/dm.service.js';
 import { isValidSnowflake } from '../utils/validation.js';
 import { getDb, schema } from '../db/index.js';
-import { eq, inArray } from 'drizzle-orm';
+import { eq, and, inArray } from 'drizzle-orm';
 
 const HEARTBEAT_INTERVAL = 30_000; // 30 seconds
 const HEARTBEAT_CHECK_INTERVAL = 45_000; // 45 seconds
@@ -387,6 +387,20 @@ export async function registerGateway(app: FastifyInstance): Promise<void> {
       const { serverId } = data;
       if (!serverId) return;
 
+      // Verify the user is a member of this server
+      const db = getDb();
+      const member = await db.query.serverMembers.findFirst({
+        where: and(
+          eq(schema.serverMembers.serverId, BigInt(serverId)),
+          eq(schema.serverMembers.userId, BigInt(meta.userId)),
+        ),
+      });
+
+      if (!member) {
+        sendError(socket, 4003, 'Not a member of this server');
+        return;
+      }
+
       connectionManager.subscribeToServer(serverId, meta.userId);
       const pubsub = getPubSubManager();
       await pubsub.subscribeToServer(serverId);
@@ -402,6 +416,20 @@ export async function registerGateway(app: FastifyInstance): Promise<void> {
 
       const { serverId } = data;
       if (!serverId) return;
+
+      // Verify the user is a member of this server
+      const db = getDb();
+      const member = await db.query.serverMembers.findFirst({
+        where: and(
+          eq(schema.serverMembers.serverId, BigInt(serverId)),
+          eq(schema.serverMembers.userId, BigInt(meta.userId)),
+        ),
+      });
+
+      if (!member) {
+        sendError(socket, 4003, 'Not a member of this server');
+        return;
+      }
 
       connectionManager.unsubscribeFromServer(serverId, meta.userId);
       const pubsub = getPubSubManager();

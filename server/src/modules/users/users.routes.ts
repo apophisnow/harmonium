@@ -26,7 +26,14 @@ export async function userRoutes(app: FastifyInstance) {
   });
 
   // POST /api/users/@me/password - Change password
-  app.post('/api/users/@me/password', async (request, reply) => {
+  app.post('/api/users/@me/password', {
+    config: {
+      rateLimit: {
+        max: 5,
+        timeWindow: '1 minute',
+      },
+    },
+  }, async (request, reply) => {
     const parsed = changePasswordSchema.safeParse(request.body);
     if (!parsed.success) {
       throw new ValidationError(parsed.error.errors[0].message);

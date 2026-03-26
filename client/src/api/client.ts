@@ -1,24 +1,7 @@
 import axios, { AxiosError, InternalAxiosRequestConfig } from 'axios';
 import { useToastStore } from '../stores/toast.store.js';
 
-interface QueueItem {
-  resolve: (token: string) => void;
-  reject: (error: unknown) => void;
-}
-
-let isRefreshing = false;
-let failedQueue: QueueItem[] = [];
-
-const processQueue = (error: unknown, token: string | null = null) => {
-  failedQueue.forEach((item) => {
-    if (error) {
-      item.reject(error);
-    } else {
-      item.resolve(token!);
-    }
-  });
-  failedQueue = [];
-};
+let refreshPromise: Promise<string> | null = null;
 
 const apiClient = axios.create({
   baseURL: '/api',
@@ -73,50 +56,40 @@ apiClient.interceptors.response.use(
       return Promise.reject(error);
     }
 
-    if (isRefreshing) {
-      return new Promise<string>((resolve, reject) => {
-        failedQueue.push({ resolve, reject });
-      })
-        .then((token) => {
-          if (originalRequest.headers) {
-            originalRequest.headers.Authorization = `Bearer ${token}`;
-          }
-          return apiClient(originalRequest);
-        })
-        .catch((err) => Promise.reject(err));
-    }
-
     originalRequest._retry = true;
-    isRefreshing = true;
 
-    const refreshToken = localStorage.getItem('refreshToken');
+    if (!refreshPromise) {
+      const refreshToken = localStorage.getItem('refreshToken');
 
-    if (!refreshToken) {
-      isRefreshing = false;
-      processQueue(new Error('No refresh token'), null);
-      clearAuthAndRedirect();
-      return Promise.reject(error);
+      if (!refreshToken) {
+        clearAuthAndRedirect();
+        return Promise.reject(error);
+      }
+
+      refreshPromise = axios.post('/api/auth/refresh', { refreshToken })
+        .then((response) => {
+          const { accessToken, refreshToken: newRefreshToken } = response.data;
+          localStorage.setItem('accessToken', accessToken);
+          localStorage.setItem('refreshToken', newRefreshToken);
+          return accessToken as string;
+        })
+        .catch((refreshError) => {
+          clearAuthAndRedirect();
+          throw refreshError;
+        })
+        .finally(() => {
+          refreshPromise = null;
+        });
     }
 
     try {
-      const response = await axios.post('/api/auth/refresh', { refreshToken });
-      const { accessToken, refreshToken: newRefreshToken } = response.data;
-
-      localStorage.setItem('accessToken', accessToken);
-      localStorage.setItem('refreshToken', newRefreshToken);
-
+      const accessToken = await refreshPromise;
       if (originalRequest.headers) {
         originalRequest.headers.Authorization = `Bearer ${accessToken}`;
       }
-
-      processQueue(null, accessToken);
       return apiClient(originalRequest);
     } catch (refreshError) {
-      processQueue(refreshError, null);
-      clearAuthAndRedirect();
       return Promise.reject(refreshError);
-    } finally {
-      isRefreshing = false;
     }
   },
 );

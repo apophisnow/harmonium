@@ -1,5 +1,5 @@
 import { eq, and, sql } from 'drizzle-orm';
-import { getDb, schema } from '../../db/index.js';
+import { getDb, schema, type DbOrTransaction } from '../../db/index.js';
 import { generateId } from '../../utils/snowflake.js';
 import { NotFoundError, ForbiddenError, ConflictError } from '../../utils/errors.js';
 import { DEFAULT_PERMISSIONS, Permission, hasPermission } from '@harmonium/shared';
@@ -61,44 +61,48 @@ export async function createServer(userId: string, input: CreateServerInput) {
   const userIdBigInt = BigInt(userId);
   const serverId = generateId();
 
-  // Insert the server
-  const [server] = await db
-    .insert(schema.servers)
-    .values({
-      id: serverId,
-      name: input.name,
-      ownerId: userIdBigInt,
-    })
-    .returning();
+  const server = await db.transaction(async (tx) => {
+    // Insert the server
+    const [newServer] = await tx
+      .insert(schema.servers)
+      .values({
+        id: serverId,
+        name: input.name,
+        ownerId: userIdBigInt,
+      })
+      .returning();
 
-  // Add creator as a member
-  await db.insert(schema.serverMembers).values({
-    serverId: serverId,
-    userId: userIdBigInt,
-  });
+    // Add creator as a member
+    await tx.insert(schema.serverMembers).values({
+      serverId: serverId,
+      userId: userIdBigInt,
+    });
 
-  // Set initial member count
-  await db.update(schema.servers).set({ memberCount: 1 }).where(eq(schema.servers.id, serverId));
+    // Set initial member count
+    await tx.update(schema.servers).set({ memberCount: 1 }).where(eq(schema.servers.id, serverId));
 
-  // Create default @everyone role
-  const roleId = generateId();
-  await db.insert(schema.roles).values({
-    id: roleId,
-    serverId: serverId,
-    name: '@everyone',
-    isDefault: true,
-    permissions: DEFAULT_PERMISSIONS,
-    position: 0,
-  });
+    // Create default @everyone role
+    const roleId = generateId();
+    await tx.insert(schema.roles).values({
+      id: roleId,
+      serverId: serverId,
+      name: '@everyone',
+      isDefault: true,
+      permissions: DEFAULT_PERMISSIONS,
+      position: 0,
+    });
 
-  // Create default "general" text channel
-  const channelId = generateId();
-  await db.insert(schema.channels).values({
-    id: channelId,
-    serverId: serverId,
-    name: 'general',
-    type: 'text',
-    position: 0,
+    // Create default "general" text channel
+    const channelId = generateId();
+    await tx.insert(schema.channels).values({
+      id: channelId,
+      serverId: serverId,
+      name: 'general',
+      type: 'text',
+      position: 0,
+    });
+
+    return newServer;
   });
 
   return serverToResponse(server);
@@ -299,20 +303,21 @@ export async function leaveServer(serverId: string, userId: string) {
     throw new ForbiddenError('Server owner cannot leave the server. Transfer ownership or delete the server.');
   }
 
-  // Remove from server_members
-  await db
-    .delete(schema.serverMembers)
-    .where(
-      and(
-        eq(schema.serverMembers.serverId, serverIdBigInt),
-        eq(schema.serverMembers.userId, userIdBigInt),
-      ),
-    );
+  // Remove member and decrement count atomically
+  await db.transaction(async (tx) => {
+    await tx
+      .delete(schema.serverMembers)
+      .where(
+        and(
+          eq(schema.serverMembers.serverId, serverIdBigInt),
+          eq(schema.serverMembers.userId, userIdBigInt),
+        ),
+      );
 
-  // Decrement member count
-  await db.update(schema.servers).set({ memberCount: sql`GREATEST(${schema.servers.memberCount} - 1, 0)` }).where(eq(schema.servers.id, serverIdBigInt));
+    await tx.update(schema.servers).set({ memberCount: sql`GREATEST(${schema.servers.memberCount} - 1, 0)` }).where(eq(schema.servers.id, serverIdBigInt));
+  });
 
-  // Publish MEMBER_LEAVE via pub/sub
+  // Publish MEMBER_LEAVE via pub/sub (after transaction commits)
   const pubsub = getPubSubManager();
   await pubsub.publishToServer(serverId, {
     op: 'MEMBER_LEAVE' as const,
@@ -357,20 +362,21 @@ export async function kickMember(serverId: string, actorId: string, targetUserId
     throw new ForbiddenError('Cannot kick a member with an equal or higher role');
   }
 
-  // Remove target from server_members
-  await db
-    .delete(schema.serverMembers)
-    .where(
-      and(
-        eq(schema.serverMembers.serverId, serverIdBigInt),
-        eq(schema.serverMembers.userId, targetUserIdBigInt),
-      ),
-    );
+  // Remove member and decrement count atomically
+  await db.transaction(async (tx) => {
+    await tx
+      .delete(schema.serverMembers)
+      .where(
+        and(
+          eq(schema.serverMembers.serverId, serverIdBigInt),
+          eq(schema.serverMembers.userId, targetUserIdBigInt),
+        ),
+      );
 
-  // Decrement member count
-  await db.update(schema.servers).set({ memberCount: sql`GREATEST(${schema.servers.memberCount} - 1, 0)` }).where(eq(schema.servers.id, serverIdBigInt));
+    await tx.update(schema.servers).set({ memberCount: sql`GREATEST(${schema.servers.memberCount} - 1, 0)` }).where(eq(schema.servers.id, serverIdBigInt));
+  });
 
-  // Broadcast MEMBER_LEAVE via pubsub
+  // Broadcast MEMBER_LEAVE via pubsub (after transaction commits)
   const pubsub = getPubSubManager();
   await pubsub.publishToServer(serverId, {
     op: 'MEMBER_LEAVE' as const,
@@ -387,22 +393,22 @@ export async function kickMember(serverId: string, actorId: string, targetUserId
   }).catch(() => {});
 }
 
-export async function addMemberToServer(serverId: string, userId: string) {
-  const db = getDb();
+export async function addMemberToServer(serverId: string, userId: string, txn?: DbOrTransaction) {
+  const q = txn ?? getDb();
   const serverIdBigInt = BigInt(serverId);
   const userIdBigInt = BigInt(userId);
 
   // Add to server_members
-  await db.insert(schema.serverMembers).values({
+  await q.insert(schema.serverMembers).values({
     serverId: serverIdBigInt,
     userId: userIdBigInt,
   });
 
   // Increment member count
-  await db.update(schema.servers).set({ memberCount: sql`${schema.servers.memberCount} + 1` }).where(eq(schema.servers.id, serverIdBigInt));
+  await q.update(schema.servers).set({ memberCount: sql`${schema.servers.memberCount} + 1` }).where(eq(schema.servers.id, serverIdBigInt));
 
   // Fetch the member with user data for the event payload
-  const [row] = await db
+  const [row] = await q
     .select({
       member: schema.serverMembers,
       user: schema.users,
@@ -418,12 +424,15 @@ export async function addMemberToServer(serverId: string, userId: string) {
 
   const memberData = memberToResponse(row.member, row.user);
 
-  // Publish MEMBER_JOIN via pub/sub
-  const pubsub = getPubSubManager();
-  await pubsub.publishToServer(serverId, {
-    op: 'MEMBER_JOIN' as const,
-    d: { serverId, member: memberData },
-  });
+  // Publish MEMBER_JOIN via pub/sub only if not inside a transaction
+  // (callers using a transaction should publish after commit)
+  if (!txn) {
+    const pubsub = getPubSubManager();
+    await pubsub.publishToServer(serverId, {
+      op: 'MEMBER_JOIN' as const,
+      d: { serverId, member: memberData },
+    });
+  }
 
   return memberData;
 }

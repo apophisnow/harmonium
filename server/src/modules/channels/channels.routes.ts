@@ -12,6 +12,8 @@ import {
 } from './channels.schemas.js';
 import * as channelsService from './channels.service.js';
 import { ValidationError } from '../../utils/errors.js';
+import { Permission } from '@harmonium/shared';
+import { requirePermission, requireChannelPermission } from '../../utils/permissions.js';
 
 export async function channelRoutes(app: FastifyInstance) {
   // All routes require authentication
@@ -20,7 +22,9 @@ export async function channelRoutes(app: FastifyInstance) {
   // ===== Server-scoped routes: /api/servers/:serverId =====
 
   // POST /api/servers/:serverId/channels - Create channel (MANAGE_CHANNELS)
-  app.post('/api/servers/:serverId/channels', async (request, reply) => {
+  app.post('/api/servers/:serverId/channels', {
+    preHandler: requirePermission(Permission.MANAGE_CHANNELS),
+  }, async (request, reply) => {
     const paramsParsed = serverParamsSchema.safeParse(request.params);
     if (!paramsParsed.success) {
       throw new ValidationError(paramsParsed.error.errors[0].message);
@@ -76,7 +80,9 @@ export async function channelRoutes(app: FastifyInstance) {
   // ===== Channel-scoped routes: /api/channels =====
 
   // PATCH /api/channels/:channelId - Update channel (MANAGE_CHANNELS)
-  app.patch('/api/channels/:channelId', async (request, reply) => {
+  app.patch('/api/channels/:channelId', {
+    preHandler: requireChannelPermission(Permission.MANAGE_CHANNELS),
+  }, async (request, reply) => {
     const paramsParsed = channelParamsSchema.safeParse(request.params);
     if (!paramsParsed.success) {
       throw new ValidationError(paramsParsed.error.errors[0].message);
@@ -96,7 +102,9 @@ export async function channelRoutes(app: FastifyInstance) {
   });
 
   // DELETE /api/channels/:channelId - Delete channel (MANAGE_CHANNELS)
-  app.delete('/api/channels/:channelId', async (request, reply) => {
+  app.delete('/api/channels/:channelId', {
+    preHandler: requireChannelPermission(Permission.MANAGE_CHANNELS),
+  }, async (request, reply) => {
     const paramsParsed = channelParamsSchema.safeParse(request.params);
     if (!paramsParsed.success) {
       throw new ValidationError(paramsParsed.error.errors[0].message);

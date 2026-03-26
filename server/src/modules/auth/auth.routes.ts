@@ -77,7 +77,14 @@ export async function authRoutes(app: FastifyInstance) {
   });
 
   // POST /api/auth/refresh
-  app.post('/api/auth/refresh', async (request, reply) => {
+  app.post('/api/auth/refresh', {
+    config: {
+      rateLimit: {
+        max: 10,
+        timeWindow: '1 minute',
+      },
+    },
+  }, async (request, reply) => {
     const parsed = refreshSchema.safeParse(request.body);
     if (!parsed.success) {
       throw new ValidationError(parsed.error.errors[0].message);

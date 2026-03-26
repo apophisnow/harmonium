@@ -1,5 +1,6 @@
 import { useEffect, useRef, useCallback, useState } from 'react';
-import type { ClientEvent, ServerEvent } from '@harmonium/shared';
+import type { ClientEvent } from '@harmonium/shared';
+import { serverEventSchema } from '@harmonium/shared';
 import { useAuthStore } from '../stores/auth.store.js';
 import { useToastStore } from '../stores/toast.store.js';
 import { useMessageStore } from '../stores/message.store.js';
@@ -85,9 +86,11 @@ export function useWebSocket() {
 
   // Keep handleMessage in a ref so the WebSocket onmessage handler always
   // calls the latest version without needing to recreate `connect`.
-  const handleMessageRef = useRef<(data: ServerEvent) => void>(() => {});
+  const handleMessageRef = useRef<(data: ServerEventParsed) => void>(() => {});
 
-  handleMessageRef.current = (data: ServerEvent) => {
+  type ServerEventParsed = import('zod').infer<typeof serverEventSchema>;
+
+  handleMessageRef.current = (data: ServerEventParsed) => {
     switch (data.op) {
       case 'HELLO': {
         // Send IDENTIFY with the latest token from the ref
@@ -237,7 +240,7 @@ export function useWebSocket() {
         break;
       case 'VOICE_STATE_UPDATE': {
         // Update server-wide channel voice states for sidebar display
-        const vsData = data.d as { userId: string; channelId: string; username: string; selfMute: boolean; selfDeaf: boolean };
+        const vsData = data.d;
         if (!vsData.channelId || vsData.channelId === '') {
           useVoiceStore.getState().removeChannelVoiceUser(vsData.userId);
         } else {
@@ -258,7 +261,7 @@ export function useWebSocket() {
         break;
       }
       case 'NEW_PRODUCER': {
-        const npData = data.d as { producerId: string; userId: string; kind: string; channelId: string; producerType: string };
+        const npData = data.d;
         if (npData.kind === 'video') {
           useVoiceStore.getState().updateChannelVoiceUser(npData.channelId, npData.userId, {
             isScreenSharing: npData.producerType === 'screenShare' ? true : undefined,
@@ -271,7 +274,7 @@ export function useWebSocket() {
         break;
       }
       case 'PRODUCER_CLOSED': {
-        const pcData = data.d as { producerId: string; userId: string; kind: string; channelId: string; producerType: string };
+        const pcData = data.d;
         if (pcData.kind === 'video') {
           useVoiceStore.getState().updateChannelVoiceUser(pcData.channelId, pcData.userId, {
             isScreenSharing: pcData.producerType === 'screenShare' ? false : undefined,
@@ -323,8 +326,13 @@ export function useWebSocket() {
 
     ws.onmessage = (event) => {
       try {
-        const data = JSON.parse(event.data as string) as ServerEvent;
-        handleMessageRef.current(data);
+        const json: unknown = JSON.parse(event.data as string);
+        const result = serverEventSchema.safeParse(json);
+        if (!result.success) {
+          console.warn('[WS] Invalid event payload:', result.error.format());
+          return;
+        }
+        handleMessageRef.current(result.data);
       } catch {
         console.error('[WS] Failed to parse message');
       }

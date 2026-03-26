@@ -51,7 +51,8 @@ services:
       JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET:?Set JWT_REFRESH_SECRET in .env}
       PORT: 3001
       CLIENT_URL: ${CLIENT_URL:-http://localhost}
-      MEDIASOUP_ANNOUNCED_IP: ${MEDIASOUP_ANNOUNCED_IP:-127.0.0.1}
+      # Must be set to your server's public IP for voice/video to work
+      MEDIASOUP_ANNOUNCED_IP: ${MEDIASOUP_ANNOUNCED_IP:?Set MEDIASOUP_ANNOUNCED_IP in .env to your server's public IP}
       MEDIASOUP_PREFER_TCP: ${MEDIASOUP_PREFER_TCP:-true}
       UPLOAD_DIR: /app/uploads
       MAX_UPLOAD_SIZE: ${MAX_UPLOAD_SIZE:-10485760}

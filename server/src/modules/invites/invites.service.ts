@@ -5,6 +5,7 @@ import { NotFoundError, ForbiddenError, ConflictError, ValidationError } from '.
 import { hasPermission, Permission } from '@harmonium/shared';
 import { addMemberToServer } from '../servers/servers.service.js';
 import { isBanned } from '../bans/bans.service.js';
+import { getPubSubManager } from '../../ws/pubsub.js';
 import type { CreateInviteInput } from './invites.schemas.js';
 import { createAuditLogEntry } from '../audit-log/audit-log.service.js';
 import { AuditLogAction } from '@harmonium/shared';
@@ -141,11 +142,9 @@ export async function getInviteInfo(code: string) {
     .select({
       invite: schema.invites,
       server: schema.servers,
-      inviter: schema.users,
     })
     .from(schema.invites)
     .innerJoin(schema.servers, eq(schema.invites.serverId, schema.servers.id))
-    .innerJoin(schema.users, eq(schema.invites.inviterId, schema.users.id))
     .where(eq(schema.invites.code, code));
 
   if (!row) {
@@ -158,7 +157,19 @@ export async function getInviteInfo(code: string) {
     .from(schema.serverMembers)
     .where(eq(schema.serverMembers.serverId, row.invite.serverId));
 
-  return inviteToResponse(row.invite, row.server, row.inviter, countResult.count);
+  // Round member count to nearest 10, minimum 1
+  const exactCount = countResult.count;
+  const approximateCount = Math.max(1, Math.round(exactCount / 10) * 10);
+
+  // Return only minimal public information — no inviter details
+  return {
+    code: row.invite.code,
+    server: {
+      name: row.server.name,
+      iconUrl: row.server.iconUrl,
+      approximateMemberCount: approximateCount,
+    },
+  };
 }
 
 export async function getServerInvites(serverId: string) {
@@ -198,38 +209,59 @@ export async function acceptInvite(code: string, userId: string) {
     throw new ValidationError('Invite has reached its maximum number of uses');
   }
 
-  const userIdBigInt = BigInt(userId);
+  // Check if user is banned (outside transaction — read-only check)
   const serverId = invite.serverId;
-
-  // Check if already a member
-  const existingMember = await db.query.serverMembers.findFirst({
-    where: and(
-      eq(schema.serverMembers.serverId, serverId),
-      eq(schema.serverMembers.userId, userIdBigInt),
-    ),
-  });
-
-  if (existingMember) {
-    throw new ConflictError('You are already a member of this server');
-  }
-
-  // Check if user is banned
   if (await isBanned(serverId.toString(), userId)) {
     throw new ForbiddenError('You are banned from this server');
   }
 
-  // Increment use count
-  await db
-    .update(schema.invites)
-    .set({ useCount: invite.useCount + 1 })
-    .where(eq(schema.invites.code, code));
+  // Wrap membership check, use count increment, and member addition in a transaction
+  // to prevent race conditions (duplicate memberships, over-counting invite uses)
+  const { member, server } = await db.transaction(async (tx) => {
+    const userIdBigInt = BigInt(userId);
 
-  // Add user to server (this also publishes MEMBER_JOIN event)
-  const member = await addMemberToServer(serverId.toString(), userId);
+    // Check if already a member (inside transaction for atomicity)
+    const existingMember = await tx.query.serverMembers.findFirst({
+      where: and(
+        eq(schema.serverMembers.serverId, serverId),
+        eq(schema.serverMembers.userId, userIdBigInt),
+      ),
+    });
 
-  // Fetch server data to return
-  const server = await db.query.servers.findFirst({
-    where: eq(schema.servers.id, serverId),
+    if (existingMember) {
+      throw new ConflictError('You are already a member of this server');
+    }
+
+    // Re-check max uses inside transaction to prevent race conditions
+    const currentInvite = await tx.query.invites.findFirst({
+      where: eq(schema.invites.code, code),
+    });
+    if (currentInvite && currentInvite.maxUses !== null && currentInvite.useCount >= currentInvite.maxUses) {
+      throw new ValidationError('Invite has reached its maximum number of uses');
+    }
+
+    // Increment use count
+    await tx
+      .update(schema.invites)
+      .set({ useCount: sql`${schema.invites.useCount} + 1` })
+      .where(eq(schema.invites.code, code));
+
+    // Add user to server (pass tx so it runs within the transaction)
+    const txMember = await addMemberToServer(serverId.toString(), userId, tx);
+
+    // Fetch server data to return
+    const txServer = await tx.query.servers.findFirst({
+      where: eq(schema.servers.id, serverId),
+    });
+
+    return { member: txMember, server: txServer };
+  });
+
+  // Publish MEMBER_JOIN after transaction commits successfully
+  const pubsub = getPubSubManager();
+  await pubsub.publishToServer(serverId.toString(), {
+    op: 'MEMBER_JOIN' as const,
+    d: { serverId: serverId.toString(), member },
   });
 
   return {
