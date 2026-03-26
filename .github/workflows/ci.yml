@@ -96,12 +96,6 @@ jobs:
       - name: Run unit tests
         run: npm test --workspace=server --workspace=client --if-present
 
-      - name: Apply database migrations
-        run: npx drizzle-kit push
-        working-directory: server
-        env:
-          NODE_OPTIONS: "--import tsx"
-
       - name: Start server for integration tests
         run: |
           cd server && node dist/index.js &
