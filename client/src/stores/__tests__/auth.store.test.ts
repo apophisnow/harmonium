@@ -35,6 +35,10 @@ const mockUser = {
   updatedAt: '2025-01-01T00:00:00Z',
 };
 
+// Create a fake JWT with an exp claim far in the future (year 2099)
+const fakeJwtPayload = btoa(JSON.stringify({ exp: 4102444800 }));
+const fakeValidJwt = `header.${fakeJwtPayload}.signature`;
+
 const mockAuthResponse = {
   accessToken: 'access-token-123',
   refreshToken: 'refresh-token-456',
@@ -168,7 +172,7 @@ describe('useAuthStore', () => {
   });
 
   it('hydrate restores state from valid localStorage data', () => {
-    storage.set('accessToken', 'stored-access');
+    storage.set('accessToken', fakeValidJwt);
     storage.set('refreshToken', 'stored-refresh');
     storage.set('user', JSON.stringify(mockUser));
 
@@ -176,7 +180,7 @@ describe('useAuthStore', () => {
 
     const state = useAuthStore.getState();
     expect(state.user).toEqual(mockUser);
-    expect(state.accessToken).toBe('stored-access');
+    expect(state.accessToken).toBe(fakeValidJwt);
     expect(state.refreshToken).toBe('stored-refresh');
     expect(state.isAuthenticated).toBe(true);
     expect(state.isLoading).toBe(false);

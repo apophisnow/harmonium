@@ -78,6 +78,9 @@ function resolve(
 }
 
 function loadInitial(): { theme: ThemeId; mode: Mode; hasUserPreference: boolean } {
+  if (typeof localStorage === 'undefined' || typeof localStorage.getItem !== 'function') {
+    return { theme: DEFAULT_THEME, mode: DEFAULT_MODE, hasUserPreference: false };
+  }
   const hasUserPreference = localStorage.getItem('app-theme-explicit') === 'true';
   const storedTheme = localStorage.getItem('app-theme');
   const storedMode = localStorage.getItem('app-mode');
