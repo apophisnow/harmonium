@@ -1,25 +1,26 @@
 import { create } from 'zustand';
 import type { Message, Embed } from '@harmonium/shared';
+import type { ClientMessage } from '../types.js';
 import { getMessages, getPinnedMessages as fetchPinnedMessagesApi } from '../api/messages.js';
 
 const DEFAULT_LIMIT = 50;
 
 interface MessageState {
-  messages: Map<string, Message[]>;
+  messages: Map<string, ClientMessage[]>;
   hasMore: Map<string, boolean>;
-  replyingTo: Message | null;
+  replyingTo: ClientMessage | null;
   pinnedMessages: Map<string, Message[]>;
 
   fetchMessages: (channelId: string, before?: string) => Promise<void>;
   addMessage: (message: Message) => void;
-  addOptimisticMessage: (message: Message) => void;
+  addOptimisticMessage: (message: ClientMessage) => void;
   confirmMessage: (tempId: string, realMessage: Message) => void;
   failMessage: (tempId: string) => void;
   removeMessage: (channelId: string, tempId: string) => void;
-  retryMessage: (channelId: string, tempId: string) => Message | undefined;
+  retryMessage: (channelId: string, tempId: string) => ClientMessage | undefined;
   updateMessage: (message: Partial<Message> & { id: string; channelId: string }) => void;
   deleteMessage: (channelId: string, messageId: string) => void;
-  setReplyingTo: (message: Message | null) => void;
+  setReplyingTo: (message: ClientMessage | null) => void;
   addReaction: (channelId: string, messageId: string, userId: string, emoji: string) => void;
   removeReaction: (channelId: string, messageId: string, userId: string, emoji: string) => void;
   fetchPinnedMessages: (channelId: string) => Promise<void>;
@@ -39,8 +40,9 @@ export const useMessageStore = create<MessageState>((set, get) => ({
       before,
       limit: DEFAULT_LIMIT,
     });
-    const messages = new Map(get().messages);
-    const hasMore = new Map(get().hasMore);
+    const state = get();
+    const messages = new Map(state.messages);
+    const hasMore = new Map(state.hasMore);
 
     const existing = before ? (messages.get(channelId) ?? []) : [];
     // Messages come newest-first from API; prepend older ones

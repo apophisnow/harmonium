@@ -37,14 +37,15 @@ export const useChannelStore = create<ChannelState>((set, get) => ({
   },
 
   removeChannel: (channelId, serverId) => {
-    const channels = new Map(get().channels);
+    const state = get();
+    const channels = new Map(state.channels);
     const list = channels.get(serverId) ?? [];
     channels.set(
       serverId,
       list.filter((c) => c.id !== channelId),
     );
     const currentChannelId =
-      get().currentChannelId === channelId ? null : get().currentChannelId;
+      state.currentChannelId === channelId ? null : state.currentChannelId;
     set({ channels, currentChannelId });
   },
 

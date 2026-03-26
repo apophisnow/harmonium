@@ -37,10 +37,11 @@ export const useServerStore = create<ServerState>((set, get) => ({
   },
 
   removeServer: (id) => {
-    const servers = new Map(get().servers);
+    const state = get();
+    const servers = new Map(state.servers);
     servers.delete(id);
     const currentServerId =
-      get().currentServerId === id ? null : get().currentServerId;
+      state.currentServerId === id ? null : state.currentServerId;
     set({ servers, currentServerId });
   },
 

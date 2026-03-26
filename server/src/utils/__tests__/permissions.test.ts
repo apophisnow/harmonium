@@ -6,18 +6,20 @@ import { ForbiddenError, NotFoundError } from '../errors.js';
 vi.mock('drizzle-orm', () => ({
   eq: vi.fn((a: any, b: any) => ({ field: a, value: b })),
   and: vi.fn((...args: any[]) => args),
+  sql: vi.fn((strings: any, ...values: any[]) => ({ strings, values })),
 }));
 
 // Mock DB module
 vi.mock('../../db/index.js', () => ({
   getDb: vi.fn(),
   schema: {
-    servers: { id: 'servers.id' },
+    servers: { id: 'servers.id', ownerId: 'servers.ownerId' },
     serverMembers: { serverId: 'serverMembers.serverId', userId: 'serverMembers.userId' },
-    roles: { id: 'roles.id', serverId: 'roles.serverId', isDefault: 'roles.isDefault' },
+    roles: { id: 'roles.id', serverId: 'roles.serverId', isDefault: 'roles.isDefault', permissions: 'roles.permissions' },
     memberRoles: { serverId: 'memberRoles.serverId', userId: 'memberRoles.userId', roleId: 'memberRoles.roleId' },
     channels: { id: 'channels.id' },
     channelPermissionOverrides: { channelId: 'channelPermissionOverrides.channelId' },
+    dmChannelMembers: { channelId: 'dmChannelMembers.channelId', userId: 'dmChannelMembers.userId' },
   },
 }));
 
@@ -32,20 +34,56 @@ import {
 const mockedGetDb = vi.mocked(getDb);
 
 function createMockDb(overrides: any = {}) {
-  const mockWhere = vi.fn().mockResolvedValue([]);
-  return {
+  // serverMemberWhere handles the server+membership JOIN query (query 1 in computeServerPermissions)
+  const serverMemberWhere = vi.fn().mockResolvedValue([]);
+  // roleWhere handles the roles query (query 2 in computeServerPermissions)
+  const roleWhere = vi.fn().mockResolvedValue([]);
+  // channelMemberRoleWhere handles the member roles query inside computeChannelPermissions
+  const channelMemberRoleWhere = vi.fn().mockResolvedValue([]);
+
+  const mockDb: any = {
     query: {
       servers: { findFirst: vi.fn() },
       serverMembers: { findFirst: vi.fn() },
       roles: { findFirst: vi.fn() },
+      channels: { findFirst: vi.fn() },
       channelPermissionOverrides: { findMany: vi.fn().mockResolvedValue([]) },
+      dmChannelMembers: { findFirst: vi.fn() },
     },
-    select: vi.fn().mockReturnThis(),
-    from: vi.fn().mockReturnThis(),
-    innerJoin: vi.fn().mockReturnThis(),
-    where: mockWhere,
+    select: vi.fn(),
+    _serverMemberWhere: serverMemberWhere,
+    _roleWhere: roleWhere,
+    _channelMemberRoleWhere: channelMemberRoleWhere,
     ...overrides,
-  } as any;
+  };
+
+  // Route .where() based on what table was passed to .from():
+  // - from(servers) => serverMemberWhere
+  // - from(roles) => roleWhere
+  // - from(memberRoles) => channelMemberRoleWhere
+  mockDb.select.mockImplementation(() => {
+    let whereToUse = channelMemberRoleWhere; // default fallback
+    const chain: any = {};
+    chain.from = vi.fn().mockImplementation((table: any) => {
+      if (table === 'servers.id' || table?.id === 'servers.id') {
+        whereToUse = serverMemberWhere;
+      } else if (table === 'roles.id' || table?.id === 'roles.id') {
+        whereToUse = roleWhere;
+      } else {
+        whereToUse = channelMemberRoleWhere;
+      }
+      return chain;
+    });
+    chain.leftJoin = vi.fn().mockReturnValue(chain);
+    chain.innerJoin = vi.fn().mockReturnValue(chain);
+    // Use a getter so it resolves the correct where based on from() call
+    Object.defineProperty(chain, 'where', {
+      get() { return whereToUse; },
+    });
+    return chain;
+  });
+
+  return mockDb;
 }
 
 describe('permissions', () => {
@@ -59,28 +97,24 @@ describe('permissions', () => {
 
   describe('computeServerPermissions', () => {
     it('owner gets ALL_PERMISSIONS', async () => {
-      mockDb.query.servers.findFirst.mockResolvedValue({
-        id: 100n,
-        ownerId: 1n,
-      });
+      // Query 1: server+member JOIN returns owner match
+      mockDb._serverMemberWhere.mockResolvedValue([{ ownerId: 1n, memberUserId: 1n }]);
 
       const result = await computeServerPermissions(mockDb, '100', '1');
       expect(result).toBe(ALL_PERMISSIONS);
     });
 
     it('throws NotFoundError when server not found', async () => {
-      mockDb.query.servers.findFirst.mockResolvedValue(undefined);
+      // Query 1: no rows => server not found
+      mockDb._serverMemberWhere.mockResolvedValue([]);
 
       await expect(computeServerPermissions(mockDb, '999', '1')).rejects.toThrow(NotFoundError);
       await expect(computeServerPermissions(mockDb, '999', '1')).rejects.toThrow('Server not found');
     });
 
     it('throws ForbiddenError for non-member', async () => {
-      mockDb.query.servers.findFirst.mockResolvedValue({
-        id: 100n,
-        ownerId: 999n, // different owner
-      });
-      mockDb.query.serverMembers.findFirst.mockResolvedValue(undefined);
+      // Query 1: server found but memberUserId is null (not a member)
+      mockDb._serverMemberWhere.mockResolvedValue([{ ownerId: 999n, memberUserId: null }]);
 
       await expect(computeServerPermissions(mockDb, '100', '1')).rejects.toThrow(ForbiddenError);
       await expect(computeServerPermissions(mockDb, '100', '1')).rejects.toThrow(
@@ -91,22 +125,12 @@ describe('permissions', () => {
     it('basic member gets @everyone role permissions', async () => {
       const everyonePerms = Permission.SEND_MESSAGES | Permission.READ_MESSAGES;
 
-      mockDb.query.servers.findFirst.mockResolvedValue({
-        id: 100n,
-        ownerId: 999n,
-      });
-      mockDb.query.serverMembers.findFirst.mockResolvedValue({
-        serverId: 100n,
-        userId: 1n,
-      });
-      mockDb.query.roles.findFirst.mockResolvedValue({
-        id: 50n,
-        serverId: 100n,
-        isDefault: true,
-        permissions: everyonePerms,
-      });
-      // No additional roles
-      mockDb.where.mockResolvedValue([]);
+      // Query 1: server+member found
+      mockDb._serverMemberWhere.mockResolvedValue([{ ownerId: 999n, memberUserId: 1n }]);
+      // Query 2: only @everyone role
+      mockDb._roleWhere.mockResolvedValue([
+        { permissions: everyonePerms, isDefault: true },
+      ]);
 
       const result = await computeServerPermissions(mockDb, '100', '1');
       expect(result).toBe(everyonePerms);
@@ -116,23 +140,10 @@ describe('permissions', () => {
       const everyonePerms = Permission.SEND_MESSAGES | Permission.READ_MESSAGES;
       const extraPerms = Permission.MANAGE_MESSAGES;
 
-      mockDb.query.servers.findFirst.mockResolvedValue({
-        id: 100n,
-        ownerId: 999n,
-      });
-      mockDb.query.serverMembers.findFirst.mockResolvedValue({
-        serverId: 100n,
-        userId: 1n,
-      });
-      mockDb.query.roles.findFirst.mockResolvedValue({
-        id: 50n,
-        serverId: 100n,
-        isDefault: true,
-        permissions: everyonePerms,
-      });
-      // Additional role with extra permissions
-      mockDb.where.mockResolvedValue([
-        { role: { permissions: extraPerms } },
+      mockDb._serverMemberWhere.mockResolvedValue([{ ownerId: 999n, memberUserId: 1n }]);
+      mockDb._roleWhere.mockResolvedValue([
+        { permissions: everyonePerms, isDefault: true },
+        { permissions: extraPerms, isDefault: false },
       ]);
 
       const result = await computeServerPermissions(mockDb, '100', '1');
@@ -142,23 +153,10 @@ describe('permissions', () => {
     it('ADMINISTRATOR in any role grants ALL_PERMISSIONS', async () => {
       const everyonePerms = Permission.SEND_MESSAGES;
 
-      mockDb.query.servers.findFirst.mockResolvedValue({
-        id: 100n,
-        ownerId: 999n,
-      });
-      mockDb.query.serverMembers.findFirst.mockResolvedValue({
-        serverId: 100n,
-        userId: 1n,
-      });
-      mockDb.query.roles.findFirst.mockResolvedValue({
-        id: 50n,
-        serverId: 100n,
-        isDefault: true,
-        permissions: everyonePerms,
-      });
-      // Role with ADMINISTRATOR
-      mockDb.where.mockResolvedValue([
-        { role: { permissions: Permission.ADMINISTRATOR } },
+      mockDb._serverMemberWhere.mockResolvedValue([{ ownerId: 999n, memberUserId: 1n }]);
+      mockDb._roleWhere.mockResolvedValue([
+        { permissions: everyonePerms, isDefault: true },
+        { permissions: Permission.ADMINISTRATOR, isDefault: false },
       ]);
 
       const result = await computeServerPermissions(mockDb, '100', '1');
@@ -168,11 +166,8 @@ describe('permissions', () => {
 
   describe('computeChannelPermissions', () => {
     it('admin bypasses channel overrides', async () => {
-      // Server owner => ALL_PERMISSIONS
-      mockDb.query.servers.findFirst.mockResolvedValue({
-        id: 100n,
-        ownerId: 1n,
-      });
+      // Server owner => ALL_PERMISSIONS from computeServerPermissions
+      mockDb._serverMemberWhere.mockResolvedValue([{ ownerId: 1n, memberUserId: 1n }]);
 
       const result = await computeChannelPermissions(mockDb, '100', '200', '1');
       expect(result).toBe(ALL_PERMISSIONS);
@@ -184,23 +179,13 @@ describe('permissions', () => {
       const everyonePerms = Permission.SEND_MESSAGES | Permission.READ_MESSAGES;
       const everyoneRoleId = 50n;
 
-      mockDb.query.servers.findFirst.mockResolvedValue({ id: 100n, ownerId: 999n });
-      mockDb.query.serverMembers.findFirst.mockResolvedValue({ serverId: 100n, userId: 1n });
+      // computeServerPermissions queries
+      mockDb._serverMemberWhere.mockResolvedValue([{ ownerId: 999n, memberUserId: 1n }]);
+      mockDb._roleWhere.mockResolvedValue([
+        { permissions: everyonePerms, isDefault: true },
+      ]);
 
-      // For computeServerPermissions: @everyone role
-      // For computeChannelPermissions: @everyone role again
-      // Both calls use roles.findFirst
-      mockDb.query.roles.findFirst.mockResolvedValue({
-        id: everyoneRoleId,
-        serverId: 100n,
-        isDefault: true,
-        permissions: everyonePerms,
-      });
-
-      // No additional member roles (from computeServerPermissions and computeChannelPermissions)
-      mockDb.where.mockResolvedValue([]);
-
-      // Channel overrides: deny SEND_MESSAGES for @everyone
+      // computeChannelPermissions parallel queries
       mockDb.query.channelPermissionOverrides.findMany.mockResolvedValue([
         {
           targetType: 'role',
@@ -209,6 +194,12 @@ describe('permissions', () => {
           deny: Permission.SEND_MESSAGES,
         },
       ]);
+      mockDb.query.roles.findFirst.mockResolvedValue({
+        id: everyoneRoleId,
+        serverId: 100n,
+        isDefault: true,
+        permissions: everyonePerms,
+      });
 
       const result = await computeChannelPermissions(mockDb, '100', '200', '1');
       // SEND_MESSAGES should be denied, READ_MESSAGES should remain
@@ -221,22 +212,13 @@ describe('permissions', () => {
       const everyoneRoleId = 50n;
       const memberRoleId = 60n;
 
-      mockDb.query.servers.findFirst.mockResolvedValue({ id: 100n, ownerId: 999n });
-      mockDb.query.serverMembers.findFirst.mockResolvedValue({ serverId: 100n, userId: 1n });
-      mockDb.query.roles.findFirst.mockResolvedValue({
-        id: everyoneRoleId,
-        serverId: 100n,
-        isDefault: true,
-        permissions: everyonePerms,
-      });
+      // computeServerPermissions queries
+      mockDb._serverMemberWhere.mockResolvedValue([{ ownerId: 999n, memberUserId: 1n }]);
+      mockDb._roleWhere.mockResolvedValue([
+        { permissions: everyonePerms, isDefault: true },
+      ]);
 
-      // First call to where (in computeServerPermissions): no additional roles
-      // Second call to where (in computeChannelPermissions): member has roleId 60
-      mockDb.where
-        .mockResolvedValueOnce([]) // computeServerPermissions memberRoleRows
-        .mockResolvedValueOnce([{ roleId: memberRoleId }]); // computeChannelPermissions memberRoleRows
-
-      // Channel overrides: allow SEND_MESSAGES for role 60
+      // computeChannelPermissions parallel queries
       mockDb.query.channelPermissionOverrides.findMany.mockResolvedValue([
         {
           targetType: 'role',
@@ -245,6 +227,14 @@ describe('permissions', () => {
           deny: 0n,
         },
       ]);
+      mockDb.query.roles.findFirst.mockResolvedValue({
+        id: everyoneRoleId,
+        serverId: 100n,
+        isDefault: true,
+        permissions: everyonePerms,
+      });
+      // Member has roleId 60 (from the select().from(memberRoles).where() in computeChannelPermissions)
+      mockDb._channelMemberRoleWhere.mockResolvedValue([{ roleId: memberRoleId }]);
 
       const result = await computeChannelPermissions(mockDb, '100', '200', '1');
       // Should have READ_MESSAGES from @everyone + SEND_MESSAGES from role override
@@ -257,17 +247,13 @@ describe('permissions', () => {
       const everyoneRoleId = 50n;
       const userId = 1n;
 
-      mockDb.query.servers.findFirst.mockResolvedValue({ id: 100n, ownerId: 999n });
-      mockDb.query.serverMembers.findFirst.mockResolvedValue({ serverId: 100n, userId });
-      mockDb.query.roles.findFirst.mockResolvedValue({
-        id: everyoneRoleId,
-        serverId: 100n,
-        isDefault: true,
-        permissions: everyonePerms,
-      });
-      mockDb.where.mockResolvedValue([]);
+      // computeServerPermissions queries
+      mockDb._serverMemberWhere.mockResolvedValue([{ ownerId: 999n, memberUserId: 1n }]);
+      mockDb._roleWhere.mockResolvedValue([
+        { permissions: everyonePerms, isDefault: true },
+      ]);
 
-      // Member-specific override: deny SEND_MESSAGES, allow MANAGE_MESSAGES
+      // computeChannelPermissions parallel queries
       mockDb.query.channelPermissionOverrides.findMany.mockResolvedValue([
         {
           targetType: 'member',
@@ -276,6 +262,12 @@ describe('permissions', () => {
           deny: Permission.SEND_MESSAGES,
         },
       ]);
+      mockDb.query.roles.findFirst.mockResolvedValue({
+        id: everyoneRoleId,
+        serverId: 100n,
+        isDefault: true,
+        permissions: everyonePerms,
+      });
 
       const result = await computeChannelPermissions(mockDb, '100', '200', '1');
       expect(result & Permission.READ_MESSAGES).toBe(Permission.READ_MESSAGES);
@@ -287,7 +279,7 @@ describe('permissions', () => {
   describe('requirePermission', () => {
     it('passes when user has the required permission', async () => {
       // Owner has ALL_PERMISSIONS
-      mockDb.query.servers.findFirst.mockResolvedValue({ id: 100n, ownerId: 1n });
+      mockDb._serverMemberWhere.mockResolvedValue([{ ownerId: 1n, memberUserId: 1n }]);
 
       const handler = requirePermission(Permission.SEND_MESSAGES);
       const request = {
@@ -303,15 +295,10 @@ describe('permissions', () => {
     it('throws ForbiddenError when user lacks permission', async () => {
       const everyonePerms = Permission.READ_MESSAGES; // no MANAGE_ROLES
 
-      mockDb.query.servers.findFirst.mockResolvedValue({ id: 100n, ownerId: 999n });
-      mockDb.query.serverMembers.findFirst.mockResolvedValue({ serverId: 100n, userId: 1n });
-      mockDb.query.roles.findFirst.mockResolvedValue({
-        id: 50n,
-        serverId: 100n,
-        isDefault: true,
-        permissions: everyonePerms,
-      });
-      mockDb.where.mockResolvedValue([]);
+      mockDb._serverMemberWhere.mockResolvedValue([{ ownerId: 999n, memberUserId: 1n }]);
+      mockDb._roleWhere.mockResolvedValue([
+        { permissions: everyonePerms, isDefault: true },
+      ]);
 
       const handler = requirePermission(Permission.MANAGE_ROLES);
       const request = {

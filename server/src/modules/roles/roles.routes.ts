@@ -42,7 +42,7 @@ export async function roleRoutes(app: FastifyInstance) {
       targetType: 'role',
       targetId: role.id,
       changes: { name: { new: role.name } },
-    }).catch(() => {});
+    }).catch(err => console.warn('Failed to write audit log for role create:', err));
 
     return reply.status(201).send(role);
   });
@@ -120,7 +120,7 @@ export async function roleRoutes(app: FastifyInstance) {
       action: AuditLogAction.ROLE_DELETE,
       targetType: 'role',
       targetId: paramsParsed.data.roleId,
-    }).catch(() => {});
+    }).catch(err => console.warn('Failed to write audit log for role delete:', err));
 
     return reply.status(204).send();
   });

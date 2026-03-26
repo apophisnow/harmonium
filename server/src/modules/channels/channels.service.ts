@@ -3,7 +3,8 @@ import { getDb, schema } from '../../db/index.js';
 import { generateId } from '../../utils/snowflake.js';
 import { NotFoundError, ForbiddenError } from '../../utils/errors.js';
 import { getPubSubManager } from '../../ws/pubsub.js';
-import { Permission, hasPermission, computeChannelPermissions } from '@harmonium/shared';
+import { Permission, hasPermission } from '@harmonium/shared';
+import { computeServerPermissions, computeChannelPermissions } from '../../utils/permissions.js';
 import type {
   CreateChannelInput,
   UpdateChannelInput,
@@ -83,63 +84,9 @@ export async function requireMembership(serverId: string, userId: string): Promi
   }
 }
 
-async function getServerOwnerId(serverId: string): Promise<string> {
-  const db = getDb();
-  const server = await db.query.servers.findFirst({
-    where: eq(schema.servers.id, BigInt(serverId)),
-  });
-  if (!server) {
-    throw new NotFoundError('Server not found');
-  }
-  return server.ownerId.toString();
-}
-
-async function getMemberPermissions(serverId: string, userId: string): Promise<bigint> {
-  const db = getDb();
-  const serverIdBigInt = BigInt(serverId);
-  const userIdBigInt = BigInt(userId);
-
-  // Server owner has all permissions
-  const ownerId = await getServerOwnerId(serverId);
-  if (ownerId === userId) {
-    return ~0n; // All bits set
-  }
-
-  // Get all roles for this server
-  const allRoles = await db.query.roles.findMany({
-    where: eq(schema.roles.serverId, serverIdBigInt),
-  });
-
-  // Get the @everyone role (default)
-  const everyoneRole = allRoles.find((r) => r.isDefault);
-  let permissions = everyoneRole?.permissions ?? 0n;
-
-  // Get member's assigned roles
-  const memberRoleRows = await db
-    .select({ roleId: schema.memberRoles.roleId })
-    .from(schema.memberRoles)
-    .where(
-      and(
-        eq(schema.memberRoles.serverId, serverIdBigInt),
-        eq(schema.memberRoles.userId, userIdBigInt),
-      ),
-    );
-
-  const memberRoleIds = new Set(memberRoleRows.map((r) => r.roleId));
-
-  // Combine permissions from all assigned roles
-  for (const role of allRoles) {
-    if (memberRoleIds.has(role.id)) {
-      permissions |= role.permissions;
-    }
-  }
-
-  return permissions;
-}
-
 async function requirePermission(serverId: string, userId: string, permission: bigint): Promise<void> {
-  await requireMembership(serverId, userId);
-  const perms = await getMemberPermissions(serverId, userId);
+  const db = getDb();
+  const perms = await computeServerPermissions(db, serverId, userId);
   if (!hasPermission(perms, permission)) {
     throw new ForbiddenError('You do not have permission to perform this action');
   }
@@ -151,83 +98,7 @@ async function getChannelPermissionsForUser(
   userId: string,
 ): Promise<bigint> {
   const db = getDb();
-  const channelIdBigInt = BigInt(channelId);
-  const serverIdBigInt = BigInt(serverId);
-  const userIdBigInt = BigInt(userId);
-
-  // Get base server permissions
-  const basePermissions = await getMemberPermissions(serverId, userId);
-
-  // Admin bypasses all channel overrides
-  if (hasPermission(basePermissions, Permission.ADMINISTRATOR)) {
-    return basePermissions;
-  }
-
-  // Get all channel permission overrides
-  const overrides = await db
-    .select()
-    .from(schema.channelPermissionOverrides)
-    .where(eq(schema.channelPermissionOverrides.channelId, channelIdBigInt));
-
-  if (overrides.length === 0) {
-    return basePermissions;
-  }
-
-  // Get member's role IDs
-  const memberRoleRows = await db
-    .select({ roleId: schema.memberRoles.roleId })
-    .from(schema.memberRoles)
-    .where(
-      and(
-        eq(schema.memberRoles.serverId, serverIdBigInt),
-        eq(schema.memberRoles.userId, userIdBigInt),
-      ),
-    );
-  const memberRoleIds = new Set(memberRoleRows.map((r) => r.roleId));
-
-  // Get the @everyone role
-  const everyoneRole = await db.query.roles.findFirst({
-    where: and(
-      eq(schema.roles.serverId, serverIdBigInt),
-      eq(schema.roles.isDefault, true),
-    ),
-  });
-
-  // Apply @everyone role override first, then other role overrides, then member override
-  const roleOverrides: Array<{ allow: bigint; deny: bigint }> = [];
-
-  // @everyone override
-  if (everyoneRole) {
-    const everyoneOverride = overrides.find(
-      (o) => o.targetType === 'role' && o.targetId === everyoneRole.id,
-    );
-    if (everyoneOverride) {
-      roleOverrides.push({ allow: everyoneOverride.allow, deny: everyoneOverride.deny });
-    }
-  }
-
-  // Other role overrides (combined)
-  let roleAllow = 0n;
-  let roleDeny = 0n;
-  for (const override of overrides) {
-    if (override.targetType === 'role' && memberRoleIds.has(override.targetId)) {
-      roleAllow |= override.allow;
-      roleDeny |= override.deny;
-    }
-  }
-  if (roleAllow !== 0n || roleDeny !== 0n) {
-    roleOverrides.push({ allow: roleAllow, deny: roleDeny });
-  }
-
-  // Member-specific override
-  const memberOverride = overrides.find(
-    (o) => o.targetType === 'member' && o.targetId === userIdBigInt,
-  );
-  if (memberOverride) {
-    roleOverrides.push({ allow: memberOverride.allow, deny: memberOverride.deny });
-  }
-
-  return computeChannelPermissions(basePermissions, roleOverrides);
+  return computeChannelPermissions(db, serverId, channelId, userId);
 }
 
 function canReadChannel(channelPerms: bigint): boolean {
@@ -293,7 +164,7 @@ export async function createChannel(serverId: string, userId: string, input: Cre
     targetType: 'channel',
     targetId: channelId.toString(),
     changes: { name: { new: normalizedName }, type: { new: input.type ?? 'text' } },
-  }).catch(() => {});
+  }).catch(err => console.warn('Failed to write audit log for channel create:', err));
 
   return response;
 }
@@ -415,7 +286,7 @@ export async function updateChannel(channelId: string, userId: string, input: Up
     targetType: 'channel',
     targetId: channelId,
     changes: Object.keys(changes).length > 0 ? changes : null,
-  }).catch(() => {});
+  }).catch(err => console.warn('Failed to write audit log for channel update:', err));
 
   return response;
 }
@@ -454,7 +325,7 @@ export async function deleteChannel(channelId: string, userId: string) {
     targetType: 'channel',
     targetId: channelId,
     changes: { name: { old: channelName } },
-  }).catch(() => {});
+  }).catch(err => console.warn('Failed to write audit log for channel delete:', err));
 }
 
 // ===== Category CRUD =====

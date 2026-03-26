@@ -1,11 +1,12 @@
 import { useEffect, useRef, useCallback } from 'react';
-import type { Message, ClientEvent } from '@harmonium/shared';
+import type { ClientEvent } from '@harmonium/shared';
+import type { ClientMessage } from '../../types.js';
 import { MessageItem } from './MessageItem.js';
 import { LoadingSpinner } from '../shared/LoadingSpinner.js';
 import { useUnreadStore } from '../../stores/unread.store.js';
 
 interface MessageListProps {
-  messages: Message[];
+  messages: ClientMessage[];
   isLoading: boolean;
   hasMore: boolean;
   loadMore: () => Promise<void>;
@@ -109,7 +110,7 @@ export function MessageList({
   };
 
   // Group consecutive messages from same author within 5 minutes
-  const isGrouped = (msg: Message, prevMsg: Message | undefined): boolean => {
+  const isGrouped = (msg: ClientMessage, prevMsg: ClientMessage | undefined): boolean => {
     if (!prevMsg) return false;
     if (msg.authorId !== prevMsg.authorId) return false;
     const timeDiff =

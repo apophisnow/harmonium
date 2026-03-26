@@ -62,6 +62,7 @@ apiClient.interceptors.response.use(
       const refreshToken = localStorage.getItem('refreshToken');
 
       if (!refreshToken) {
+        useToastStore.getState().addToast('error', 'Session expired. Please log in again.');
         clearAuthAndRedirect();
         return Promise.reject(error);
       }
@@ -74,6 +75,7 @@ apiClient.interceptors.response.use(
           return accessToken as string;
         })
         .catch((refreshError) => {
+          useToastStore.getState().addToast('error', 'Session expired. Please log in again.');
           clearAuthAndRedirect();
           throw refreshError;
         })

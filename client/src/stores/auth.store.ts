@@ -119,6 +119,13 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
     if (accessToken && refreshToken && userJson) {
       try {
+        // Check if the access token is expired
+        const payload = JSON.parse(atob(accessToken.split('.')[1]));
+        const isExpired = typeof payload.exp === 'number' && payload.exp * 1000 < Date.now();
+        if (isExpired) {
+          throw new Error('Token expired');
+        }
+
         const user = JSON.parse(userJson) as PublicUser;
         set({
           user,

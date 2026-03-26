@@ -49,6 +49,8 @@ export function ContextMenu({ x, y, items, header, onClose }: ContextMenuProps) 
   return (
     <div
       ref={menuRef}
+      role="menu"
+      aria-label="Context menu"
       className="fixed z-50 min-w-[180px] rounded-md bg-th-bg-floating p-1.5 shadow-xl"
       style={{ left: x, top: y }}
     >
@@ -70,6 +72,8 @@ export function ContextMenu({ x, y, items, header, onClose }: ContextMenuProps) 
         return (
           <button
             key={item.label}
+            role="menuitem"
+            aria-label={item.label}
             className={`flex w-full items-center rounded px-2 py-1.5 text-sm ${
               item.danger
                 ? 'text-th-red hover:bg-th-red hover:text-white'

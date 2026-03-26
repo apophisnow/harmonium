@@ -11,6 +11,21 @@ import { createAuditLogEntry } from '../audit-log/audit-log.service.js';
 import { AuditLogAction } from '@harmonium/shared';
 import type { UpdateDiscoveryInput } from '../discovery/discovery.schemas.js';
 
+/**
+ * Reconcile the cached member_count with the actual COUNT(*) from server_members.
+ * Called as fire-and-forget after add/remove operations to ensure eventual consistency.
+ */
+async function reconcileMemberCount(serverId: string): Promise<void> {
+  const db = getDb();
+  const serverIdBigInt = BigInt(serverId);
+  await db
+    .update(schema.servers)
+    .set({
+      memberCount: sql`(SELECT COUNT(*)::int FROM ${schema.serverMembers} WHERE ${schema.serverMembers.serverId} = ${serverIdBigInt})`,
+    })
+    .where(eq(schema.servers.id, serverIdBigInt));
+}
+
 function serverToResponse(server: typeof schema.servers.$inferSelect) {
   return {
     id: server.id.toString(),
@@ -207,7 +222,7 @@ export async function updateServer(serverId: string, userId: string, input: Upda
     targetType: 'server',
     targetId: serverId,
     changes: Object.keys(changes).length > 0 ? changes : null,
-  }).catch(() => {});
+  }).catch(err => console.warn('Failed to write audit log for server update:', err));
 
   return response;
 }
@@ -323,6 +338,9 @@ export async function leaveServer(serverId: string, userId: string) {
     op: 'MEMBER_LEAVE' as const,
     d: { serverId, userId },
   });
+
+  // Fire-and-forget reconciliation of member count
+  reconcileMemberCount(serverId).catch(err => console.warn('Failed to reconcile member count:', err));
 }
 
 export async function kickMember(serverId: string, actorId: string, targetUserId: string) {
@@ -390,7 +408,10 @@ export async function kickMember(serverId: string, actorId: string, targetUserId
     action: AuditLogAction.MEMBER_KICK,
     targetType: 'user',
     targetId: targetUserId,
-  }).catch(() => {});
+  }).catch(err => console.warn('Failed to write audit log for member kick:', err));
+
+  // Fire-and-forget reconciliation of member count
+  reconcileMemberCount(serverId).catch(err => console.warn('Failed to reconcile member count:', err));
 }
 
 export async function addMemberToServer(serverId: string, userId: string, txn?: DbOrTransaction) {
@@ -433,6 +454,9 @@ export async function addMemberToServer(serverId: string, userId: string, txn?: 
       d: { serverId, member: memberData },
     });
   }
+
+  // Fire-and-forget reconciliation of member count
+  reconcileMemberCount(serverId).catch(err => console.warn('Failed to reconcile member count:', err));
 
   return memberData;
 }

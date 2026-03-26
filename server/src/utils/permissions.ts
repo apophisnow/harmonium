@@ -1,4 +1,4 @@
-import { eq, and } from 'drizzle-orm';
+import { eq, and, sql } from 'drizzle-orm';
 import type { FastifyRequest, FastifyReply } from 'fastify';
 import { Permission, ALL_PERMISSIONS, hasPermission } from '@harmonium/shared';
 import type { Database } from '../db/index.js';
@@ -13,6 +13,8 @@ import { ForbiddenError, NotFoundError } from './errors.js';
  * 2. OR in every additional role the member holds.
  * 3. If the result includes ADMINISTRATOR, return ALL_PERMISSIONS.
  * 4. The server owner always receives ALL_PERMISSIONS.
+ *
+ * Uses 2 queries: one JOIN for server+membership, one for all applicable roles.
  */
 export async function computeServerPermissions(
   db: Database,
@@ -22,55 +24,59 @@ export async function computeServerPermissions(
   const serverIdBigInt = BigInt(serverId);
   const userIdBigInt = BigInt(userId);
 
-  // Check if user is the server owner
-  const server = await db.query.servers.findFirst({
-    where: eq(schema.servers.id, serverIdBigInt),
-  });
+  // Query 1: Server lookup + membership check in a single JOIN
+  const [serverMemberRow] = await db
+    .select({
+      ownerId: schema.servers.ownerId,
+      memberUserId: schema.serverMembers.userId,
+    })
+    .from(schema.servers)
+    .leftJoin(
+      schema.serverMembers,
+      and(
+        eq(schema.serverMembers.serverId, schema.servers.id),
+        eq(schema.serverMembers.userId, userIdBigInt),
+      ),
+    )
+    .where(eq(schema.servers.id, serverIdBigInt));
 
-  if (!server) {
+  if (!serverMemberRow) {
     throw new NotFoundError('Server not found');
   }
 
-  if (server.ownerId === userIdBigInt) {
+  if (serverMemberRow.ownerId === userIdBigInt) {
     return ALL_PERMISSIONS;
   }
 
-  // Verify membership
-  const membership = await db.query.serverMembers.findFirst({
-    where: and(
-      eq(schema.serverMembers.serverId, serverIdBigInt),
-      eq(schema.serverMembers.userId, userIdBigInt),
-    ),
-  });
-
-  if (!membership) {
+  if (!serverMemberRow.memberUserId) {
     throw new ForbiddenError('You are not a member of this server');
   }
 
-  // Get @everyone role permissions
-  const everyoneRole = await db.query.roles.findFirst({
-    where: and(
-      eq(schema.roles.serverId, serverIdBigInt),
-      eq(schema.roles.isDefault, true),
-    ),
-  });
-
-  let permissions = everyoneRole?.permissions ?? 0n;
-
-  // Get all member roles and OR their permissions
-  const memberRoleRows = await db
-    .select({ role: schema.roles })
-    .from(schema.memberRoles)
-    .innerJoin(schema.roles, eq(schema.memberRoles.roleId, schema.roles.id))
+  // Query 2: Get @everyone role + all member roles in one query using UNION via OR
+  // Fetches: roles where (serverId matches AND isDefault=true) OR (role is assigned to this member)
+  const roleRows = await db
+    .select({
+      permissions: schema.roles.permissions,
+      isDefault: schema.roles.isDefault,
+    })
+    .from(schema.roles)
+    .leftJoin(
+      schema.memberRoles,
+      and(
+        eq(schema.memberRoles.roleId, schema.roles.id),
+        eq(schema.memberRoles.userId, userIdBigInt),
+      ),
+    )
     .where(
       and(
-        eq(schema.memberRoles.serverId, serverIdBigInt),
-        eq(schema.memberRoles.userId, userIdBigInt),
+        eq(schema.roles.serverId, serverIdBigInt),
+        sql`(${schema.roles.isDefault} = true OR ${schema.memberRoles.userId} IS NOT NULL)`,
       ),
     );
 
-  for (const row of memberRoleRows) {
-    permissions |= row.role.permissions;
+  let permissions = 0n;
+  for (const row of roleRows) {
+    permissions |= row.permissions;
   }
 
   // If ADMINISTRATOR, grant all
@@ -90,6 +96,8 @@ export async function computeServerPermissions(
  * 3. Apply @everyone role channel overrides (deny then allow).
  * 4. Apply overrides for each of the member's roles (deny then allow, accumulated).
  * 5. Apply member-specific overrides (deny then allow).
+ *
+ * Uses computeServerPermissions (2 queries) + 1 query for overrides + role context = 3 total.
  */
 export async function computeChannelPermissions(
   db: Database,
@@ -108,20 +116,30 @@ export async function computeChannelPermissions(
   const serverIdBigInt = BigInt(serverId);
   const userIdBigInt = BigInt(userId);
 
-  // Get all channel permission overrides
-  const overrides = await db.query.channelPermissionOverrides.findMany({
-    where: eq(schema.channelPermissionOverrides.channelId, channelIdBigInt),
-  });
+  // Single query: get all channel overrides + @everyone role id + member role ids
+  // We fetch overrides and role context in parallel to reduce sequential queries
+  const [overrides, everyoneRole, memberRoleRows] = await Promise.all([
+    db.query.channelPermissionOverrides.findMany({
+      where: eq(schema.channelPermissionOverrides.channelId, channelIdBigInt),
+    }),
+    db.query.roles.findFirst({
+      where: and(
+        eq(schema.roles.serverId, serverIdBigInt),
+        eq(schema.roles.isDefault, true),
+      ),
+    }),
+    db
+      .select({ roleId: schema.memberRoles.roleId })
+      .from(schema.memberRoles)
+      .where(
+        and(
+          eq(schema.memberRoles.serverId, serverIdBigInt),
+          eq(schema.memberRoles.userId, userIdBigInt),
+        ),
+      ),
+  ]);
 
-  // 1. Apply @everyone role overrides (the @everyone role id equals the server id,
-  //    but here the @everyone role has isDefault=true, so find it)
-  const everyoneRole = await db.query.roles.findFirst({
-    where: and(
-      eq(schema.roles.serverId, serverIdBigInt),
-      eq(schema.roles.isDefault, true),
-    ),
-  });
-
+  // 1. Apply @everyone role overrides
   if (everyoneRole) {
     const everyoneOverride = overrides.find(
       (o) => o.targetType === 'role' && o.targetId === everyoneRole.id,
@@ -133,16 +151,6 @@ export async function computeChannelPermissions(
   }
 
   // 2. Apply member's role overrides (accumulated)
-  const memberRoleRows = await db
-    .select({ roleId: schema.memberRoles.roleId })
-    .from(schema.memberRoles)
-    .where(
-      and(
-        eq(schema.memberRoles.serverId, serverIdBigInt),
-        eq(schema.memberRoles.userId, userIdBigInt),
-      ),
-    );
-
   const memberRoleIds = new Set(memberRoleRows.map((r) => r.roleId));
 
   let roleAllow = 0n;

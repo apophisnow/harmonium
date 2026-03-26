@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 
 export interface DeviceList {
   audioInputs: MediaDeviceInfo[];
@@ -13,7 +13,11 @@ export function useMediaDevices(): DeviceList {
     videoInputs: [],
   });
 
+  const mountedRef = useRef(true);
+
   useEffect(() => {
+    mountedRef.current = true;
+
     async function enumerate() {
       // Request a transient stream so the browser exposes device labels
       try {
@@ -24,6 +28,7 @@ export function useMediaDevices(): DeviceList {
       }
 
       const all = await navigator.mediaDevices.enumerateDevices();
+      if (!mountedRef.current) return;
       setDevices({
         audioInputs: all.filter((d) => d.kind === 'audioinput'),
         audioOutputs: all.filter((d) => d.kind === 'audiooutput'),
@@ -33,7 +38,10 @@ export function useMediaDevices(): DeviceList {
 
     enumerate();
     navigator.mediaDevices.addEventListener('devicechange', enumerate);
-    return () => navigator.mediaDevices.removeEventListener('devicechange', enumerate);
+    return () => {
+      mountedRef.current = false;
+      navigator.mediaDevices.removeEventListener('devicechange', enumerate);
+    };
   }, []);
 
   return devices;

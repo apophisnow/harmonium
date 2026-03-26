@@ -1,5 +1,6 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
-import type { ServerMember, Message } from '@harmonium/shared';
+import type { ServerMember } from '@harmonium/shared';
+import type { ClientMessage } from '../../types.js';
 import { sendMessage } from '../../api/messages.js';
 import { useMessageStore } from '../../stores/message.store.js';
 import { useAuthStore } from '../../stores/auth.store.js';
@@ -59,7 +60,7 @@ export function MessageInput({
     // Only show optimistic message for text-only sends (no files)
     const hasFiles = files.length > 0;
     if (!hasFiles && trimmed && currentUser) {
-      const optimisticMsg: Message = {
+      const optimisticMsg: ClientMessage = {
         id: tempId,
         channelId,
         authorId: currentUser.id,

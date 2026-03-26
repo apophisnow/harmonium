@@ -94,7 +94,7 @@ export function EmojiPicker({ onSelect, onClose }: EmojiPickerProps) {
 
       {/* Emoji grid */}
       <div className="p-2 max-h-[200px] overflow-y-auto">
-        <div className="grid grid-cols-8 gap-0.5">
+        <div className="grid grid-cols-8 gap-0.5" role="grid" aria-label="Emoji grid">
           {EMOJI_CATEGORIES[activeCategory].emojis.map((emoji) => (
             <button
               key={emoji}
@@ -102,6 +102,7 @@ export function EmojiPicker({ onSelect, onClose }: EmojiPickerProps) {
                 onSelect(emoji);
                 onClose();
               }}
+              aria-label={emoji}
               className="flex items-center justify-center h-8 w-8 rounded hover:bg-th-bg-accent transition-colors text-lg"
             >
               {emoji}

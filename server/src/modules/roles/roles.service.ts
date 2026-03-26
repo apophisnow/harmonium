@@ -155,7 +155,7 @@ export async function updateRole(serverId: string, roleId: string, input: Update
     targetType: 'role',
     targetId: roleId,
     changes: Object.keys(changes).length > 0 ? changes : null,
-  }).catch(() => {});
+  }).catch(err => console.warn('Failed to write audit log for role update:', err));
 
   return response;
 }

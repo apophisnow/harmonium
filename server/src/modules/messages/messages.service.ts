@@ -29,6 +29,27 @@ export interface AttachmentInput {
   sizeBytes: number;
 }
 
+// ===== Filename Sanitization =====
+
+function sanitizeFilename(filename: string): string {
+  // Split into name and extension
+  const lastDot = filename.lastIndexOf('.');
+  let name = lastDot > 0 ? filename.slice(0, lastDot) : filename;
+  const ext = lastDot > 0 ? filename.slice(lastDot) : '';
+
+  // Replace characters outside the safe set with underscores
+  name = name.replace(/[^a-zA-Z0-9._-]/g, '_');
+  const sanitizedExt = ext.replace(/[^a-zA-Z0-9.]/g, '_');
+
+  // Truncate to 255 chars total
+  const maxNameLen = 255 - sanitizedExt.length;
+  if (name.length > maxNameLen) {
+    name = name.slice(0, maxNameLen);
+  }
+
+  return name + sanitizedExt;
+}
+
 // ===== Helpers =====
 
 interface MessageRow {
@@ -222,13 +243,14 @@ export async function createMessage(
   if (attachmentInputs.length > 0 && storage) {
     for (const file of attachmentInputs) {
       const attachmentId = generateId();
-      const relativePath = `attachments/${messageId.toString()}/${file.filename}`;
+      const safeFilename = sanitizeFilename(file.filename);
+      const relativePath = `attachments/${messageId.toString()}/${safeFilename}`;
       const url = await storage.save(relativePath, file.buffer);
 
       const values = {
         id: attachmentId,
         messageId,
-        filename: file.filename,
+        filename: safeFilename,
         url,
         contentType: file.contentType,
         sizeBytes: file.sizeBytes,
@@ -340,8 +362,8 @@ export async function createMessage(
 
   // Fire-and-forget embed fetching
   if (input.content) {
-    fetchAndStoreEmbeds(messageId, input.content, channelId, serverId ?? '').catch(() => {
-      // Silently ignore embed fetch failures
+    fetchAndStoreEmbeds(messageId, input.content, channelId, serverId ?? '').catch(err => {
+      console.warn('Failed to fetch and store embeds:', err);
     });
   }
 

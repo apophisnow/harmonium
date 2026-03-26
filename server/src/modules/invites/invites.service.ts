@@ -3,6 +3,7 @@ import { eq, and, sql } from 'drizzle-orm';
 import { getDb, schema } from '../../db/index.js';
 import { NotFoundError, ForbiddenError, ConflictError, ValidationError } from '../../utils/errors.js';
 import { hasPermission, Permission } from '@harmonium/shared';
+import { computeServerPermissions } from '../../utils/permissions.js';
 import { addMemberToServer } from '../servers/servers.service.js';
 import { isBanned } from '../bans/bans.service.js';
 import { getPubSubManager } from '../../ws/pubsub.js';
@@ -59,48 +60,10 @@ function inviteToResponse(
   };
 }
 
-/** Compute the effective permissions for a user in a server */
+/** Compute the effective permissions for a user in a server (delegates to centralized util) */
 async function getUserServerPermissions(serverId: bigint, userId: bigint): Promise<bigint> {
   const db = getDb();
-
-  // Check if user is server owner -- owners have all permissions
-  const server = await db.query.servers.findFirst({
-    where: eq(schema.servers.id, serverId),
-  });
-
-  if (server && server.ownerId === userId) {
-    // Owner has all permissions
-    return ~0n;
-  }
-
-  // Get @everyone (default) role permissions
-  const defaultRole = await db.query.roles.findFirst({
-    where: and(
-      eq(schema.roles.serverId, serverId),
-      eq(schema.roles.isDefault, true),
-    ),
-  });
-
-  let permissions = defaultRole?.permissions ?? 0n;
-
-  // Get member's assigned roles
-  const memberRoleRows = await db
-    .select({ role: schema.roles })
-    .from(schema.memberRoles)
-    .innerJoin(schema.roles, eq(schema.memberRoles.roleId, schema.roles.id))
-    .where(
-      and(
-        eq(schema.memberRoles.serverId, serverId),
-        eq(schema.memberRoles.userId, userId),
-      ),
-    );
-
-  // OR together all role permissions
-  for (const row of memberRoleRows) {
-    permissions |= row.role.permissions;
-  }
-
-  return permissions;
+  return computeServerPermissions(db, serverId.toString(), userId.toString());
 }
 
 export async function createInvite(serverId: string, inviterId: string, input: CreateInviteInput) {
@@ -130,7 +93,7 @@ export async function createInvite(serverId: string, inviterId: string, input: C
     targetType: 'invite',
     targetId: null,
     changes: { code: { new: code } },
-  }).catch(() => {});
+  }).catch(err => console.warn('Failed to write audit log for invite create:', err));
 
   return inviteToResponse(invite);
 }
@@ -317,7 +280,7 @@ export async function deleteInvite(code: string, userId: string, serverId: strin
     targetType: 'invite',
     targetId: null,
     changes: { code: { old: code } },
-  }).catch(() => {});
+  }).catch(err => console.warn('Failed to write audit log for invite delete:', err));
 }
 
 export { getUserServerPermissions };

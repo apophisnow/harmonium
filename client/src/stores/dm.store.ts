@@ -30,13 +30,14 @@ export const useDmStore = create<DmState>((set, get) => ({
 
   openDm: async (recipientId) => {
     const channel = await createDm(recipientId);
-    const existing = get().dmChannels.find((c) => c.id === channel.id);
+    const state = get();
+    const existing = state.dmChannels.find((c) => c.id === channel.id);
     if (!existing) {
-      set({ dmChannels: [channel, ...get().dmChannels] });
+      set({ dmChannels: [channel, ...state.dmChannels] });
     } else {
       // Update existing channel (may have been reopened)
       set({
-        dmChannels: get().dmChannels.map((c) =>
+        dmChannels: state.dmChannels.map((c) =>
           c.id === channel.id ? channel : c,
         ),
       });
@@ -46,24 +47,26 @@ export const useDmStore = create<DmState>((set, get) => ({
 
   closeDm: async (channelId) => {
     await apiCloseDm(channelId);
+    const state = get();
     set({
-      dmChannels: get().dmChannels.filter((c) => c.id !== channelId),
+      dmChannels: state.dmChannels.filter((c) => c.id !== channelId),
       currentDmChannelId:
-        get().currentDmChannelId === channelId ? null : get().currentDmChannelId,
+        state.currentDmChannelId === channelId ? null : state.currentDmChannelId,
     });
   },
 
   addDmChannel: (channel) => {
-    const existing = get().dmChannels.find((c) => c.id === channel.id);
+    const state = get();
+    const existing = state.dmChannels.find((c) => c.id === channel.id);
     if (existing) {
       // Update existing
       set({
-        dmChannels: get().dmChannels.map((c) =>
+        dmChannels: state.dmChannels.map((c) =>
           c.id === channel.id ? channel : c,
         ),
       });
     } else {
-      set({ dmChannels: [channel, ...get().dmChannels] });
+      set({ dmChannels: [channel, ...state.dmChannels] });
     }
   },
 

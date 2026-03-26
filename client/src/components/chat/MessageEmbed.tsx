@@ -1,5 +1,7 @@
 import type { Embed } from '@harmonium/shared';
 
+const isSafeUrl = (url: string) => /^https?:\/\//i.test(url);
+
 interface MessageEmbedProps {
   embed: Embed;
 }
@@ -11,14 +13,23 @@ export function MessageEmbed({ embed }: MessageEmbedProps) {
   if (embed.type === 'image' && !embed.title && !embed.description) {
     return (
       <div className="mt-1 max-w-[400px]">
-        <a href={embed.url} target="_blank" rel="noopener noreferrer">
+        {isSafeUrl(embed.url) ? (
+          <a href={embed.url} target="_blank" rel="noopener noreferrer">
+            <img
+              src={embed.imageUrl ?? embed.url}
+              alt="Embedded image"
+              className="max-h-[300px] max-w-full rounded object-contain cursor-pointer"
+              loading="lazy"
+            />
+          </a>
+        ) : (
           <img
             src={embed.imageUrl ?? embed.url}
             alt="Embedded image"
-            className="max-h-[300px] max-w-full rounded object-contain cursor-pointer"
+            className="max-h-[300px] max-w-full rounded object-contain"
             loading="lazy"
           />
-        </a>
+        )}
       </div>
     );
   }
@@ -33,14 +44,20 @@ export function MessageEmbed({ embed }: MessageEmbedProps) {
       )}
 
       {embed.title && (
-        <a
-          href={embed.url}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="block text-sm font-semibold text-th-text-link hover:underline mb-0.5"
-        >
-          {embed.title}
-        </a>
+        isSafeUrl(embed.url) ? (
+          <a
+            href={embed.url}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="block text-sm font-semibold text-th-text-link hover:underline mb-0.5"
+          >
+            {embed.title}
+          </a>
+        ) : (
+          <p className="text-sm font-semibold text-th-text-link mb-0.5">
+            {embed.title}
+          </p>
+        )
       )}
 
       {embed.description && (
@@ -50,14 +67,25 @@ export function MessageEmbed({ embed }: MessageEmbedProps) {
       )}
 
       {embed.imageUrl && (
-        <a href={embed.url} target="_blank" rel="noopener noreferrer" className="block mt-1">
-          <img
-            src={embed.imageUrl}
-            alt={embed.title ?? 'Embed image'}
-            className="max-h-[300px] max-w-full rounded object-contain"
-            loading="lazy"
-          />
-        </a>
+        isSafeUrl(embed.url) ? (
+          <a href={embed.url} target="_blank" rel="noopener noreferrer" className="block mt-1">
+            <img
+              src={embed.imageUrl}
+              alt={embed.title ?? 'Embed image'}
+              className="max-h-[300px] max-w-full rounded object-contain"
+              loading="lazy"
+            />
+          </a>
+        ) : (
+          <div className="block mt-1">
+            <img
+              src={embed.imageUrl}
+              alt={embed.title ?? 'Embed image'}
+              className="max-h-[300px] max-w-full rounded object-contain"
+              loading="lazy"
+            />
+          </div>
+        )
       )}
     </div>
   );

@@ -1,5 +1,6 @@
-import { useState, type ReactNode } from 'react';
-import type { Message, Attachment, Reaction, ServerMember, ThreadListItem } from '@harmonium/shared';
+import React, { useState, type ReactNode } from 'react';
+import type { Attachment, Reaction, ServerMember, ThreadListItem } from '@harmonium/shared';
+import type { ClientMessage } from '../../types.js';
 import { useAuthStore } from '../../stores/auth.store.js';
 import { useMessageStore } from '../../stores/message.store.js';
 import { useMemberStore } from '../../stores/member.store.js';
@@ -23,7 +24,7 @@ import { renderMarkdown } from '../../utils/markdown.js';
 import { AttachmentPreview } from './AttachmentPreview.js';
 
 interface MessageItemProps {
-  message: Message;
+  message: ClientMessage;
   isGrouped: boolean;
 }
 
@@ -145,7 +146,7 @@ function MessageContent({ content }: { content: string }) {
   return <>{renderMarkdown(resolved)}</>;
 }
 
-export function MessageItem({ message, isGrouped }: MessageItemProps) {
+export const MessageItem = React.memo(function MessageItem({ message, isGrouped }: MessageItemProps) {
   const [isHovering, setIsHovering] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [editContent, setEditContent] = useState(message.content ?? '');
@@ -731,4 +732,5 @@ function FailedMessageBar({
       </button>
     </div>
   );
-}
+});
+

@@ -1,6 +1,7 @@
-import { pgTable, bigint, varchar, boolean, integer, timestamp, index, primaryKey } from 'drizzle-orm/pg-core';
+import { pgTable, bigint, varchar, boolean, integer, timestamp, index, primaryKey, type AnyPgColumn } from 'drizzle-orm/pg-core';
 import { servers } from './servers.js';
 import { users } from './users.js';
+import { messages } from './messages.js';
 
 export const channelCategories = pgTable('channel_categories', {
   id: bigint('id', { mode: 'bigint' }).primaryKey(),
@@ -25,8 +26,8 @@ export const channels = pgTable('channels', {
   ownerId: bigint('owner_id', { mode: 'bigint' }).references(() => users.id),
   // Thread fields
   isThread: boolean('is_thread').notNull().default(false),
-  parentChannelId: bigint('parent_channel_id', { mode: 'bigint' }),
-  originMessageId: bigint('origin_message_id', { mode: 'bigint' }),
+  parentChannelId: bigint('parent_channel_id', { mode: 'bigint' }).references((): AnyPgColumn => channels.id, { onDelete: 'set null' }),
+  originMessageId: bigint('origin_message_id', { mode: 'bigint' }).references((): AnyPgColumn => messages.id, { onDelete: 'set null' }),
   threadArchived: boolean('thread_archived').notNull().default(false),
   threadArchivedAt: timestamp('thread_archived_at', { withTimezone: true }),
   lastMessageAt: timestamp('last_message_at', { withTimezone: true }),

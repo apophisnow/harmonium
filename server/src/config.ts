@@ -18,7 +18,17 @@ const envSchema = z.object({
   SMTP_USER: z.string().optional(),
   SMTP_PASS: z.string().optional(),
   SMTP_FROM: z.string().default('noreply@harmonium.app'),
-});
+}).refine(
+  (data) => {
+    const smtpFields = [data.SMTP_HOST, data.SMTP_USER, data.SMTP_PASS];
+    const setCount = smtpFields.filter((f) => f !== undefined && f !== '').length;
+    // Either none are set or all must be set
+    return setCount === 0 || setCount === smtpFields.length;
+  },
+  {
+    message: 'SMTP configuration is incomplete: if any of SMTP_HOST, SMTP_USER, SMTP_PASS is set, all must be set',
+  },
+);
 
 export type Config = z.infer<typeof envSchema>;
 

@@ -6,8 +6,15 @@ export default defineConfig({
     globals: true,
     environment: 'happy-dom',
     include: ['src/**/__tests__/**/*.test.ts', 'src/**/__tests__/**/*.test.tsx'],
-    passWithNoTests: true,
     setupFiles: ['./src/test-setup.ts'],
+    coverage: {
+      provider: 'v8',
+      thresholds: {
+        lines: 30,
+        functions: 30,
+        branches: 30,
+      },
+    },
   },
   resolve: {
     alias: {
