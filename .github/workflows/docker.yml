@@ -20,8 +20,13 @@ jobs:
         include:
           - image: harmonium-server
             dockerfile: server/Dockerfile
+            context: .
           - image: harmonium-client
             dockerfile: client/Dockerfile
+            context: .
+          - image: harmonium-nginx
+            dockerfile: nginx/Dockerfile
+            context: nginx
 
     steps:
       - uses: actions/checkout@v4
@@ -47,7 +52,7 @@ jobs:
 
       - uses: docker/build-push-action@v6
         with:
-          context: .
+          context: ${{ matrix.context }}
           file: ${{ matrix.dockerfile }}
           push: true
           tags: ${{ steps.meta.outputs.tags }}

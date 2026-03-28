@@ -81,7 +81,9 @@ services:
     restart: unless-stopped
 
   nginx:
-    image: nginx:alpine
+    build:
+      context: nginx
+      dockerfile: Dockerfile
     depends_on:
       server:
         condition: service_healthy
@@ -89,8 +91,6 @@ services:
         condition: service_healthy
     ports:
       - "80:80"
-    volumes:
-      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
     healthcheck:
       test: ["CMD-SHELL", "wget -q --spider http://localhost:80 || exit 1"]
       interval: 10s
